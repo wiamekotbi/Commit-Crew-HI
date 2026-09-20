@@ -1,4 +1,4 @@
-# Commit-Crew
+# Commit-Crew-HI
 
 A bakery-focused food ordering and delivery simulator developed for **SOEN 343 – Software Architecture and Design**.
 
