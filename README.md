@@ -6,14 +6,14 @@ The system allows customers to order bakery products, bakery staff to manage and
 
 ## Team Members
 
-| Name |
-|---|
-| Wiâme Kotbi |
-| Maria Laghmari |
-| Aya Manguer |
-| Anthony Ly |
-| Quentin Malichecq-Laroche |
-| Sukhdarshan Singh|
+| Name | Student ID | Role |
+|---|---:|---|
+| Wiâme Kotbi | 40299105 | Repository Coordinator & Software Developer |
+| Maria Laghmari | 40297167 | Team Lead & Software Developer |
+| Aya Manguer | 40298292 | Requirements & Documentation Coordinator & Software Developer |
+| Anthony Ly | 40282737 | Design Coordinator & Software Developer |
+| Quentin Malichecq-Laroche | 40285143 | Quality Coordinator & Software Developer |
+| Sukhdarshan Singh | 40240213 | Integration Coordinator & Software Developer |
 
 **Team Leader:** Maria Laghmari
 
