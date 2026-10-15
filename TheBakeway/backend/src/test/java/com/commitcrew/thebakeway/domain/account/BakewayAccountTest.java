@@ -38,4 +38,24 @@ class BakewayAccountTest {
                 "Montreal",
                 null));
     }
+
+    @Test
+    void updatesCustomerProfile() {
+        BakewayAccount account = new BakewayAccount(
+                "1",
+                "maria",
+                "password",
+                "Maria",
+                "",
+                "Old Address",
+                Role.CUSTOMER);
+
+        account.updateProfile("Maria Laghmari", "maria@email.com", "New Address");
+
+        assertEquals("Maria Laghmari", account.getDisplayName());
+        assertEquals("maria@email.com", account.getContactEmail());
+        assertEquals("New Address", account.getDeliveryAddress());
+        assertEquals(Role.CUSTOMER, account.getRole());
+        assertEquals("maria", account.getUsername());
+    }
 }
