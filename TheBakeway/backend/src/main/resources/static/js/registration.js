@@ -23,7 +23,7 @@ form.addEventListener("submit", async function (event) {
     const result = await response.json();
 
     if (response.ok) {
-        message.textContent = "Account created successfully. ID: " + result.accountId;
+        message.textContent = "Account created successfully. ";
         form.reset();
     } else {
         message.textContent = result.error;

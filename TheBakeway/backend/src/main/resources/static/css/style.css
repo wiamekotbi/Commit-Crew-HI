@@ -1,13 +1,18 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #f7f3ee;
+    background: linear-gradient(135deg, #fff8f3, #f8e7dc);
+    color: #5f4032;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
 }
 
 header {
-    background-color: #8b5e3c;
-    padding: 20px;
+    background-color: #c98768;
+    padding: 28px 20px;
     text-align: center;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
@@ -15,23 +20,54 @@ header h1 {
     color: white;
 }
 
+.brand-name {
+    font-family: "Brush Script MT", "Segoe Script", cursive;
+    font-size: 52px;
+    font-weight: normal;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.brand-icon {
+    font-size: 38px;
+    vertical-align: middle;
+}
+
+header p {
+    margin: 8px 0 0;
+    color: #fff4ed;
+    font-size: 16px;
+}
+
 main {
     display: flex;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 45px 20px;
+    position: relative;
+    z-index: 2;
 }
 
 .registration-card {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.96);
+    padding: 35px;
+    border-radius: 20px;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    box-shadow: 0 12px 30px rgba(105, 70, 50, 0.15);
+    border: 1px solid #f0d6c6;
+}
+
+.card-icon {
+    text-align: center;
+    font-size: 42px;
+    margin-bottom: 5px;
 }
 
 .registration-card h2 {
     text-align: center;
-    margin-top: 0;
+    margin-top: 5px;
+    margin-bottom: 25px;
+    color: #80543f;
 }
 
 form {
@@ -40,23 +76,87 @@ form {
 }
 
 label {
-    margin-top: 15px;
-    margin-bottom: 5px;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-weight: bold;
+    color: #6e4938;
 }
 
 input {
-    padding: 10px;
-    font-size: 16px;
+    padding: 12px;
+    font-size: 15px;
+    border: 1px solid #e4c5b3;
+    border-radius: 10px;
+    background-color: #fffaf7;
+}
+
+input:focus {
+    outline: none;
+    border-color: #c98768;
+    box-shadow: 0 0 0 3px rgba(201, 135, 104, 0.15);
 }
 
 button {
-    margin-top: 20px;
-    padding: 12px;
+    margin-top: 24px;
+    padding: 13px;
     font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    background-color: #c98768;
+    color: white;
+    font-weight: bold;
     cursor: pointer;
 }
 
+button:hover {
+    background-color: #b67558;
+}
+
 #message {
-    margin-top: 15px;
+    margin-top: 18px;
     text-align: center;
+    color: #80543f;
+    font-weight: bold;
+}
+
+.bakery-background .icon {
+    position: fixed;
+    font-size: 55px;
+    opacity: 0.12;
+    z-index: 1;
+    transform: rotate(-15deg);
+}
+
+.icon1 {
+    top: 22%;
+    left: 7%;
+}
+
+.icon2 {
+    top: 52%;
+    left: 12%;
+    transform: rotate(15deg);
+}
+
+.icon3 {
+    bottom: 8%;
+    left: 25%;
+}
+
+.icon4 {
+    top: 25%;
+    right: 8%;
+    transform: rotate(20deg);
+}
+
+.icon5 {
+    top: 58%;
+    right: 12%;
+    transform: rotate(-10deg);
+}
+
+.icon6 {
+    bottom: 7%;
+    right: 28%;
+    transform: rotate(15deg);
 }
