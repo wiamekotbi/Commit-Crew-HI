@@ -3,21 +3,32 @@ package com.commitcrew.thebakeway.application.reg;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 
+@ExtendWith(MockitoExtension.class)
 class RegistrationServiceTest {
+
+    @Mock
+    private AccountRegistry accountRegistry;
+
+    @InjectMocks
+    private RegistrationService registrationService;
 
     @Test
     void registersCustomer() {
-        AccountRegistry registry = new AccountRegistry();
-        RegistrationService service = new RegistrationService(registry);
+        when(accountRegistry.existsByUsername("maria")).thenReturn(false);
 
-        BakewayAccount account = service.registerCustomer(
+        BakewayAccount account = registrationService.registerCustomer(
                 "Maria",
                 "maria",
                 "password",
@@ -33,30 +44,19 @@ class RegistrationServiceTest {
 
     @Test
     void rejectsDuplicateUsername() {
-        AccountRegistry registry = new AccountRegistry();
-        RegistrationService service = new RegistrationService(registry);
+        when(accountRegistry.existsByUsername("maria")).thenReturn(true);
 
-        service.registerCustomer(
+        assertThrows(IllegalArgumentException.class, () -> registrationService.registerCustomer(
                 "Maria",
                 "maria",
                 "password",
                 "password",
-                "Montreal");
-
-        assertThrows(IllegalArgumentException.class, () -> service.registerCustomer(
-                "Maria 2",
-                "maria",
-                "password",
-                "password",
-                "Laval"));
+                "Montreal"));
     }
 
     @Test
     void rejectsMismatchedPasswords() {
-        AccountRegistry registry = new AccountRegistry();
-        RegistrationService service = new RegistrationService(registry);
-
-        assertThrows(IllegalArgumentException.class, () -> service.registerCustomer(
+        assertThrows(IllegalArgumentException.class, () -> registrationService.registerCustomer(
                 "Maria",
                 "maria",
                 "password",
@@ -66,10 +66,7 @@ class RegistrationServiceTest {
 
     @Test
     void rejectsMissingDeliveryAddress() {
-        AccountRegistry registry = new AccountRegistry();
-        RegistrationService service = new RegistrationService(registry);
-
-        assertThrows(IllegalArgumentException.class, () -> service.registerCustomer(
+        assertThrows(IllegalArgumentException.class, () -> registrationService.registerCustomer(
                 "Maria",
                 "maria",
                 "password",

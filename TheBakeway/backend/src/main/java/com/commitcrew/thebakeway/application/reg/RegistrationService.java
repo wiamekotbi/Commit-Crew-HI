@@ -43,7 +43,7 @@ public class RegistrationService {
             throw new IllegalArgumentException("Delivery address is required");
         }
 
-        if (accountRegistry.usernameExists(username)) {
+        if (accountRegistry.existsByUsername(username)) {
             throw new IllegalArgumentException("Username already taken");
         }
 
@@ -58,7 +58,7 @@ public class RegistrationService {
                 deliveryAddress,
                 Role.CUSTOMER);
 
-        accountRegistry.addAccount(account);
+        accountRegistry.save(account);
 
         return account;
     }

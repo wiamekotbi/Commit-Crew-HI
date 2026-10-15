@@ -1,35 +1,10 @@
 package com.commitcrew.thebakeway.domain.account;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public class AccountRegistry {
+public interface AccountRegistry extends JpaRepository<BakewayAccount, String> {
 
-    private final List<BakewayAccount> accounts = new ArrayList<>();
+    boolean existsByUsername(String username);
 
-    public void addAccount(BakewayAccount account) {
-        accounts.add(account);
-    }
-
-    public boolean usernameExists(String username) {
-        for (BakewayAccount account : accounts) {
-            if (account.getUsername().equals(username)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public BakewayAccount findByUsername(String username) {
-        for (BakewayAccount account : accounts) {
-            if (account.getUsername().equals(username)) {
-                return account;
-            }
-        }
-
-        return null;
-    }
+    BakewayAccount findByUsername(String username);
 }
