@@ -5,7 +5,9 @@ import java.util.UUID;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
+import org.springframework.stereotype.Service;
 
+@Service
 public class RegistrationService {
 
     private final AccountRegistry accountRegistry;

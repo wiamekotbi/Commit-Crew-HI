@@ -2,7 +2,9 @@ package com.commitcrew.thebakeway.domain.account;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class AccountRegistry {
 
     private final List<BakewayAccount> accounts = new ArrayList<>();
