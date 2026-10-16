@@ -36,16 +36,23 @@ public class MenuItem {
     @Column(nullable = false)
     private MenuItemStatus status = MenuItemStatus.available;
 
+    @Column(nullable = false)
+    private boolean discontinued = false;
+
     // Required by JPA
     protected MenuItem() {
     }
 
     public MenuItem(String bakeryId, String name, String description, double price, MenuItemStatus status) {
+        validateName(name);
+        validatePrice(price);
+        
         this.bakeryId = bakeryId;
         this.name = name;
         this.description = description;
         this.price = price;
         this.status = (status != null) ? status : MenuItemStatus.available;
+        this.discontinued = false; // Default new items to not discontinued
     }
 
     public String getId() {
@@ -72,11 +79,16 @@ public class MenuItem {
         return status;
     }
 
+    public boolean isDiscontinued() {
+        return discontinued;
+    }
+
     public void setBakeryId(String bakeryId) {
         this.bakeryId = bakeryId;
     }
 
     public void setName(String name) {
+        validateName(name);
         this.name = name;
     }
 
@@ -85,10 +97,28 @@ public class MenuItem {
     }
 
     public void setPrice(double price) {
+        validatePrice(price);
         this.price = price;
     }
 
     public void setStatus(MenuItemStatus status) {
         this.status = (status != null) ? status : MenuItemStatus.available;
+    }
+
+    public void setDiscontinued(boolean discontinued) {
+        this.discontinued = discontinued;
+    }
+
+    // Validation helper methods
+    private void validateName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Menu item name cannot be null or empty.");
+        }
+    }
+
+    private void validatePrice(double price) {
+        if (price < 0) {
+            throw new IllegalArgumentException("Menu item price cannot be negative.");
+        }
     }
 }
