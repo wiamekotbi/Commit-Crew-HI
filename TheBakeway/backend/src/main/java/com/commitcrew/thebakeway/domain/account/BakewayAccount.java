@@ -1,13 +1,38 @@
 package com.commitcrew.thebakeway.domain.account;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "accounts")
 public class BakewayAccount {
+
+    @Id
     private String accountId;
+
+    @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
     private String displayName;
+
     private String contactEmail;
+
     private String deliveryAddress;
-    private final Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
+    protected BakewayAccount() {
+    }
 
     public BakewayAccount(
             String accountId,
@@ -17,6 +42,7 @@ public class BakewayAccount {
             String contactEmail,
             String deliveryAddress,
             Role role) {
+
         if (role == null) {
             throw new IllegalArgumentException("Account must have a role");
         }

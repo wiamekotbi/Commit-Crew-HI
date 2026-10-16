@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bakeway - Register</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body>
+
+    <div class="bakery-background">
+    <i class="fa-solid fa-bread-slice icon icon1"></i>
+    <i class="fa-solid fa-cookie-bite icon icon2"></i>
+    <i class="fa-solid fa-cake-candles icon icon3"></i>
+    <i class="fa-solid fa-wheat-awn icon icon4"></i>
+    <i class="fa-solid fa-bread-slice icon icon5"></i>
+    <i class="fa-solid fa-cookie-bite icon icon6"></i>
+</div>
+
+    <header>
+        <h1><span class="brand-icon"><i class="fa-solid fa-bread-slice"></i></span> <span class="brand-name">The Bakeway</span></h1>
+    </header>
+
+    <main>
+        <div class="registration-card">
+            <div class="card-icon">
+    <i class="fa-solid fa-bread-slice"></i>
+</div>
+
+            <h2>Create a Customer Account</h2>
+
+            <form id="registrationForm">
+                <label for="name">Name</label>
+                <input type="text" id="name" required>
+
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" required>
+
+                <label for="deliveryAddress">Delivery Address</label>
+                <input type="text" id="deliveryAddress" required>
+
+                <button type="submit">Create Customer Account</button>
+            </form>
+
+            <p id="message"></p>
+        </div>
+    </main>
+
+    <script src="/js/registration.js"></script>
+</body>
+</html>
