@@ -26,7 +26,10 @@ public class MenuItem {
     private double price;
 
     @Column(nullable = false)
-    private boolean availability = true;
+    private boolean inStock = true;
+
+    @Column(nullable = false)
+    private boolean available = true;
 
     // Required by JPA
     protected MenuItem() {
@@ -36,7 +39,8 @@ public class MenuItem {
     public MenuItem(String name, double price) {
         this.name = name;
         this.price = price;
-        this.availability = true;
+        this.inStock = true;
+        this.available = true;
     }
 
     public UUID getId() {
@@ -51,8 +55,12 @@ public class MenuItem {
         return price;
     }
 
-    public boolean getAvailability() {
-        return availability;
+    public boolean isInStock() {
+        return inStock;
+    }
+
+    public boolean isAvailable() {
+        return available;
     }
 
     public void setName(String name) {
@@ -63,7 +71,11 @@ public class MenuItem {
         this.price = price;
     }
 
-    public void setAvailability(boolean availability) {
-        this.availability = availability;
+    public void setInStock(boolean inStock) {
+        this.inStock = inStock;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
     }
 }
