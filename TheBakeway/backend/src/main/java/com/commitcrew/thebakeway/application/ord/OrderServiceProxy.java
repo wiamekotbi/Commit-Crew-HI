@@ -13,6 +13,7 @@ import com.commitcrew.thebakeway.domain.session.Session;
 public class OrderServiceProxy implements OrderService {
 
     static final String PLACE_ORDER = "PLACE_ORDER";
+    static final String CANCEL_ORDER = "CANCEL_ORDER";
     static final String MANAGE_ORDERS = "MANAGE_ORDERS";
     static final String PREPARE_ORDERS = "PREPARE_ORDERS";
 
@@ -41,14 +42,14 @@ public class OrderServiceProxy implements OrderService {
     }
 
     @Override
-    public void placeOrder(String sessionId) {
+    public String placeOrder(String sessionId, PlaceOrderRequest request) {
         checkAccess(sessionId, PLACE_ORDER);
-        realSubject.placeOrder(sessionId);
+        return realSubject.placeOrder(sessionId, request);
     }
 
     @Override
     public void cancelOrder(String sessionId, String orderId) {
-        checkAccess(sessionId, PLACE_ORDER);
+        checkAccess(sessionId, CANCEL_ORDER);
         realSubject.cancelOrder(sessionId, orderId);
     }
 
@@ -59,9 +60,9 @@ public class OrderServiceProxy implements OrderService {
     }
 
     @Override
-    public void rejectOrder(String sessionId, String orderId) {
+    public void rejectOrder(String sessionId, String orderId, String reason) {
         checkAccess(sessionId, MANAGE_ORDERS);
-        realSubject.rejectOrder(sessionId, orderId);
+        realSubject.rejectOrder(sessionId, orderId, reason);
     }
 
     @Override

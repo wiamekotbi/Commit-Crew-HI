@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,8 @@ class OrderServiceProxyTest {
 
     private static final String SESSION_ID = "session-1";
     private static final String ORDER_ID = "order-1";
+    private static final PlaceOrderRequest REQUEST = new PlaceOrderRequest(
+            "bakery-1", List.of(new OrderItemRequest("item-1", 1)), "Montreal");
 
     @Mock
     private OrderService realSubject;
@@ -46,9 +49,9 @@ class OrderServiceProxyTest {
         when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class,
-                () -> orderServiceProxy.placeOrder(SESSION_ID));
+                () -> orderServiceProxy.placeOrder(SESSION_ID, REQUEST));
 
-        verify(realSubject, never()).placeOrder(SESSION_ID);
+        verify(realSubject, never()).placeOrder(SESSION_ID, REQUEST);
     }
 
     @Test
@@ -58,9 +61,9 @@ class OrderServiceProxyTest {
         when(permissionPolicy.isAllowed(OrderServiceProxy.PLACE_ORDER, Role.COURIER)).thenReturn(false);
 
         assertThrows(SecurityException.class,
-                () -> orderServiceProxy.placeOrder(SESSION_ID));
+                () -> orderServiceProxy.placeOrder(SESSION_ID, REQUEST));
 
-        verify(realSubject, never()).placeOrder(SESSION_ID);
+        verify(realSubject, never()).placeOrder(SESSION_ID, REQUEST);
     }
 
     @Test
@@ -69,9 +72,12 @@ class OrderServiceProxyTest {
         when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
         when(permissionPolicy.isAllowed(OrderServiceProxy.PLACE_ORDER, Role.CUSTOMER)).thenReturn(true);
 
-        orderServiceProxy.placeOrder(SESSION_ID);
+        when(realSubject.placeOrder(SESSION_ID, REQUEST)).thenReturn(ORDER_ID);
 
-        verify(realSubject).placeOrder(SESSION_ID);
+        String orderId = orderServiceProxy.placeOrder(SESSION_ID, REQUEST);
+
+        assertEquals(ORDER_ID, orderId);
+        verify(realSubject).placeOrder(SESSION_ID, REQUEST);
     }
 
     @Test
@@ -86,6 +92,40 @@ class OrderServiceProxyTest {
 
         verify(realSubject).acceptOrder(SESSION_ID, ORDER_ID);
         verify(realSubject).startPreparing(SESSION_ID, ORDER_ID);
+    }
+
+    @Test
+    void delegatesRejectWithReasonWhenAuthorized() {
+        Session session = new Session(SESSION_ID, "restaurant-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.MANAGE_ORDERS, Role.RESTAURANT)).thenReturn(true);
+
+        orderServiceProxy.rejectOrder(SESSION_ID, ORDER_ID, "Out of flour");
+
+        verify(realSubject).rejectOrder(SESSION_ID, ORDER_ID, "Out of flour");
+    }
+
+    @Test
+    void delegatesCancelWhenOperatorIsAuthorized() {
+        Session session = new Session(SESSION_ID, "operator-1", Role.OPERATOR);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CANCEL_ORDER, Role.OPERATOR)).thenReturn(true);
+
+        orderServiceProxy.cancelOrder(SESSION_ID, ORDER_ID);
+
+        verify(realSubject).cancelOrder(SESSION_ID, ORDER_ID);
+    }
+
+    @Test
+    void rejectsCancelWithoutCancelPermission() {
+        Session session = new Session(SESSION_ID, "restaurant-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CANCEL_ORDER, Role.RESTAURANT)).thenReturn(false);
+
+        assertThrows(SecurityException.class,
+                () -> orderServiceProxy.cancelOrder(SESSION_ID, ORDER_ID));
+
+        verify(realSubject, never()).cancelOrder(SESSION_ID, ORDER_ID);
     }
 
     @Test

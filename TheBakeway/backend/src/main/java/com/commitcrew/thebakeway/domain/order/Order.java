@@ -76,6 +76,11 @@ public class Order {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // Only PlacedState.reject calls this
+    void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
     public void accept() { state.accept(this); }
     public void reject(String reason) { state.reject(this, reason); }
     public void startPreparing() { state.startPreparing(this); }

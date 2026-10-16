@@ -1,6 +1,7 @@
 package com.commitcrew.thebakeway.domain.order;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -13,7 +14,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -33,13 +37,19 @@ class OrderLifecycleTest {
         ACTIONS.put("cancelAsOperator", order -> order.cancel(Role.OPERATOR));
     }
 
-    // The only legal transitions so far (reject and cancel come with the reject/cancel issue)
-    private static final Map<String, String> LEGAL = Map.of(
-            "placed:accept", "accepted",
-            "accepted:startPreparing", "preparing",
-            "preparing:markReady", "ready",
-            "ready:confirmPickup", "picked_up",
-            "picked_up:confirmDelivery", "delivered");
+    // Every legal transition; any other status and action pair must be refused
+    private static final Map<String, String> LEGAL = Map.ofEntries(
+            Map.entry("placed:accept", "accepted"),
+            Map.entry("placed:reject", "rejected"),
+            Map.entry("placed:cancelAsCustomer", "cancelled"),
+            Map.entry("placed:cancelAsOperator", "cancelled"),
+            Map.entry("accepted:startPreparing", "preparing"),
+            Map.entry("accepted:cancelAsOperator", "cancelled"),
+            Map.entry("preparing:markReady", "ready"),
+            Map.entry("preparing:cancelAsOperator", "cancelled"),
+            Map.entry("ready:confirmPickup", "picked_up"),
+            Map.entry("ready:cancelAsOperator", "cancelled"),
+            Map.entry("picked_up:confirmDelivery", "delivered"));
 
     @Test
     void followsTheFullLifecycle() {
@@ -83,6 +93,38 @@ class OrderLifecycleTest {
         assertEquals("ready", order.getStatus());
         order.confirmPickup();
         assertEquals("picked_up", order.getStatus());
+    }
+
+    @Test
+    void rejectStoresTheReason() {
+        Order order = newOrder();
+
+        order.reject("Out of flour");
+
+        assertEquals("rejected", order.getStatus());
+        assertEquals("Out of flour", order.getRejectionReason());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    void rejectRequiresAReason(String reason) {
+        Order order = newOrder();
+
+        assertThrows(IllegalArgumentException.class, () -> order.reject(reason));
+
+        assertEquals("placed", order.getStatus());
+        assertNull(order.getRejectionReason());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, names = {"RESTAURANT", "COURIER"})
+    void onlyCustomerOrOperatorCanCancelPlacedOrder(Role role) {
+        Order order = newOrder();
+
+        assertThrows(IllegalTransitionException.class, () -> order.cancel(role));
+
+        assertEquals("placed", order.getStatus());
     }
 
     @Test

@@ -6,8 +6,9 @@ import org.springframework.stereotype.Service;
 public class OrderServiceImpl implements OrderService {
 
     @Override
-    public void placeOrder(String sessionId) {
+    public String placeOrder(String sessionId, PlaceOrderRequest request) {
         // Awaiting full order implementation from ORD module merge.
+        throw new UnsupportedOperationException("Placing orders is not available yet");
     }
 
     @Override
@@ -21,7 +22,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void rejectOrder(String sessionId, String orderId) {
+    public void rejectOrder(String sessionId, String orderId, String reason) {
         // Awaiting full order implementation from ORD module merge.
     }
 
