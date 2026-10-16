@@ -7,7 +7,14 @@ import java.util.function.Supplier;
 public final class OrderStateFactory {
 
     private static final Map<String, Supplier<OrderState>> STATES = Map.of(
-            OrderStatus.placed.name(), PlacedState::new);
+            OrderStatus.placed.name(), PlacedState::new,
+            OrderStatus.accepted.name(), AcceptedState::new,
+            OrderStatus.preparing.name(), PreparingState::new,
+            OrderStatus.ready.name(), ReadyState::new,
+            OrderStatus.picked_up.name(), PickedUpState::new,
+            OrderStatus.delivered.name(), DeliveredState::new,
+            OrderStatus.rejected.name(), RejectedState::new,
+            OrderStatus.cancelled.name(), CancelledState::new);
 
     private OrderStateFactory() {
     }
