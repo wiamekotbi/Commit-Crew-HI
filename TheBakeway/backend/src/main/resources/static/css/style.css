@@ -112,6 +112,23 @@ button:hover {
     background-color: #b67558;
 }
 
+.secondary-button {
+    width: 100%;
+    background-color: #80543f;
+}
+
+.secondary-button:hover {
+    background-color: #6e4938;
+}
+
+.account-link {
+    text-align: center;
+}
+
+.account-link a {
+    color: #80543f;
+}
+
 #message {
     margin-top: 18px;
     text-align: center;
