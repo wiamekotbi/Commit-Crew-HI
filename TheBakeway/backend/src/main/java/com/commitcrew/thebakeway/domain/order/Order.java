@@ -2,10 +2,15 @@ package com.commitcrew.thebakeway.domain.order;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
+
+import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// Context of the State pattern: every lifecycle action is delegated to the current OrderState
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -22,31 +27,64 @@ public class Order {
     @Column(name = "bakery_id", nullable = false)
     private String bakeryId;
 
+    @Column(name = "recipient_name", nullable = false)
+    private String recipientName;
+
     @Column(name = "delivery_address", nullable = false)
     private String deliveryAddress;
 
-    // Only allow selected Strings to be in the db
+    // Persisted copy of state.getStatus(); only setState(OrderState) changes it
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderStatus state; 
+    @Column(name = "state", nullable = false)
+    private OrderStatus status;
+
+    @Transient
+    private OrderState state;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "order")
     private List<OrderLine> orderItems = new ArrayList<>();
 
     protected Order() {}
 
-    public Order(String customerId, String bakeryId, String deliveryAddress, OrderStatus state) {
+    public Order(String customerId, String bakeryId, String recipientName, String deliveryAddress) {
         this.customerId = customerId;
         this.bakeryId = bakeryId;
+        this.recipientName = recipientName;
         this.deliveryAddress = deliveryAddress;
-        this.state = state;
         this.createdAt = LocalDateTime.now();
+        setState(new PlacedState());
     }
 
-    public void addOrderItem(com.commitcrew.thebakeway.domain.menu.MenuItem menuItem, int quantity) {
+    @PostLoad
+    void restoreState() {
+        this.state = OrderStateFactory.fromStatus(status.name());
+    }
+
+    // Only state classes call this
+    void setState(OrderState state) {
+        this.state = state;
+        this.status = OrderStatus.valueOf(state.getStatus());
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void accept() { state.accept(this); }
+    public void reject(String reason) { state.reject(this, reason); }
+    public void startPreparing() { state.startPreparing(this); }
+    public void markReady() { state.markReady(this); }
+    public void confirmPickup() { state.confirmPickup(this); }
+    public void confirmDelivery() { state.confirmDelivery(this); }
+    public void cancel(Role role) { state.cancel(this, role); }
+
+    public void addOrderItem(MenuItem menuItem, int quantity) {
         OrderLine item = new OrderLine(this, menuItem, quantity);
         this.orderItems.add(item);
     }
@@ -65,10 +103,12 @@ public class Order {
     public void setCustomerId(String customerId) { this.customerId = customerId; }
     public String getBakeryId() { return bakeryId; }
     public void setBakeryId(String bakeryId) { this.bakeryId = bakeryId; }
+    public String getRecipientName() { return recipientName; }
     public String getDeliveryAddress() { return deliveryAddress; }
     public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
-    public OrderStatus getState() { return state; }
-    public void setState(OrderStatus state) { this.state = state; }
+    public String getStatus() { return state.getStatus(); }
+    public String getRejectionReason() { return rejectionReason; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
     public List<OrderLine> getOrderItems() { return orderItems; }
 }
