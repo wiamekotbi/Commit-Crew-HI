@@ -5,10 +5,16 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MenuItemRegistry extends JpaRepository<MenuItem, String> {
-    List<MenuItem> findByAvailableTrue(); // Available means the item has not been discontinued
+    
+    // Find all menu items belonging to a specific bakery
+    List<MenuItem> findByBakeryId(String bakeryId);
+    
+    // Find menu items by bakery and status (e.g., available or sold_out)
+    List<MenuItem> findByBakeryIdAndStatus(String bakeryId, MenuItemStatus status);
+
     // Spring Data JPA automatically provides methods like:
     // - save(MenuItem menuItem)
-    // - findById(UUID id)
+    // - findById(String id)
     // - findAll()
-    // - deleteById(UUID id)
+    // - deleteById(String id) -> Used when an item is no longer offered and needs to be removed
 }
