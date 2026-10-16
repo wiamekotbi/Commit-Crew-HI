@@ -35,7 +35,7 @@ public class Order {
 
     // Persisted copy of state.getStatus(); only setState(OrderState) changes it
     @Enumerated(EnumType.STRING)
-    @Column(name = "state", nullable = false)
+    @Column(name = "status", nullable = false)
     private OrderStatus status;
 
     @Transient
