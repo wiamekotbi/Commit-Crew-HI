@@ -83,4 +83,17 @@ public class BakewayAccount {
     public Role getRole() {
         return role;
     }
+
+    public void updateProfile(String displayName, String contactEmail, String deliveryAddress) {
+        if (displayName == null || displayName.isBlank()) {
+            throw new IllegalArgumentException("Display name is required");
+        }
+
+        this.displayName = displayName;
+        this.contactEmail = contactEmail;
+
+        if (role == Role.CUSTOMER) {
+            this.deliveryAddress = deliveryAddress;
+        }
+    }
 }
