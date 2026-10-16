@@ -19,6 +19,7 @@ public class PermissionPolicy {
             Role.CUSTOMER, withProfileOperations(
                     "BROWSE_MENU",
                     "PLACE_ORDER",
+                    "CANCEL_ORDER",
                     "VIEW_ORDER_HISTORY"),
             Role.RESTAURANT, withProfileOperations(
                     "MANAGE_MENU_ITEMS",
@@ -31,7 +32,8 @@ public class PermissionPolicy {
                     "CONFIRM_PICKUP",
                     "CONFIRM_DELIVERY"),
             Role.OPERATOR, withProfileOperations(
-                    "VIEW_SIMULATOR_DASHBOARD"));
+                    "VIEW_SIMULATOR_DASHBOARD",
+                    "CANCEL_ORDER"));
 
     public boolean isAllowed(String operation, Role role) {
         if (operation == null || role == null) {

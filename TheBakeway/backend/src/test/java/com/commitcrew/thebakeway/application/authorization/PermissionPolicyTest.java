@@ -18,6 +18,7 @@ class PermissionPolicyTest {
             "UPDATE_PROFILE",
             "BROWSE_MENU",
             "PLACE_ORDER",
+            "CANCEL_ORDER",
             "VIEW_ORDER_HISTORY",
             "MANAGE_MENU_ITEMS",
             "MANAGE_ITEM_AVAILABILITY",
@@ -40,6 +41,7 @@ class PermissionPolicyTest {
         assertAllowedAndDenied(Role.CUSTOMER, withProfileOperations(
                 "BROWSE_MENU",
                 "PLACE_ORDER",
+                "CANCEL_ORDER",
                 "VIEW_ORDER_HISTORY"));
     }
 
@@ -64,7 +66,8 @@ class PermissionPolicyTest {
     @Test
     void operatorHasOnlyOperatorPermissions() {
         assertAllowedAndDenied(Role.OPERATOR, withProfileOperations(
-                "VIEW_SIMULATOR_DASHBOARD"));
+                "VIEW_SIMULATOR_DASHBOARD",
+                "CANCEL_ORDER"));
     }
 
     @Test
