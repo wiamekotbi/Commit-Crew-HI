@@ -1,1 +1,0 @@
-The database hasn't been created yet, but once it is created. Do not have it's access in plain text, make sure it is git ignore'd.
