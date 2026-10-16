@@ -3,6 +3,7 @@ const accountId = params.get("accountId");
 
 const form = document.getElementById("profileForm");
 const message = document.getElementById("message");
+const logoutButton = document.getElementById("logoutButton");
 
 async function loadProfile() {
     if (!accountId) {
@@ -50,6 +51,14 @@ form.addEventListener("submit", async function (event) {
     } else {
         message.textContent = result.error;
     }
+});
+
+logoutButton.addEventListener("click", async function () {
+    await fetch("/api/logout", {
+        method: "POST",
+        credentials: "same-origin"
+    });
+    window.location.href = "/login.html";
 });
 
 loadProfile();

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bakeway - Login</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body>
+
+    <div class="bakery-background">
+        <i class="fa-solid fa-bread-slice icon icon1"></i>
+        <i class="fa-solid fa-cookie-bite icon icon2"></i>
+        <i class="fa-solid fa-cake-candles icon icon3"></i>
+        <i class="fa-solid fa-wheat-awn icon icon4"></i>
+        <i class="fa-solid fa-bread-slice icon icon5"></i>
+        <i class="fa-solid fa-cookie-bite icon icon6"></i>
+    </div>
+
+    <header>
+        <h1><span class="brand-icon"><i class="fa-solid fa-bread-slice"></i></span>
+            <span class="brand-name">The Bakeway</span>
+        </h1>
+    </header>
+
+    <main>
+        <div class="registration-card">
+            <div class="card-icon">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <h2>Login</h2>
+
+            <form id="loginForm">
+                <label for="username">Username</label>
+                <input type="text" id="username" autocomplete="username" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" autocomplete="current-password" required>
+
+                <button type="submit">Login</button>
+            </form>
+
+            <p id="message"></p>
+            <p class="account-link">No account? <a href="/registration.html">Register here</a>.</p>
+        </div>
+    </main>
+
+    <script src="/js/login.js"></script>
+</body>
+</html>

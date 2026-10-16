@@ -6,16 +6,17 @@ import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import org.springframework.stereotype.Service;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class RegistrationService {
 
     private final AccountRegistry accountRegistry;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
-    public RegistrationService(AccountRegistry accountRegistry) {
+    public RegistrationService(AccountRegistry accountRegistry, PasswordEncoder passwordEncoder) {
         this.accountRegistry = accountRegistry;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public BakewayAccount registerCustomer(
