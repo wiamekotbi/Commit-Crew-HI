@@ -1,12 +1,12 @@
 package com.commitcrew.thebakeway.domain.menu;
 
-import java.util.UUID;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 import org.hibernate.annotations.UuidGenerator;
 
@@ -17,65 +17,78 @@ public class MenuItem {
     @Id
     @GeneratedValue
     @UuidGenerator
-    private UUID id;
+    @Column(name = "menu_item_id", updatable = false, nullable = false)
+    private String id;
+
+    @Column(name = "bakery_id", nullable = false)
+    private String bakeryId;
 
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "description")
+    private String description;
+
     @Column(nullable = false)
     private double price;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private boolean inStock = true;
-
-    @Column(nullable = false)
-    private boolean available = true;
+    private MenuItemStatus status = MenuItemStatus.available;
 
     // Required by JPA
     protected MenuItem() {
     }
 
-    // ID is generated automatically
-    public MenuItem(String name, double price) {
+    public MenuItem(String bakeryId, String name, String description, double price, MenuItemStatus status) {
+        this.bakeryId = bakeryId;
         this.name = name;
+        this.description = description;
         this.price = price;
-        this.inStock = true;
-        this.available = true;
+        this.status = (status != null) ? status : MenuItemStatus.available;
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
+    }
+
+    public String getBakeryId() {
+        return bakeryId;
     }
 
     public String getName() {
         return name;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public double getPrice() {
         return price;
     }
 
-    public boolean isInStock() {
-        return inStock;
+    public MenuItemStatus getStatus() {
+        return status;
     }
 
-    public boolean isAvailable() {
-        return available;
+    public void setBakeryId(String bakeryId) {
+        this.bakeryId = bakeryId;
     }
 
     public void setName(String name) {
         this.name = name;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public void setPrice(double price) {
         this.price = price;
     }
 
-    public void setInStock(boolean inStock) {
-        this.inStock = inStock;
-    }
-
-    public void setAvailable(boolean available) {
-        this.available = available;
+    public void setStatus(MenuItemStatus status) {
+        this.status = (status != null) ? status : MenuItemStatus.available;
     }
 }

@@ -1,12 +1,11 @@
 package com.commitcrew.thebakeway.domain.menu;
 
-import java.util.UUID;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface MenuItemRegistry extends JpaRepository<MenuItem, UUID> { // UUID rather than String so the ID can be automatically generated
-    List<MenuItem> findByAvailableTrue();
+public interface MenuItemRegistry extends JpaRepository<MenuItem, String> {
+    List<MenuItem> findByAvailableTrue(); // Available means the item has not been discontinued
     // Spring Data JPA automatically provides methods like:
     // - save(MenuItem menuItem)
     // - findById(UUID id)
