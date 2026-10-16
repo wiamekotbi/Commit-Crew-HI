@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -21,12 +22,16 @@ class RegistrationServiceTest {
     @Mock
     private AccountRegistry accountRegistry;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private RegistrationService registrationService;
 
     @Test
     void registersCustomer() {
         when(accountRegistry.existsByUsername("maria")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("encoded-password");
 
         BakewayAccount account = registrationService.registerCustomer(
                 "Maria",
@@ -38,6 +43,7 @@ class RegistrationServiceTest {
         assertNotNull(account.getAccountId());
         assertEquals("Maria", account.getDisplayName());
         assertEquals("maria", account.getUsername());
+        assertEquals("encoded-password", account.getPassword());
         assertEquals("Montreal", account.getDeliveryAddress());
         assertEquals(Role.CUSTOMER, account.getRole());
     }
