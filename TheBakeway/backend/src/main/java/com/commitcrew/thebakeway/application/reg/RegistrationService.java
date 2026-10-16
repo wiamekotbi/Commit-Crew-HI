@@ -6,11 +6,13 @@ import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Service
 public class RegistrationService {
 
     private final AccountRegistry accountRegistry;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public RegistrationService(AccountRegistry accountRegistry) {
         this.accountRegistry = accountRegistry;
@@ -52,7 +54,7 @@ public class RegistrationService {
         BakewayAccount account = new BakewayAccount(
                 accountId,
                 username,
-                password,
+                passwordEncoder.encode(password),
                 name,
                 "",
                 deliveryAddress,
