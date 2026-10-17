@@ -28,5 +28,13 @@ public class BakeryService {
     public List<Bakery> getOpenBakeries() {
         return bakeryRegistry.findByBakeryStatus(BakeryStatus.open);
     }
-    
+
+    // 4. Fetch Status of a specific bakery by its ID
+    public BakeryStatus getBakeryStatus(String bakeryId) {
+        Bakery bakery = getBakeryById(bakeryId);
+        return bakery.getBakeryStatus();
+    }
+
+
+
 }

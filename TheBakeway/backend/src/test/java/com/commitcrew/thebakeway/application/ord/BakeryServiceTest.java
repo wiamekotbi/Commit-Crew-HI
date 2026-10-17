@@ -101,4 +101,45 @@ public class BakeryServiceTest {
         // Verify the service requested the bakery by ID.
         verify(bakeryRegistry).findById("missing-id");
     }
+
+    @Test 
+    void shouldReturnPausedBakeryStatus(){
+        // Arrange
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+
+        Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+
+        // Teach the mock to return the specific bakery when queried by ID.
+        when(bakeryRegistry.findById("bakery-123")).thenReturn(java.util.Optional.of(bakery));
+
+        // Act
+        BakeryStatus actualStatus = bakeryService.getBakeryStatus("bakery-123");
+
+        // Assert
+        assertEquals(BakeryStatus.paused, actualStatus);
+
+        // Verify the service requested the bakery by ID.
+        verify(bakeryRegistry).findById("bakery-123");
+    }
+
+    @Test 
+    void shouldThrowExceptionWhenGettingStatusOfMissingBakery(){
+        // Arrange
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+
+        when(bakeryRegistry.findById("missing-id")).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert: Expect an IllegalArgumentException when trying to fetch the status of a non-existent bakery.
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            bakeryService.getBakeryStatus("missing-id");
+        });
+
+        // Assert that the exception message is as expected.
+        assertEquals("Bakery not found with ID: missing-id", exception.getMessage());
+
+        // Verify the service requested the bakery by ID.
+        verify(bakeryRegistry).findById("missing-id");
+    }
 }
