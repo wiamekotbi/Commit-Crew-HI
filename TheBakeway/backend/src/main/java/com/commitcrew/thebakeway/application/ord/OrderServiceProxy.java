@@ -8,6 +8,10 @@ import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.session.Session;
 
+import java.util.List;
+import com.commitcrew.thebakeway.domain.bakery.Bakery;
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+
 @Service
 @Primary
 public class OrderServiceProxy implements OrderService {
@@ -16,6 +20,7 @@ public class OrderServiceProxy implements OrderService {
     static final String CANCEL_ORDER = "CANCEL_ORDER";
     static final String MANAGE_ORDERS = "MANAGE_ORDERS";
     static final String PREPARE_ORDERS = "PREPARE_ORDERS";
+    static final String BROWSE_MENU = "BROWSE_MENU";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -75,5 +80,17 @@ public class OrderServiceProxy implements OrderService {
     public void markReady(String sessionId, String orderId) {
         checkAccess(sessionId, PREPARE_ORDERS);
         realSubject.markReady(sessionId, orderId);
+    }
+
+    @Override
+    public List<Bakery> getOpenBakeries(String sessionId) {
+        checkAccess(sessionId, BROWSE_MENU);
+        return realSubject.getOpenBakeries(sessionId);
+    }
+
+    @Override
+    public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
+        checkAccess(sessionId, BROWSE_MENU);
+        return realSubject.getMenuForBrowsing(sessionId, bakeryId);
     }
 }
