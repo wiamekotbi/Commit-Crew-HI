@@ -26,4 +26,10 @@ public class MenuService {
     public List<MenuItem> getMenuItemsByBakeryIdAndStatus(String bakeryId, MenuItemStatus status) {
         return menuItemRegistry.findByBakeryIdAndStatus(bakeryId, status);
     }
+
+    // 3. Fetch a specific menu item by its ID
+    public MenuItem getMenuItem(String itemId){
+        return menuItemRegistry.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Menu item not found with ID: " + itemId));
+    }
 }
