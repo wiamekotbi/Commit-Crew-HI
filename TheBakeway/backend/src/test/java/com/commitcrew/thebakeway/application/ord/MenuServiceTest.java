@@ -133,9 +133,9 @@ public class MenuServiceTest {
 
         // We mock the service boundary: BakeryService already handles missing IDs.
         when(bakeryService.getBakeryById("missing-id"))
-                .thenThrow(new IllegalArgumentException("Bakery not found with ID: missing-id"));
+                .thenThrow(new BakeryNotFoundException("Bakery not found with ID: missing-id"));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        BakeryNotFoundException exception = assertThrows(BakeryNotFoundException.class,
                 () -> menuService.getMenuForBrowsing("missing-id"));
 
         assertEquals("Bakery not found with ID: missing-id", exception.getMessage());
@@ -152,7 +152,7 @@ public class MenuServiceTest {
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
+        BakeryUnavailableException exception = assertThrows(BakeryUnavailableException.class,
                 () -> menuService.getMenuForBrowsing("bakery-123"));
 
         assertEquals("Bakery bakery-123 is unavailable for browsing: paused", exception.getMessage());
@@ -169,7 +169,7 @@ public class MenuServiceTest {
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.closed, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
+        BakeryUnavailableException exception = assertThrows(BakeryUnavailableException.class,
                 () -> menuService.getMenuForBrowsing("bakery-123"));
 
         assertEquals("Bakery bakery-123 is unavailable for browsing: closed", exception.getMessage());

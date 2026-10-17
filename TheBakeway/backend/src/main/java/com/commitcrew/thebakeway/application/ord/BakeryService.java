@@ -21,7 +21,7 @@ public class BakeryService {
     // 2. Fetch a specific bakery by its ID
     public Bakery getBakeryById(String bakeryId) {
         return bakeryRegistry.findById(bakeryId)
-                .orElseThrow(() -> new IllegalArgumentException("Bakery not found with ID: " + bakeryId));
+                .orElseThrow(() -> new BakeryNotFoundException("Bakery not found with ID: " + bakeryId));
     }
 
     // 3. Fetch open bakeries

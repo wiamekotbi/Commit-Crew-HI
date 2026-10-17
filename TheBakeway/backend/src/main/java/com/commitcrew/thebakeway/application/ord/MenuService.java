@@ -42,7 +42,7 @@ public class MenuService {
         // Reuse the existing lookup so a missing bakery is rejected before querying its menu.
         Bakery bakery = bakeryService.getBakeryById(bakeryId);
         if (bakery.getBakeryStatus() != BakeryStatus.open) {
-            throw new IllegalStateException("Bakery " + bakeryId
+            throw new BakeryUnavailableException("Bakery " + bakeryId
                     + " is unavailable for browsing: " + bakery.getBakeryStatus());
         }
 

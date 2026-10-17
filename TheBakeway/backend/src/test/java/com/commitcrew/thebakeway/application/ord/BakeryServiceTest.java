@@ -90,8 +90,8 @@ public class BakeryServiceTest {
         // Teach the mock to return an empty Optional for a non-existent bakery ID.
         when(bakeryRegistry.findById("missing-id")).thenReturn(java.util.Optional.empty());
 
-        // Act & Assert: Expect an IllegalArgumentException when trying to fetch a non-existent bakery.
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        // Act & Assert: a missing bakery must produce the specific BakeryNotFoundException.
+        BakeryNotFoundException exception = assertThrows(BakeryNotFoundException.class, () -> {
             bakeryService.getBakeryById("missing-id");
         });
 
@@ -131,8 +131,8 @@ public class BakeryServiceTest {
 
         when(bakeryRegistry.findById("missing-id")).thenReturn(java.util.Optional.empty());
 
-        // Act & Assert: Expect an IllegalArgumentException when trying to fetch the status of a non-existent bakery.
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        // Act & Assert: status lookup must preserve the BakeryNotFoundException from bakery lookup.
+        BakeryNotFoundException exception = assertThrows(BakeryNotFoundException.class, () -> {
             bakeryService.getBakeryStatus("missing-id");
         });
 
