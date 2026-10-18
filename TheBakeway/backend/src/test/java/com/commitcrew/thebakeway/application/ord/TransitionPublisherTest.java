@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,23 @@ import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 
 class TransitionPublisherTest {
+
+    @Test
+    void registersDiscoveredObserverImplementationsDuringConstruction() {
+        StateTransitionObserver eventRecorder = mock(StateTransitionObserver.class);
+        StateTransitionObserver dashboardUpdater = mock(StateTransitionObserver.class);
+        StateTransitionEvent event = event();
+
+        // This represents the list of observer beans Spring discovers at startup.
+        TransitionPublisher publisher = new TransitionPublisher(
+                List.of(eventRecorder, dashboardUpdater));
+
+        publisher.notifyObservers(event);
+
+        // Both independent observers receive the exact same immutable event.
+        verify(eventRecorder).update(event);
+        verify(dashboardUpdater).update(event);
+    }
 
     @Test
     void notifiesEveryObserverWithSameEvent() {
@@ -77,6 +95,8 @@ class TransitionPublisherTest {
     void rejectsNullObserverAndEvent() {
         TransitionPublisher publisher = new TransitionPublisher();
 
+        assertThrows(IllegalArgumentException.class,
+                () -> new TransitionPublisher(null));
         assertThrows(IllegalArgumentException.class, () -> publisher.attach(null));
         assertThrows(IllegalArgumentException.class, () -> publisher.detach(null));
         assertThrows(IllegalArgumentException.class, () -> publisher.notifyObservers(null));
