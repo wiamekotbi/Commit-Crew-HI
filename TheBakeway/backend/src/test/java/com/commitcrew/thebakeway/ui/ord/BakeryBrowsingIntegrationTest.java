@@ -24,8 +24,10 @@ import com.commitcrew.thebakeway.application.ord.BakeryService;
 import com.commitcrew.thebakeway.application.ord.MenuService;
 import com.commitcrew.thebakeway.application.ord.OrderServiceImpl;
 import com.commitcrew.thebakeway.application.ord.OrderServiceProxy;
+import com.commitcrew.thebakeway.application.ord.PreparationQueue;
 import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
+import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
@@ -33,6 +35,7 @@ import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
+import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.session.Session;
 
 class BakeryBrowsingIntegrationTest {
@@ -52,7 +55,9 @@ class BakeryBrowsingIntegrationTest {
         BakeryStaffAccessService staffAccessService = mock(BakeryStaffAccessService.class);
         BakeryStatusAccessService statusAccessService = mock(BakeryStatusAccessService.class);
         OrderServiceImpl implementation = new OrderServiceImpl(
-                bakeryService, menuService, staffAccessService, statusAccessService);
+                bakeryService, menuService, staffAccessService, statusAccessService,
+                mock(OrderRegistry.class), mock(AccountRegistry.class), sessionManager,
+                mock(PreparationQueue.class), new TransitionPublisher());
         OrderServiceProxy proxy = new OrderServiceProxy(
                 implementation, sessionManager, new PermissionPolicy());
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new BakeryController(proxy)).build();
