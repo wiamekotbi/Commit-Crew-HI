@@ -21,4 +21,9 @@ public interface OrderService {
     List<Bakery> getOpenBakeries(String sessionId); 
 
     List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId);
+
+    MenuItem addMenuItem(String sessionId, String name, String description, double price);
+
+    MenuItem editMenuItem(
+            String sessionId, String itemId, String name, String description, double price);
 }

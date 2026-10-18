@@ -177,4 +177,76 @@ public class MenuServiceTest {
         // Closed bakeries are also rejected without loading their menu items.
         verifyNoInteractions(menuItemRegistry);
     }
+
+    @Test
+    void shouldAddAvailableItemToAuthenticatedBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        when(menuItemRegistry.save(org.mockito.ArgumentMatchers.any(MenuItem.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        MenuItem item = menuService.addMenuItem(
+                "bakery-123", "Croissant", "Butter croissant", 3.50);
+
+        assertEquals("bakery-123", item.getBakeryId());
+        assertEquals("Croissant", item.getName());
+        assertEquals(3.50, item.getPrice());
+        assertEquals(MenuItemStatus.available, item.getStatus());
+        verify(menuItemRegistry).save(item);
+    }
+
+    @Test
+    void shouldEditItemOwnedByAuthenticatedBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuItem item = new MenuItem(
+                "bakery-123", "Old Name", "Old description", 2.00, MenuItemStatus.sold_out);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+        when(menuItemRegistry.save(item)).thenReturn(item);
+
+        MenuItem updated = menuService.editMenuItem(
+                "bakery-123", "item-1", "New Name", "New description", 3.50);
+
+        assertSame(item, updated);
+        assertEquals("New Name", updated.getName());
+        assertEquals("New description", updated.getDescription());
+        assertEquals(3.50, updated.getPrice());
+        // Editing descriptive details must not reset availability.
+        assertEquals(MenuItemStatus.sold_out, updated.getStatus());
+        verify(menuItemRegistry).save(item);
+    }
+
+    @Test
+    void shouldRejectEditingItemOwnedByAnotherBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuItem item = new MenuItem(
+                "other-bakery", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+
+        assertThrows(SecurityException.class, () -> menuService.editMenuItem(
+                "bakery-123", "item-1", "Changed", "Changed", 4.00));
+
+        // Ownership is checked before mutation or persistence.
+        assertEquals("Croissant", item.getName());
+        verify(menuItemRegistry, org.mockito.Mockito.never()).save(item);
+    }
+
+    @Test
+    void shouldRejectInvalidDetailsWithoutSaving() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> menuService.addMenuItem("bakery-123", " ", "Description", 2.00));
+        assertThrows(IllegalArgumentException.class,
+                () -> menuService.addMenuItem("bakery-123", "Croissant", "Description", -1.00));
+
+        verifyNoInteractions(menuItemRegistry);
+    }
 }

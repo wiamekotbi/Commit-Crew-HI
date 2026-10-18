@@ -50,4 +50,34 @@ public class MenuService {
         return getAllMenuItemsByBakeryId(bakeryId);
     }
 
+    /**
+     * Adds an item to the bakery derived from the authenticated staff account.
+     * JPA assigns the unique item ID when the entity is persisted, and the
+     * domain constructor ensures every new item begins as available.
+     */
+    public MenuItem addMenuItem(String bakeryId, String name, String description, double price) {
+        MenuItem menuItem = new MenuItem(
+                bakeryId, name, description, price, MenuItemStatus.available);
+        return menuItemRegistry.save(menuItem);
+    }
+
+    /**
+     * Edits only descriptive fields on an item owned by the staff member's
+     * bakery. Ownership is checked before mutating the managed entity.
+     */
+    public MenuItem editMenuItem(
+            String bakeryId,
+            String itemId,
+            String name,
+            String description,
+            double price) {
+        MenuItem menuItem = getMenuItem(itemId);
+        if (!bakeryId.equals(menuItem.getBakeryId())) {
+            throw new SecurityException("Menu item does not belong to the authenticated bakery");
+        }
+
+        menuItem.updateDetails(name, description, price);
+        return menuItemRegistry.save(menuItem);
+    }
+
 }

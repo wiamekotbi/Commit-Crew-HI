@@ -243,4 +243,38 @@ class OrderServiceProxyTest {
         verifyNoInteractions(realSubject);  
     }
 
+    @Test
+    void delegatesMenuManagementWhenRestaurantIsAuthorized() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.MANAGE_MENU_ITEMS, Role.RESTAURANT))
+                .thenReturn(true);
+        MenuItem item = new MenuItem(
+                "bakery-1", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+        when(realSubject.addMenuItem(
+                SESSION_ID, "Croissant", "Butter croissant", 3.50)).thenReturn(item);
+
+        MenuItem actual = orderServiceProxy.addMenuItem(
+                SESSION_ID, "Croissant", "Butter croissant", 3.50);
+
+        assertEquals(item, actual);
+        verify(realSubject).addMenuItem(
+                SESSION_ID, "Croissant", "Butter croissant", 3.50);
+    }
+
+    @Test
+    void rejectsMenuManagementWithoutPermission() {
+        Session session = new Session(SESSION_ID, "customer-1", Role.CUSTOMER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.MANAGE_MENU_ITEMS, Role.CUSTOMER))
+                .thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.editMenuItem(
+                SESSION_ID, "item-1", "Changed", "Changed", 4.00));
+
+        verify(realSubject, never()).editMenuItem(
+                SESSION_ID, "item-1", "Changed", "Changed", 4.00);
+    }
+
 }

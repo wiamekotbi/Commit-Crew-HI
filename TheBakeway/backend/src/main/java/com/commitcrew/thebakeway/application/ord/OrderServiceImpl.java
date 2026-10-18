@@ -11,11 +11,16 @@ public class OrderServiceImpl implements OrderService {
 
     private final BakeryService bakeryService;
     private final MenuService menuService;
+    private final BakeryStaffAccessService bakeryStaffAccessService;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
-    public OrderServiceImpl(BakeryService bakeryService, MenuService menuService) {
+    public OrderServiceImpl(
+            BakeryService bakeryService,
+            MenuService menuService,
+            BakeryStaffAccessService bakeryStaffAccessService) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
+        this.bakeryStaffAccessService = bakeryStaffAccessService;
     }
 
     @Override
@@ -59,5 +64,19 @@ public class OrderServiceImpl implements OrderService {
     public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
         // MenuService checks bakery availability and preserves sold-out items in the result.
         return menuService.getMenuForBrowsing(bakeryId);
+    }
+
+    @Override
+    public MenuItem addMenuItem(String sessionId, String name, String description, double price) {
+        // Ownership comes from the authenticated account, never from request data.
+        String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
+        return menuService.addMenuItem(bakeryId, name, description, price);
+    }
+
+    @Override
+    public MenuItem editMenuItem(
+            String sessionId, String itemId, String name, String description, double price) {
+        String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
+        return menuService.editMenuItem(bakeryId, itemId, name, description, price);
     }
 }

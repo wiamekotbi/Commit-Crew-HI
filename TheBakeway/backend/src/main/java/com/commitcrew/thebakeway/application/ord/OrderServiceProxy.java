@@ -21,6 +21,7 @@ public class OrderServiceProxy implements OrderService {
     static final String MANAGE_ORDERS = "MANAGE_ORDERS";
     static final String PREPARE_ORDERS = "PREPARE_ORDERS";
     static final String BROWSE_MENU = "BROWSE_MENU";
+    static final String MANAGE_MENU_ITEMS = "MANAGE_MENU_ITEMS";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -92,5 +93,18 @@ public class OrderServiceProxy implements OrderService {
     public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
         checkAccess(sessionId, BROWSE_MENU);
         return realSubject.getMenuForBrowsing(sessionId, bakeryId);
+    }
+
+    @Override
+    public MenuItem addMenuItem(String sessionId, String name, String description, double price) {
+        checkAccess(sessionId, MANAGE_MENU_ITEMS);
+        return realSubject.addMenuItem(sessionId, name, description, price);
+    }
+
+    @Override
+    public MenuItem editMenuItem(
+            String sessionId, String itemId, String name, String description, double price) {
+        checkAccess(sessionId, MANAGE_MENU_ITEMS);
+        return realSubject.editMenuItem(sessionId, itemId, name, description, price);
     }
 }

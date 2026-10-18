@@ -44,6 +44,7 @@ public class MenuItem {
     }
 
     public MenuItem(String bakeryId, String name, String description, double price, MenuItemStatus status) {
+        validateBakeryId(bakeryId);
         validateName(name);
         validatePrice(price);
         
@@ -83,10 +84,16 @@ public class MenuItem {
         return discontinued;
     }
 
-    public void setBakeryId(String bakeryId) {
-        this.bakeryId = bakeryId;
+    /** Updates the editable menu details without changing ownership or availability. */
+    public void updateDetails(String name, String description, double price) {
+        validateName(name);
+        validatePrice(price);
+        this.name = name;
+        this.description = description;
+        this.price = price;
     }
 
+    // Individual setters remain for compatibility with the existing menu model.
     public void setName(String name) {
         validateName(name);
         this.name = name;
@@ -113,6 +120,12 @@ public class MenuItem {
     private void validateName(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Menu item name cannot be null or empty.");
+        }
+    }
+
+    private void validateBakeryId(String bakeryId) {
+        if (bakeryId == null || bakeryId.isBlank()) {
+            throw new IllegalArgumentException("Menu item bakery ID cannot be null or empty.");
         }
     }
 

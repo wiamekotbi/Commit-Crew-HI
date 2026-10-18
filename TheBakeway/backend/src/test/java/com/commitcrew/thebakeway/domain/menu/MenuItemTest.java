@@ -40,6 +40,28 @@ class MenuItemTest {
     }
 
     @Test
+    void shouldThrowExceptionWhenBakeryIdIsMissing() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new MenuItem(null, "Bagel", "Desc", 2.50, MenuItemStatus.available));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MenuItem("   ", "Bagel", "Desc", 2.50, MenuItemStatus.available));
+    }
+
+    @Test
+    void shouldUpdateEditableDetailsWithoutChangingOwnershipOrAvailability() {
+        MenuItem item = new MenuItem(
+                "bakery-123", "Old Name", "Old description", 2.00, MenuItemStatus.sold_out);
+
+        item.updateDetails("New Name", "New description", 3.50);
+
+        assertEquals("bakery-123", item.getBakeryId());
+        assertEquals("New Name", item.getName());
+        assertEquals("New description", item.getDescription());
+        assertEquals(3.50, item.getPrice());
+        assertEquals(MenuItemStatus.sold_out, item.getStatus());
+    }
+
+    @Test
     void shouldUpdateDiscontinuedStatusSuccessfully() {
         MenuItem item = new MenuItem("bakery-123", "Cookie", "Choc chip", 2.00, MenuItemStatus.available);
         
