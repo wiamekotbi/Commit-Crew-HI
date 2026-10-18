@@ -3,6 +3,7 @@ package com.commitcrew.thebakeway.application.ord;
 import java.util.List;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 public interface OrderService {
 
@@ -21,4 +22,12 @@ public interface OrderService {
     List<Bakery> getOpenBakeries(String sessionId); 
 
     List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId);
+
+    MenuItem addMenuItem(String sessionId, String name, String description, double price);
+
+    MenuItem editMenuItem(
+            String sessionId, String itemId, String name, String description, double price);
+
+    MenuItem updateMenuItemAvailability(
+            String sessionId, String itemId, MenuItemStatus newStatus);
 }

@@ -18,10 +18,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
+import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
 import com.commitcrew.thebakeway.application.ord.BakeryService;
 import com.commitcrew.thebakeway.application.ord.MenuService;
 import com.commitcrew.thebakeway.application.ord.OrderServiceImpl;
 import com.commitcrew.thebakeway.application.ord.OrderServiceProxy;
+import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
@@ -41,9 +43,13 @@ class BakeryBrowsingIntegrationTest {
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = new BakeryService(bakeryRegistry);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, new TransitionPublisher());
         SessionManager sessionManager = new SessionManager();
-        OrderServiceImpl implementation = new OrderServiceImpl(bakeryService, menuService);
+        // Menu management ownership is not exercised by this browsing test.
+        BakeryStaffAccessService staffAccessService = mock(BakeryStaffAccessService.class);
+        OrderServiceImpl implementation = new OrderServiceImpl(
+                bakeryService, menuService, staffAccessService);
         OrderServiceProxy proxy = new OrderServiceProxy(
                 implementation, sessionManager, new PermissionPolicy());
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new BakeryController(proxy)).build();

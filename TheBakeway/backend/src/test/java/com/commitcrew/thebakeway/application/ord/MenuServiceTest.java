@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -12,7 +13,11 @@ import java.util.Optional;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
@@ -27,7 +32,8 @@ public class MenuServiceTest {
         // or database connection is needed to test the lookup behavior.
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService); 
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         MenuItem item = new MenuItem("bakery-123", "Croissant", "Butter croissant", 3.50,
                 MenuItemStatus.available);
 
@@ -49,7 +55,8 @@ public class MenuServiceTest {
         // Arrange: a sold-out item still exists and must remain retrievable.
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         MenuItem item = new MenuItem("bakery-123", "Baguette", "French baguette", 4.00,
                 MenuItemStatus.sold_out);
         when(menuItemRegistry.findById("item-456")).thenReturn(Optional.of(item));
@@ -68,7 +75,8 @@ public class MenuServiceTest {
         // Arrange: Optional.empty() represents a lookup that found no matching item.
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         when(menuItemRegistry.findById("missing-id")).thenReturn(Optional.empty());
 
         // Act and assert: assertThrows fails if the service does not throw the expected
@@ -85,7 +93,8 @@ public class MenuServiceTest {
         // Arrange: a bakery must be open to allow browsing its menu.
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
 
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
@@ -113,7 +122,8 @@ public class MenuServiceTest {
         // An existing open bakery with no items is a valid browsing result.
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
         when(menuItemRegistry.findByBakeryId("bakery-123")).thenReturn(List.of());
@@ -129,7 +139,8 @@ public class MenuServiceTest {
     void shouldRejectBrowsingWhenBakeryDoesNotExist() {
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
 
         // We mock the service boundary: BakeryService already handles missing IDs.
         when(bakeryService.getBakeryById("missing-id"))
@@ -148,7 +159,8 @@ public class MenuServiceTest {
     void shouldRejectBrowsingForPausedBakery() {
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
 
@@ -165,7 +177,8 @@ public class MenuServiceTest {
     void shouldRejectBrowsingForClosedBakery() {
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
         BakeryService bakeryService = mock(BakeryService.class);
-        MenuService menuService = new MenuService(menuItemRegistry, bakeryService);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.closed, "123 Main St");
         when(bakeryService.getBakeryById("bakery-123")).thenReturn(bakery);
 
@@ -176,5 +189,160 @@ public class MenuServiceTest {
         verify(bakeryService).getBakeryById("bakery-123");
         // Closed bakeries are also rejected without loading their menu items.
         verifyNoInteractions(menuItemRegistry);
+    }
+
+    @Test
+    void shouldAddAvailableItemToAuthenticatedBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
+        when(menuItemRegistry.save(org.mockito.ArgumentMatchers.any(MenuItem.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        MenuItem item = menuService.addMenuItem(
+                "bakery-123", "Croissant", "Butter croissant", 3.50);
+
+        assertEquals("bakery-123", item.getBakeryId());
+        assertEquals("Croissant", item.getName());
+        assertEquals(3.50, item.getPrice());
+        assertEquals(MenuItemStatus.available, item.getStatus());
+        verify(menuItemRegistry).save(item);
+    }
+
+    @Test
+    void shouldEditItemOwnedByAuthenticatedBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
+        MenuItem item = new MenuItem(
+                "bakery-123", "Old Name", "Old description", 2.00, MenuItemStatus.sold_out);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+        when(menuItemRegistry.save(item)).thenReturn(item);
+
+        MenuItem updated = menuService.editMenuItem(
+                "bakery-123", "item-1", "New Name", "New description", 3.50);
+
+        assertSame(item, updated);
+        assertEquals("New Name", updated.getName());
+        assertEquals("New description", updated.getDescription());
+        assertEquals(3.50, updated.getPrice());
+        // Editing descriptive details must not reset availability.
+        assertEquals(MenuItemStatus.sold_out, updated.getStatus());
+        verify(menuItemRegistry).save(item);
+    }
+
+    @Test
+    void shouldRejectEditingItemOwnedByAnotherBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
+        MenuItem item = new MenuItem(
+                "other-bakery", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+
+        assertThrows(SecurityException.class, () -> menuService.editMenuItem(
+                "bakery-123", "item-1", "Changed", "Changed", 4.00));
+
+        // Ownership is checked before mutation or persistence.
+        assertEquals("Croissant", item.getName());
+        verify(menuItemRegistry, org.mockito.Mockito.never()).save(item);
+    }
+
+    @Test
+    void shouldRejectInvalidDetailsWithoutSaving() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, mock(TransitionPublisher.class));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> menuService.addMenuItem("bakery-123", " ", "Description", 2.00));
+        assertThrows(IllegalArgumentException.class,
+                () -> menuService.addMenuItem("bakery-123", "Croissant", "Description", -1.00));
+
+        verifyNoInteractions(menuItemRegistry);
+    }
+
+    @Test
+    void shouldPersistAvailabilityChangeAndPublishMenuItemTransition() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, transitionPublisher);
+        MenuItem item = new MenuItem(
+                "bakery-123", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+
+        // A loaded JPA entity already has its generated ID. Setting it here
+        // makes the unit test represent that persisted entity accurately.
+        ReflectionTestUtils.setField(item, "id", "item-1");
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+        when(menuItemRegistry.save(item)).thenReturn(item);
+
+        MenuItem updated = menuService.updateMenuItemAvailability(
+                "bakery-123", "item-1", MenuItemStatus.sold_out);
+
+        assertSame(item, updated);
+        assertEquals(MenuItemStatus.sold_out, updated.getStatus());
+        verify(menuItemRegistry).save(item);
+
+        // Capture the event instead of matching its generated ID and timestamp.
+        // This verifies the stable transition data consumed by every observer.
+        ArgumentCaptor<StateTransitionEvent> eventCaptor =
+                ArgumentCaptor.forClass(StateTransitionEvent.class);
+        verify(transitionPublisher).notifyObservers(eventCaptor.capture());
+        StateTransitionEvent event = eventCaptor.getValue();
+        assertEquals(EntityType.MENU_ITEM, event.getEntityType());
+        assertEquals("item-1", event.getEntityId());
+        assertEquals("available", event.getPreviousState());
+        assertEquals("sold_out", event.getNewState());
+    }
+
+    @Test
+    void shouldNotPersistOrPublishWhenAvailabilityAlreadyMatches() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, transitionPublisher);
+        MenuItem item = new MenuItem(
+                "bakery-123", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.sold_out);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+
+        MenuItem unchanged = menuService.updateMenuItemAvailability(
+                "bakery-123", "item-1", MenuItemStatus.sold_out);
+
+        assertSame(item, unchanged);
+        // No state transition occurred, so neither persistence nor observers
+        // should receive work that suggests a transition took place.
+        verify(menuItemRegistry, never()).save(item);
+        verifyNoInteractions(transitionPublisher);
+    }
+
+    @Test
+    void shouldRejectAvailabilityChangeForAnotherBakery() {
+        MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
+        BakeryService bakeryService = mock(BakeryService.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        MenuService menuService = new MenuService(
+                menuItemRegistry, bakeryService, transitionPublisher);
+        MenuItem item = new MenuItem(
+                "other-bakery", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+        when(menuItemRegistry.findById("item-1")).thenReturn(Optional.of(item));
+
+        assertThrows(SecurityException.class, () -> menuService.updateMenuItemAvailability(
+                "bakery-123", "item-1", MenuItemStatus.sold_out));
+
+        // Ownership must be rejected before the entity changes or an event is emitted.
+        assertEquals(MenuItemStatus.available, item.getStatus());
+        verify(menuItemRegistry, never()).save(item);
+        verifyNoInteractions(transitionPublisher);
     }
 }
