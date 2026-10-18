@@ -5,6 +5,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -90,6 +91,16 @@ public class Order {
     public void cancel(Role role) { state.cancel(this, role); }
 
     public void addOrderItem(MenuItem menuItem, int quantity) {
+        // Order construction must use the menu item's current availability.
+        // This prevents a newly submitted order from accepting an item after
+        // bakery staff mark it sold out through menu management.
+        if (menuItem.getStatus() != MenuItemStatus.available) {
+            throw new IllegalStateException(
+                    "Menu item is unavailable for ordering: " + menuItem.getName());
+        }
+
+        // OrderLine copies the current name and price. Later menu edits or
+        // availability changes therefore cannot rewrite an existing order.
         OrderLine item = new OrderLine(this, menuItem, quantity);
         this.orderItems.add(item);
     }

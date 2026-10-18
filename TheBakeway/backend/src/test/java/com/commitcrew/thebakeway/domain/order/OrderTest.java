@@ -66,4 +66,29 @@ class OrderTest {
         assertEquals(6.00, line.calculateSubtotal(), 0.001);
         assertEquals(6.00, order.calculateTotal(), 0.001);
     }
+
+    @Test
+    void shouldRejectSoldOutItemFromNewOrder() {
+        // Arrange: availability represents the current menu state observed
+        // while a new order is being assembled.
+        Order order = new Order(
+                "customer-123", "bakery-123", "Maria", "123 This Street");
+        MenuItem soldOutItem = new MenuItem(
+                "bakery-123",
+                "Croissant",
+                "Butter croissant",
+                3.00,
+                MenuItemStatus.sold_out);
+
+        // Act: sold-out items cannot enter a newly placed order.
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> order.addOrderItem(soldOutItem, 1));
+
+        // Assert: rejection happens before an OrderLine is created, leaving
+        // the order unchanged and safe to correct or abandon by the caller.
+        assertEquals("Menu item is unavailable for ordering: Croissant", exception.getMessage());
+        assertTrue(order.getOrderItems().isEmpty());
+        assertEquals(0.00, order.calculateTotal(), 0.001);
+    }
 }
