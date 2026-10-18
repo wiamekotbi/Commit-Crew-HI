@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
@@ -218,6 +220,49 @@ public class BakeryServiceTest {
 
         assertEquals(BakeryStatus.paused, unchanged.getBakeryStatus());
         verify(bakeryRegistry, never()).save(alreadyPaused);
+        verifyNoInteractions(transitionPublisher);
+    }
+
+    @Test
+    void shouldAllowNewOrderForOpenBakery() {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, transitionPublisher);
+        Bakery openBakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
+        when(bakeryRegistry.findById("bakery-123")).thenReturn(Optional.of(openBakery));
+
+        Bakery accepted = bakeryService.requireOpenForOrdering("bakery-123");
+
+        assertEquals(openBakery, accepted);
+        // This guard only reads current status. It must not persist anything or
+        // publish a transition while validating a customer's new order.
+        verify(bakeryRegistry, never()).save(openBakery);
+        verifyNoInteractions(transitionPublisher);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = BakeryStatus.class, names = {"paused", "closed"})
+    void shouldRejectNewOrderWhenBakeryIsNotOpen(BakeryStatus unavailableStatus) {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, transitionPublisher);
+        Bakery unavailableBakery = new Bakery(
+                "bakery-123", "Sweet Treats", unavailableStatus, "123 Main St");
+        when(bakeryRegistry.findById("bakery-123"))
+                .thenReturn(Optional.of(unavailableBakery));
+
+        BakeryUnavailableException exception = assertThrows(
+                BakeryUnavailableException.class,
+                () -> bakeryService.requireOpenForOrdering("bakery-123"));
+
+        assertEquals("Bakery bakery-123 is unavailable for ordering: "
+                + unavailableStatus, exception.getMessage());
+        // Rejection is read-only and therefore cannot disturb existing orders,
+        // preparation queues, bakery state, or transition observers.
+        verify(bakeryRegistry, never()).save(unavailableBakery);
         verifyNoInteractions(transitionPublisher);
     }
 }

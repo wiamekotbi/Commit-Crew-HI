@@ -46,6 +46,23 @@ public class BakeryService {
         return bakery.getBakeryStatus();
     }
 
+    /**
+     * Loads the bakery selected for a new order and verifies that it currently
+     * accepts orders. Aya's order-placement implementation can call this before
+     * constructing or saving an Order, keeping status policy in one service.
+     *
+     * Existing orders are intentionally outside this method: pausing a bakery
+     * must not alter orders or preparation work that already exists.
+     */
+    public Bakery requireOpenForOrdering(String bakeryId) {
+        Bakery bakery = getBakeryById(bakeryId);
+        if (bakery.getBakeryStatus() != BakeryStatus.open) {
+            throw new BakeryUnavailableException("Bakery " + bakeryId
+                    + " is unavailable for ordering: " + bakery.getBakeryStatus());
+        }
+        return bakery;
+    }
+
     /** Pauses a bakery and emits one event only when its state actually changes. */
     @Transactional
     public Bakery pauseBakery(String bakeryId) {
