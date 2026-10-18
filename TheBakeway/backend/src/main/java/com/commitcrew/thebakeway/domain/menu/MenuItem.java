@@ -112,6 +112,18 @@ public class MenuItem {
         this.status = (status != null) ? status : MenuItemStatus.available;
     }
 
+    /**
+     * Applies an explicit availability state selected by bakery staff.
+     * Unlike the legacy setter, this operation rejects null because a staff
+     * command must clearly choose either available or sold_out.
+     */
+    public void updateStatus(MenuItemStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Menu item status is required.");
+        }
+        this.status = newStatus;
+    }
+
     public void setDiscontinued(boolean discontinued) {
         this.discontinued = discontinued;
     }

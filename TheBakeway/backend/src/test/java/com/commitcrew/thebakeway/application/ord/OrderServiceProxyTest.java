@@ -277,4 +277,26 @@ class OrderServiceProxyTest {
                 SESSION_ID, "item-1", "Changed", "Changed", 4.00);
     }
 
+    @Test
+    void delegatesAvailabilityChangeWhenRestaurantIsAuthorized() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.MANAGE_MENU_ITEMS, Role.RESTAURANT))
+                .thenReturn(true);
+        MenuItem expected = new MenuItem(
+                "bakery-1", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.sold_out);
+        when(realSubject.updateMenuItemAvailability(
+                SESSION_ID, "item-1", MenuItemStatus.sold_out)).thenReturn(expected);
+
+        MenuItem actual = orderServiceProxy.updateMenuItemAvailability(
+                SESSION_ID, "item-1", MenuItemStatus.sold_out);
+
+        assertEquals(expected, actual);
+        verify(permissionPolicy).isAllowed(
+                OrderServiceProxy.MANAGE_MENU_ITEMS, Role.RESTAURANT);
+        verify(realSubject).updateMenuItemAvailability(
+                SESSION_ID, "item-1", MenuItemStatus.sold_out);
+    }
+
 }

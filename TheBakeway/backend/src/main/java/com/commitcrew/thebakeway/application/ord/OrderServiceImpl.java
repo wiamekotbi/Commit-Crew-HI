@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 @Service("orderServiceImpl")
 public class OrderServiceImpl implements OrderService {
@@ -78,5 +79,14 @@ public class OrderServiceImpl implements OrderService {
             String sessionId, String itemId, String name, String description, double price) {
         String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
         return menuService.editMenuItem(bakeryId, itemId, name, description, price);
+    }
+
+    @Override
+    public MenuItem updateMenuItemAvailability(
+            String sessionId, String itemId, MenuItemStatus newStatus) {
+        // Resolve ownership from the session for every mutation. The caller
+        // cannot claim access by placing an arbitrary bakery ID in a request.
+        String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
+        return menuService.updateMenuItemAvailability(bakeryId, itemId, newStatus);
     }
 }

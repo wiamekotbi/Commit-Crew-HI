@@ -62,6 +62,17 @@ class MenuItemTest {
     }
 
     @Test
+    void shouldRequireExplicitStatusForAvailabilityUpdate() {
+        MenuItem item = new MenuItem(
+                "bakery-123", "Cookie", "Chocolate chip", 2.00,
+                MenuItemStatus.available);
+
+        assertThrows(IllegalArgumentException.class, () -> item.updateStatus(null));
+        // A rejected command must leave the current domain state unchanged.
+        assertEquals(MenuItemStatus.available, item.getStatus());
+    }
+
+    @Test
     void shouldUpdateDiscontinuedStatusSuccessfully() {
         MenuItem item = new MenuItem("bakery-123", "Cookie", "Choc chip", 2.00, MenuItemStatus.available);
         

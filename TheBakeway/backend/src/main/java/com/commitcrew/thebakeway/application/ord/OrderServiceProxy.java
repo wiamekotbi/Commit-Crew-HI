@@ -11,6 +11,7 @@ import com.commitcrew.thebakeway.domain.session.Session;
 import java.util.List;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 @Service
 @Primary
@@ -106,5 +107,14 @@ public class OrderServiceProxy implements OrderService {
             String sessionId, String itemId, String name, String description, double price) {
         checkAccess(sessionId, MANAGE_MENU_ITEMS);
         return realSubject.editMenuItem(sessionId, itemId, name, description, price);
+    }
+
+    @Override
+    public MenuItem updateMenuItemAvailability(
+            String sessionId, String itemId, MenuItemStatus newStatus) {
+        // Availability is a menu-management operation and therefore uses the
+        // same restaurant-only permission enforced for add and edit commands.
+        checkAccess(sessionId, MANAGE_MENU_ITEMS);
+        return realSubject.updateMenuItemAvailability(sessionId, itemId, newStatus);
     }
 }
