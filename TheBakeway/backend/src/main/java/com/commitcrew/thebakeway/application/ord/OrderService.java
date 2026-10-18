@@ -1,5 +1,9 @@
 package com.commitcrew.thebakeway.application.ord;
 
+import java.util.List;
+import com.commitcrew.thebakeway.domain.bakery.Bakery;
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+
 public interface OrderService {
 
     String placeOrder(String sessionId, PlaceOrderRequest request);
@@ -13,4 +17,8 @@ public interface OrderService {
     void startPreparing(String sessionId, String orderId);
 
     void markReady(String sessionId, String orderId);
+
+    List<Bakery> getOpenBakeries(String sessionId); 
+
+    List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId);
 }

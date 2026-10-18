@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -18,7 +19,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.bakery.Bakery;
+import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
 import com.commitcrew.thebakeway.domain.session.Session;
+
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceProxyTest {
@@ -138,4 +144,103 @@ class OrderServiceProxyTest {
 
         assertEquals(session, result);
     }
+
+    @Test
+    void delegatesOpenBakeriesWhenCustomerIsAuthorized() {
+        // Arrange a valid customer session with permission to browse.
+        Session session = new Session(SESSION_ID, "account-1", Role.CUSTOMER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.BROWSE_MENU, Role.CUSTOMER)).thenReturn(true);
+
+        Bakery bakery = new Bakery("bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main St");
+        List<Bakery> expectedBakeries = List.of(bakery);
+        when(realSubject.getOpenBakeries(SESSION_ID)).thenReturn(expectedBakeries);
+
+        List<Bakery> actualBakeries = orderServiceProxy.getOpenBakeries(SESSION_ID);
+
+        // The proxy forwards the authorized request and preserves the returned data.
+        assertEquals(expectedBakeries, actualBakeries);
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.BROWSE_MENU, Role.CUSTOMER);
+        verify(realSubject).getOpenBakeries(SESSION_ID);
+    }
+
+    @Test 
+    void delegatesMenuBrowsingWhenCustomerIsAuthorized(){
+        // Arrange a valid customer session with permission to browse.
+        Session session = new Session(SESSION_ID, "account-1", Role.CUSTOMER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.BROWSE_MENU, Role.CUSTOMER)).thenReturn(true);
+
+        MenuItem item1 = new MenuItem("bakery-1", "Croissant", "Butter croissant", 3.50,
+                MenuItemStatus.available);
+        MenuItem item2 = new MenuItem("bakery-1", "Baguette", "French baguette", 4.00,
+                MenuItemStatus.sold_out);
+        List<MenuItem> expectedMenu = List.of(item1, item2);
+        when(realSubject.getMenuForBrowsing(SESSION_ID, "bakery-1")).thenReturn(expectedMenu);
+
+        List<MenuItem> actualMenu = orderServiceProxy.getMenuForBrowsing(SESSION_ID, "bakery-1");
+
+        // The proxy forwards the authorized request and preserves the returned data.
+        assertEquals(expectedMenu, actualMenu);
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.BROWSE_MENU, Role.CUSTOMER);
+        verify(realSubject).getMenuForBrowsing(SESSION_ID, "bakery-1");
+    }
+
+    @Test 
+    void rejectsOpenBakeriesWithoutValidSession() {
+        // Arrange: no session found for the given ID.
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.empty());
+
+        // Act & Assert: the proxy should throw an exception for missing session.
+        assertThrows(IllegalStateException.class,
+                () -> orderServiceProxy.getOpenBakeries(SESSION_ID));
+
+        // Session rejection must stop both permission checking and all delegation.
+        verifyNoInteractions(realSubject, permissionPolicy);
+    }   
+
+    @Test 
+    void rejectsMenuBrowsingWithoutValidSession() {
+        // Arrange: no session found for the given ID.
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.empty());
+        // Act & Assert: the proxy should throw an exception for missing session.
+        assertThrows(IllegalStateException.class,
+                () -> orderServiceProxy.getMenuForBrowsing(SESSION_ID, "bakery-1"));    
+    
+        // No protected operation should run when the session is invalid.
+        verifyNoInteractions(realSubject, permissionPolicy);
+    }
+
+    @Test 
+    void rejectsOpenBakeriesWithoutBrowsingPermission(){
+        // Arrange: a valid session but without permission to browse.
+        Session session = new Session(SESSION_ID, "account-1", Role.COURIER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.BROWSE_MENU, Role.COURIER)).thenReturn(false);
+
+        // Act & Assert: the proxy should throw an exception for unauthorized access.
+        assertThrows(SecurityException.class,
+                () -> orderServiceProxy.getOpenBakeries(SESSION_ID));
+
+        // No delegation should occur when the permission check fails.
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.BROWSE_MENU, Role.COURIER);
+        verifyNoInteractions(realSubject);
+    }
+
+    @Test 
+    void rejectsMenuBrowsingWithoutBrowsingPermission(){
+        // Arrange: a valid session but without permission to browse.
+        Session session = new Session(SESSION_ID, "account-1", Role.COURIER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.BROWSE_MENU, Role.COURIER)).thenReturn(false);  
+        
+        // Act & Assert: the proxy should throw an exception for unauthorized access.
+        assertThrows(SecurityException.class,
+                () -> orderServiceProxy.getMenuForBrowsing(SESSION_ID, "bakery-1"));
+    
+        // No delegation should occur when the permission check fails.
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.BROWSE_MENU, Role.COURIER);
+        verifyNoInteractions(realSubject);  
+    }
+
 }
