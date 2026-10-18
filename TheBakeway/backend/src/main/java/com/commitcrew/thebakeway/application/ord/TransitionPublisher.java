@@ -3,6 +3,7 @@ package com.commitcrew.thebakeway.application.ord;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
@@ -19,6 +20,29 @@ public class TransitionPublisher {
     // The UML specifies a List<StateTransitionObserver>. Registration order is
     // preserved, while attach prevents the same observer from appearing twice.
     private final List<StateTransitionObserver> observers = new ArrayList<>();
+
+    /**
+     * Keeps direct construction available for focused unit tests and non-Spring
+     * use. Observers can still be registered explicitly through attach.
+     */
+    public TransitionPublisher() {
+    }
+
+    /**
+     * Spring supplies every StateTransitionObserver bean in the application.
+     * Registering that list during publisher construction lets independent
+     * implementations such as Anthony's EventRecorder and a DashboardUpdater
+     * subscribe without either service knowing their concrete classes.
+     */
+    @Autowired
+    public TransitionPublisher(List<StateTransitionObserver> discoveredObservers) {
+        if (discoveredObservers == null) {
+            throw new IllegalArgumentException("Observer list is required");
+        }
+        for (StateTransitionObserver observer : discoveredObservers) {
+            attach(observer);
+        }
+    }
 
     /** Registers an observer once; attaching the same instance again is harmless. */
     public void attach(StateTransitionObserver observer) {
