@@ -13,15 +13,18 @@ public class OrderServiceImpl implements OrderService {
     private final BakeryService bakeryService;
     private final MenuService menuService;
     private final BakeryStaffAccessService bakeryStaffAccessService;
+    private final BakeryStatusAccessService bakeryStatusAccessService;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
             BakeryService bakeryService,
             MenuService menuService,
-            BakeryStaffAccessService bakeryStaffAccessService) {
+            BakeryStaffAccessService bakeryStaffAccessService,
+            BakeryStatusAccessService bakeryStatusAccessService) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
+        this.bakeryStatusAccessService = bakeryStatusAccessService;
     }
 
     @Override
@@ -88,5 +91,23 @@ public class OrderServiceImpl implements OrderService {
         // cannot claim access by placing an arbitrary bakery ID in a request.
         String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
         return menuService.updateMenuItemAvailability(bakeryId, itemId, newStatus);
+    }
+
+    @Override
+    public Bakery pauseBakery(String sessionId, String bakeryId) {
+        // Resolve the authorized target before loading or mutating its entity.
+        // For restaurant accounts, this compares the request with persistent ownership.
+        String authorizedBakeryId = bakeryStatusAccessService.resolvePauseTarget(
+                sessionId, bakeryId);
+        return bakeryService.pauseBakery(authorizedBakeryId);
+    }
+
+    @Override
+    public Bakery reopenBakery(String sessionId, String bakeryId) {
+        // The access service provides defense in depth in addition to the proxy:
+        // only an authenticated operator can reach the domain transition.
+        String authorizedBakeryId = bakeryStatusAccessService.resolveReopenTarget(
+                sessionId, bakeryId);
+        return bakeryService.reopenBakery(authorizedBakeryId);
     }
 }

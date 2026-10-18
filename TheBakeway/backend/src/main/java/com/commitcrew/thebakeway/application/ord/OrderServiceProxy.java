@@ -23,6 +23,8 @@ public class OrderServiceProxy implements OrderService {
     static final String PREPARE_ORDERS = "PREPARE_ORDERS";
     static final String BROWSE_MENU = "BROWSE_MENU";
     static final String MANAGE_MENU_ITEMS = "MANAGE_MENU_ITEMS";
+    static final String PAUSE_BAKERY = "PAUSE_BAKERY";
+    static final String REOPEN_BAKERY = "REOPEN_BAKERY";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -116,5 +118,20 @@ public class OrderServiceProxy implements OrderService {
         // same restaurant-only permission enforced for add and edit commands.
         checkAccess(sessionId, MANAGE_MENU_ITEMS);
         return realSubject.updateMenuItemAvailability(sessionId, itemId, newStatus);
+    }
+
+    @Override
+    public Bakery pauseBakery(String sessionId, String bakeryId) {
+        // Both restaurant staff and operators may pass this role-level check;
+        // the implementation still enforces bakery ownership for restaurant staff.
+        checkAccess(sessionId, PAUSE_BAKERY);
+        return realSubject.pauseBakery(sessionId, bakeryId);
+    }
+
+    @Override
+    public Bakery reopenBakery(String sessionId, String bakeryId) {
+        // PermissionPolicy grants this operation only to operators.
+        checkAccess(sessionId, REOPEN_BAKERY);
+        return realSubject.reopenBakery(sessionId, bakeryId);
     }
 }

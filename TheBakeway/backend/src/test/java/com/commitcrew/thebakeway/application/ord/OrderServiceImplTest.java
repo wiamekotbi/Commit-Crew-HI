@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 
+import com.commitcrew.thebakeway.domain.bakery.Bakery;
+import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
@@ -17,7 +19,8 @@ class OrderServiceImplTest {
         BakeryService bakeryService = mock(BakeryService.class);
         MenuService menuService = mock(MenuService.class);
         BakeryStaffAccessService accessService = mock(BakeryStaffAccessService.class);
-        OrderServiceImpl service = new OrderServiceImpl(bakeryService, menuService, accessService);
+        OrderServiceImpl service = new OrderServiceImpl(
+                bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Croissant", "Butter croissant", 3.50, MenuItemStatus.available);
         when(accessService.getBakeryIdForSession("session-1")).thenReturn("bakery-1");
@@ -37,7 +40,8 @@ class OrderServiceImplTest {
         BakeryService bakeryService = mock(BakeryService.class);
         MenuService menuService = mock(MenuService.class);
         BakeryStaffAccessService accessService = mock(BakeryStaffAccessService.class);
-        OrderServiceImpl service = new OrderServiceImpl(bakeryService, menuService, accessService);
+        OrderServiceImpl service = new OrderServiceImpl(
+                bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Updated", "New description", 4.00, MenuItemStatus.available);
         when(accessService.getBakeryIdForSession("session-1")).thenReturn("bakery-1");
@@ -59,7 +63,8 @@ class OrderServiceImplTest {
         BakeryService bakeryService = mock(BakeryService.class);
         MenuService menuService = mock(MenuService.class);
         BakeryStaffAccessService accessService = mock(BakeryStaffAccessService.class);
-        OrderServiceImpl service = new OrderServiceImpl(bakeryService, menuService, accessService);
+        OrderServiceImpl service = new OrderServiceImpl(
+                bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Croissant", "Butter croissant", 3.50,
                 MenuItemStatus.sold_out);
@@ -76,5 +81,43 @@ class OrderServiceImplTest {
         verify(accessService).getBakeryIdForSession("session-1");
         verify(menuService).updateMenuItemAvailability(
                 "bakery-1", "item-1", MenuItemStatus.sold_out);
+    }
+
+    @Test
+    void pauseUsesBakeryTargetAuthorizedForSession() {
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = mock(MenuService.class);
+        BakeryStaffAccessService staffAccess = mock(BakeryStaffAccessService.class);
+        BakeryStatusAccessService statusAccess = mock(BakeryStatusAccessService.class);
+        OrderServiceImpl service = new OrderServiceImpl(
+                bakeryService, menuService, staffAccess, statusAccess);
+        Bakery expected = new Bakery(
+                "bakery-1", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+        when(statusAccess.resolvePauseTarget("session-1", "bakery-1"))
+                .thenReturn("bakery-1");
+        when(bakeryService.pauseBakery("bakery-1")).thenReturn(expected);
+
+        assertSame(expected, service.pauseBakery("session-1", "bakery-1"));
+        verify(statusAccess).resolvePauseTarget("session-1", "bakery-1");
+        verify(bakeryService).pauseBakery("bakery-1");
+    }
+
+    @Test
+    void reopenUsesBakeryTargetAuthorizedForOperatorSession() {
+        BakeryService bakeryService = mock(BakeryService.class);
+        MenuService menuService = mock(MenuService.class);
+        BakeryStaffAccessService staffAccess = mock(BakeryStaffAccessService.class);
+        BakeryStatusAccessService statusAccess = mock(BakeryStatusAccessService.class);
+        OrderServiceImpl service = new OrderServiceImpl(
+                bakeryService, menuService, staffAccess, statusAccess);
+        Bakery expected = new Bakery(
+                "bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main St");
+        when(statusAccess.resolveReopenTarget("session-1", "bakery-1"))
+                .thenReturn("bakery-1");
+        when(bakeryService.reopenBakery("bakery-1")).thenReturn(expected);
+
+        assertSame(expected, service.reopenBakery("session-1", "bakery-1"));
+        verify(statusAccess).resolveReopenTarget("session-1", "bakery-1");
+        verify(bakeryService).reopenBakery("bakery-1");
     }
 }

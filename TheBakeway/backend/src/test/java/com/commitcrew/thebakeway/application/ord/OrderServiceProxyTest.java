@@ -299,4 +299,49 @@ class OrderServiceProxyTest {
                 SESSION_ID, "item-1", MenuItemStatus.sold_out);
     }
 
+    @Test
+    void delegatesPauseWhenRestaurantHasPausePermission() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.PAUSE_BAKERY, Role.RESTAURANT))
+                .thenReturn(true);
+        Bakery paused = new Bakery(
+                "bakery-1", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+        when(realSubject.pauseBakery(SESSION_ID, "bakery-1")).thenReturn(paused);
+
+        assertEquals(paused, orderServiceProxy.pauseBakery(SESSION_ID, "bakery-1"));
+
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.PAUSE_BAKERY, Role.RESTAURANT);
+        verify(realSubject).pauseBakery(SESSION_ID, "bakery-1");
+    }
+
+    @Test
+    void rejectsReopenWhenRestaurantLacksOperatorPermission() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.REOPEN_BAKERY, Role.RESTAURANT))
+                .thenReturn(false);
+
+        assertThrows(SecurityException.class,
+                () -> orderServiceProxy.reopenBakery(SESSION_ID, "bakery-1"));
+
+        verify(realSubject, never()).reopenBakery(SESSION_ID, "bakery-1");
+    }
+
+    @Test
+    void delegatesReopenWhenOperatorIsAuthorized() {
+        Session session = new Session(SESSION_ID, "operator-1", Role.OPERATOR);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.REOPEN_BAKERY, Role.OPERATOR))
+                .thenReturn(true);
+        Bakery open = new Bakery(
+                "bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main St");
+        when(realSubject.reopenBakery(SESSION_ID, "bakery-1")).thenReturn(open);
+
+        assertEquals(open, orderServiceProxy.reopenBakery(SESSION_ID, "bakery-1"));
+
+        verify(permissionPolicy).isAllowed(OrderServiceProxy.REOPEN_BAKERY, Role.OPERATOR);
+        verify(realSubject).reopenBakery(SESSION_ID, "bakery-1");
+    }
+
 }
