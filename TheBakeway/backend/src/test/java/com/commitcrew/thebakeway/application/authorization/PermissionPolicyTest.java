@@ -22,6 +22,8 @@ class PermissionPolicyTest {
             "VIEW_ORDER_HISTORY",
             "MANAGE_MENU_ITEMS",
             "MANAGE_ITEM_AVAILABILITY",
+            "PAUSE_BAKERY",
+            "REOPEN_BAKERY",
             "MANAGE_ORDERS",
             "PREPARE_ORDERS",
             "ASSIGN_READY_ORDERS_TO_COURIERS",
@@ -50,6 +52,7 @@ class PermissionPolicyTest {
         assertAllowedAndDenied(Role.RESTAURANT, withProfileOperations(
                 "MANAGE_MENU_ITEMS",
                 "MANAGE_ITEM_AVAILABILITY",
+                "PAUSE_BAKERY",
                 "MANAGE_ORDERS",
                 "PREPARE_ORDERS",
                 "ASSIGN_READY_ORDERS_TO_COURIERS"));
@@ -67,6 +70,8 @@ class PermissionPolicyTest {
     void operatorHasOnlyOperatorPermissions() {
         assertAllowedAndDenied(Role.OPERATOR, withProfileOperations(
                 "VIEW_SIMULATOR_DASHBOARD",
+                "PAUSE_BAKERY",
+                "REOPEN_BAKERY",
                 "CANCEL_ORDER"));
     }
 

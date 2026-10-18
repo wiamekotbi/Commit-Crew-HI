@@ -30,4 +30,8 @@ public interface OrderService {
 
     MenuItem updateMenuItemAvailability(
             String sessionId, String itemId, MenuItemStatus newStatus);
+
+    Bakery pauseBakery(String sessionId, String bakeryId);
+
+    Bakery reopenBakery(String sessionId, String bakeryId);
 }

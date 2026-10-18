@@ -95,5 +95,41 @@ public class BakeryTest {
             new Bakery("", "Sweet Treats", BakeryStatus.open, "123 Main St");
         });
     }
+
+    @Test
+    void shouldPauseOpenBakeryOnlyOnce() {
+        Bakery bakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
+
+        assertTrue(bakery.pause());
+        assertEquals(BakeryStatus.paused, bakery.getBakeryStatus());
+
+        // Repeating an already-applied command is successful but is not a transition.
+        assertFalse(bakery.pause());
+        assertEquals(BakeryStatus.paused, bakery.getBakeryStatus());
+    }
+
+    @Test
+    void shouldReopenPausedBakeryOnlyOnce() {
+        Bakery bakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+
+        assertTrue(bakery.reopen());
+        assertEquals(BakeryStatus.open, bakery.getBakeryStatus());
+
+        assertFalse(bakery.reopen());
+        assertEquals(BakeryStatus.open, bakery.getBakeryStatus());
+    }
+
+    @Test
+    void shouldNeverPauseOrReopenClosedBakery() {
+        Bakery bakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.closed, "123 Main St");
+
+        assertThrows(IllegalStateException.class, bakery::pause);
+        assertThrows(IllegalStateException.class, bakery::reopen);
+        // Both rejected commands leave the permanent state untouched.
+        assertEquals(BakeryStatus.closed, bakery.getBakeryStatus());
+    }
     
 }
