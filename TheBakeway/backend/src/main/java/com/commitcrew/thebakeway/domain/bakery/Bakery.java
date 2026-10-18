@@ -61,6 +61,46 @@ public class Bakery {
         return bakeryAddress;
     }
 
+    /**
+     * Pauses an open bakery so it stops accepting new orders. Repeating the
+     * command is idempotent, while a permanently closed bakery cannot enter
+     * this temporary operational state.
+     *
+     * @return true only when this call changed the bakery's state
+     */
+    public boolean pause() {
+        if (bakeryStatus == BakeryStatus.paused) {
+            return false;
+        }
+        if (bakeryStatus != BakeryStatus.open) {
+            throw new IllegalStateException(
+                    "Only an open bakery can be paused");
+        }
+
+        bakeryStatus = BakeryStatus.paused;
+        return true;
+    }
+
+    /**
+     * Reopens a temporarily paused bakery. An already-open bakery is an
+     * idempotent request. The report treats closed as permanent for this use
+     * case, so closed bakeries cannot be reopened through this operation.
+     *
+     * @return true only when this call changed the bakery's state
+     */
+    public boolean reopen() {
+        if (bakeryStatus == BakeryStatus.open) {
+            return false;
+        }
+        if (bakeryStatus != BakeryStatus.paused) {
+            throw new IllegalStateException(
+                    "Only a paused bakery can be reopened");
+        }
+
+        bakeryStatus = BakeryStatus.open;
+        return true;
+    }
+
     // Bakery attributes validation methods
     private void validateBakeryName(String bakeryName){
         if(bakeryName == null || bakeryName.isBlank()){

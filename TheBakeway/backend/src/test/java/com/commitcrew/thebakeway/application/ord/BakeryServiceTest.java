@@ -3,16 +3,22 @@ package com.commitcrew.thebakeway.application.ord;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
 import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
+import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 
 public class BakeryServiceTest {
 
@@ -21,7 +27,8 @@ public class BakeryServiceTest {
         // Arrange: replace the database repository with a mock we control.
         // The service is real, but this test starts neither Spring nor Supabase.
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
         List<Bakery> expectedBakeries = List.of(bakery);
@@ -44,7 +51,8 @@ public class BakeryServiceTest {
     void shouldReturnEmptyListWhenNoBakeriesAreOpen(){
         // Arrange
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         // Teach the mock to return an empty list for open bakeries.
         when(bakeryRegistry.findByBakeryStatus(BakeryStatus.open)).thenReturn(List.of());
@@ -64,7 +72,8 @@ public class BakeryServiceTest {
     void shouldReturnBakeryById(){
         // Arrange
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
 
@@ -85,7 +94,8 @@ public class BakeryServiceTest {
     void shouldThrowExceptionWhenBakeryDoesNotExist(){
         // Arrange
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         // Teach the mock to return an empty Optional for a non-existent bakery ID.
         when(bakeryRegistry.findById("missing-id")).thenReturn(java.util.Optional.empty());
@@ -106,7 +116,8 @@ public class BakeryServiceTest {
     void shouldReturnPausedBakeryStatus(){
         // Arrange
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         Bakery bakery = new Bakery("bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
 
@@ -127,7 +138,8 @@ public class BakeryServiceTest {
     void shouldThrowExceptionWhenGettingStatusOfMissingBakery(){
         // Arrange
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
 
         when(bakeryRegistry.findById("missing-id")).thenReturn(java.util.Optional.empty());
 
@@ -141,5 +153,71 @@ public class BakeryServiceTest {
 
         // Verify the service requested the bakery by ID.
         verify(bakeryRegistry).findById("missing-id");
+    }
+
+    @Test
+    void shouldPersistPauseAndPublishBakeryTransition() {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, transitionPublisher);
+        Bakery bakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.open, "123 Main St");
+        when(bakeryRegistry.findById("bakery-123")).thenReturn(Optional.of(bakery));
+        when(bakeryRegistry.save(bakery)).thenReturn(bakery);
+
+        Bakery updated = bakeryService.pauseBakery("bakery-123");
+
+        assertEquals(BakeryStatus.paused, updated.getBakeryStatus());
+        verify(bakeryRegistry).save(bakery);
+
+        // Capture generated event data while leaving its UUID and timestamp unconstrained.
+        ArgumentCaptor<StateTransitionEvent> eventCaptor =
+                ArgumentCaptor.forClass(StateTransitionEvent.class);
+        verify(transitionPublisher).notifyObservers(eventCaptor.capture());
+        StateTransitionEvent event = eventCaptor.getValue();
+        assertEquals(EntityType.BAKERY, event.getEntityType());
+        assertEquals("bakery-123", event.getEntityId());
+        assertEquals("open", event.getPreviousState());
+        assertEquals("paused", event.getNewState());
+    }
+
+    @Test
+    void shouldPersistReopenAndPublishBakeryTransition() {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, transitionPublisher);
+        Bakery bakery = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+        when(bakeryRegistry.findById("bakery-123")).thenReturn(Optional.of(bakery));
+        when(bakeryRegistry.save(bakery)).thenReturn(bakery);
+
+        Bakery updated = bakeryService.reopenBakery("bakery-123");
+
+        assertEquals(BakeryStatus.open, updated.getBakeryStatus());
+        verify(bakeryRegistry).save(bakery);
+        ArgumentCaptor<StateTransitionEvent> eventCaptor =
+                ArgumentCaptor.forClass(StateTransitionEvent.class);
+        verify(transitionPublisher).notifyObservers(eventCaptor.capture());
+        assertEquals("paused", eventCaptor.getValue().getPreviousState());
+        assertEquals("open", eventCaptor.getValue().getNewState());
+    }
+
+    @Test
+    void shouldNotPersistOrPublishUnchangedBakeryStatus() {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        TransitionPublisher transitionPublisher = mock(TransitionPublisher.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, transitionPublisher);
+        Bakery alreadyPaused = new Bakery(
+                "bakery-123", "Sweet Treats", BakeryStatus.paused, "123 Main St");
+        when(bakeryRegistry.findById("bakery-123")).thenReturn(Optional.of(alreadyPaused));
+
+        Bakery unchanged = bakeryService.pauseBakery("bakery-123");
+
+        assertEquals(BakeryStatus.paused, unchanged.getBakeryStatus());
+        verify(bakeryRegistry, never()).save(alreadyPaused);
+        verifyNoInteractions(transitionPublisher);
     }
 }

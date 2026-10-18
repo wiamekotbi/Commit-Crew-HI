@@ -42,7 +42,8 @@ class BakeryBrowsingIntegrationTest {
         // so this tests their collaboration rather than separate service stubs.
         BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
         MenuItemRegistry menuItemRegistry = mock(MenuItemRegistry.class);
-        BakeryService bakeryService = new BakeryService(bakeryRegistry);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, new TransitionPublisher());
         MenuService menuService = new MenuService(
                 menuItemRegistry, bakeryService, new TransitionPublisher());
         SessionManager sessionManager = new SessionManager();
