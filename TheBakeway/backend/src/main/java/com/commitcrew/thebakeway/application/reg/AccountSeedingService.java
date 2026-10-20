@@ -55,20 +55,32 @@ public class AccountSeedingService {
             }
     }
 
-    public void seedAccounts(){
-        File initialAccountsFile = new File("../config/initialAccounts.txt");
 
+    public void seedAccounts(){
+        //by default, accountSeeding will take place with the accounts provided by the config file.
+        
+        File initialAccountsFile = new File("../config/initialAccounts.txt");
         Scanner scanner;
 
         try{
             scanner = new Scanner(initialAccountsFile);
         } catch (Exception FileNotFoundException) {
             logInvalidEntry("Exception while seeding accounts: config file not found.");
+            errorLogIndex=0;
+            errorLog = new String[100];
             return;
         }
-        
-        //iterate through initialAccounts.txt for account seeding
+
+        seedAccounts(scanner);
+    }
+
+    public void seedAccounts(Scanner scanner){
+
+        //iterate through the scanner for account seeding. Scanner is passed as a parameter to make unit testing easier.
         int lineCounter = 1;
+
+        String accountIdCache = "";
+        //used to check if a unique account attribute has already been parsed
         boolean customerCreated = false;
         boolean courierCreated = false;
         boolean bakerCreated = false;
@@ -83,7 +95,7 @@ public class AccountSeedingService {
             }
 
             String[] parsedVals = parsedLine.split(",",-1);
-            if(parsedVals.length != 9){
+            if(parsedVals.length != 8){
                 logInvalidEntry(" ; Encountered improper number of attributes at line "+lineCounter+" while seeding accounts.");
                 //logs a blank line, as we cannot know where the password is and thus cannot remove it.
                 lineCounter++;
@@ -124,19 +136,15 @@ public class AccountSeedingService {
             }
             switch(holdRole){
                 case "CUSTOMER":
-                    customerCreated = true;
                     role = Role.CUSTOMER;
                     break;
                 case "RESTAURANT":
-                    bakerCreated = true;
                     role = Role.RESTAURANT;
                     break;
                 case "COURIER":
-                    courierCreated = true;
                     role = Role.COURIER;
                     break;
                 case "OPERATOR":
-                    operatorCreated = true;
                     role = Role.OPERATOR;
                     break;
                 default:
@@ -146,26 +154,33 @@ public class AccountSeedingService {
             }
             String bakeryId  = parsedVals[7];
 
-            
-            if (role == Role.RESTAURANT && (bakeryId == null || bakeryId.isBlank())) {
+            //check role-specific logic
+            if (role == Role.RESTAURANT && bakeryId.isBlank()) {
                 logInvalidEntry(errorString+" ; Encountered blank bakeryId for bakery at line "+lineCounter+" while seeding accounts.");
                     lineCounter++;
                     continue;
             }
-            if (role != Role.RESTAURANT && bakeryId != null) {
+            if (role != Role.RESTAURANT && !bakeryId.isBlank()) {
                 logInvalidEntry(errorString + " ; Encountered bakeryId for non-bakery account at line "+lineCounter+" while seeding accounts.");
                     lineCounter++;
                     continue;
             }
-            if (role != Role.CUSTOMER && deliveryAddress != null) {
+            if (role != Role.CUSTOMER && !deliveryAddress.isBlank()) {
                 logInvalidEntry(errorString+" ; Encountered deliveryAddress for non-customer account at line "+lineCounter+" while seeding accounts.");
                     lineCounter++;
                     continue;
             }
-            if (role == Role.CUSTOMER && deliveryAddress == null) {
+            if (role == Role.CUSTOMER && deliveryAddress.isBlank()) {
                 logInvalidEntry(errorString+" ; Encountered customer account without deliveryAddress at line "+lineCounter+" while seeding accounts.");
                     lineCounter++;
                     continue;
+            }
+
+            //check for duplicated account info within the caches
+            if(accountIdCache.contains(accountId)){
+                logInvalidEntry(errorString+" ; Encountered duplicate accountId at line "+lineCounter+" while seeding accounts.");
+                lineCounter++;
+                continue;
             }
 
             switch(role){
@@ -196,6 +211,8 @@ public class AccountSeedingService {
 
                 createdAccounts[createdAccountsIndex] = account;
                 createdAccountsIndex++;
+                //add accountId to cache for duplicate checks in the following iterations
+                accountIdCache+=" ; "+accountId;
             } catch(Exception e){
                 logInvalidEntry(errorString + " ; Creation exception thrown for account at line "+lineCounter+" while seeding accounts.");
             }
@@ -206,11 +223,15 @@ public class AccountSeedingService {
             accountRegistry.deleteAll();
             sessionManager.invalidateAllSessions();
 
-            for(BakewayAccount account : createdAccounts){
-                accountRegistry.save(account);
+            for(int i=0; i<createdAccountsIndex; i++){
+                accountRegistry.save(createdAccounts[i]);
             }
+            logger.info("Account seeding successful.\nTotal of "+errorLogIndex+" errors logged\nTotal of "+createdAccountsIndex+" accounts seeded.");
+        } else {
+            logger.info("Not all roles created while seeding: \n>customerCreated: "+customerCreated+"\n>bakerCreated: "+bakerCreated+"\n>courierCreated: "+courierCreated+"\n>operatorCreated: "+operatorCreated
+                +"\nTotal of "+errorLogIndex+" errors logged\nTotal of "+createdAccountsIndex+" accounts created but not seeded.");
         }
-        logger.info("Total of "+errorLogIndex+" errors logged\nTotal of "+createdAccountsIndex+" created.");
+        
         errorLog = new String[100];
         createdAccounts = new BakewayAccount[100];
         errorLogIndex=0;
