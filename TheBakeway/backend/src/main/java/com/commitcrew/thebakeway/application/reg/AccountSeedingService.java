@@ -3,17 +3,23 @@ import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import java.io.File;                  
+import com.commitcrew.thebakeway.application.reg.SessionManager;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //module for the seeding of predefined accounts at startup and when called by operator. Related to UC-REG-03
 
 public class AccountSeedingService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AccountSeedingService.class);
+
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
+    private final SessionManager sessionManager;
 
 
     int createdAccountsIndex;
@@ -21,18 +27,21 @@ public class AccountSeedingService {
     int errorLogIndex;
     String[] errorLog;
 
-    
-    public AccountSeedingService(AccountRegistry accountRegistry, PasswordEncoder passwordEncoder) {
+    //constructor
+    public AccountSeedingService(AccountRegistry accountRegistry, PasswordEncoder passwordEncoder, SessionManager sessionManager) {
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
+        this.sessionManager = sessionManager;
         createdAccounts = new BakewayAccount[100];
         errorLog = new String[100];
         createdAccountsIndex = 0;
         errorLogIndex = 0;
     }
 
+    //adds an error message to the array for later logging.
     public void logInvalidEntry(String errorString){
         errorLog[errorLogIndex] = errorString;
+        logger.info(errorString);
         errorLogIndex++;
     }
 
@@ -81,9 +90,10 @@ public class AccountSeedingService {
                 continue;
             }
 
-            //parsed line without the password, used when logging errors
+            //parsed line minus the password, used when logging errors
             String errorString = parsedVals[0]+parsedVals[1]+parsedVals[3]+parsedVals[4]+parsedVals[5]+parsedVals[6]+parsedVals[7];
 
+            //error checks for parsed fields
             String accountId = parsedVals[0];
             if(testLineValidity(accountId, lineCounter, errorString+" ; accountId missing")){
                 lineCounter++;
@@ -152,6 +162,11 @@ public class AccountSeedingService {
                     lineCounter++;
                     continue;
             }
+            if (role == Role.CUSTOMER && deliveryAddress == null) {
+                logInvalidEntry(errorString+" ; Encountered customer account without deliveryAddress at line "+lineCounter+" while seeding accounts.");
+                    lineCounter++;
+                    continue;
+            }
 
             switch(role){
                 case CUSTOMER:
@@ -168,31 +183,39 @@ public class AccountSeedingService {
                     break;
             }
 
-            BakewayAccount account = new BakewayAccount(
-                accountId,
-                username,
-                passwordEncoder.encode(password),
-                displayName,
-                contactEmail,
-                deliveryAddress,
-                role,
-                bakeryId);
+            try{
+                BakewayAccount account = new BakewayAccount(
+                    accountId,
+                    username,
+                    passwordEncoder.encode(password),
+                    displayName,
+                    contactEmail,
+                    deliveryAddress,
+                    role,
+                    bakeryId);
 
-            createdAccounts[createdAccountsIndex] = account;
-            createdAccountsIndex++;
+                createdAccounts[createdAccountsIndex] = account;
+                createdAccountsIndex++;
+            } catch(Exception e){
+                logInvalidEntry(errorString + " ; Creation exception thrown for account at line "+lineCounter+" while seeding accounts.");
+            }
             lineCounter++;
-
         }
 
-        //part where errors would be logged -----
-
         if(customerCreated && bakerCreated && courierCreated && operatorCreated){
-            //wipe existing accounts and sessions HERE ------
+            accountRegistry.deleteAll();
+            sessionManager.invalidateAllSessions();
 
             for(BakewayAccount account : createdAccounts){
                 accountRegistry.save(account);
             }
         }
-        //accountRegistry.save(account);
+        logger.info("Total of "+errorLogIndex+" errors logged\nTotal of "+createdAccountsIndex+" created.");
+        errorLog = new String[100];
+        createdAccounts = new BakewayAccount[100];
+        errorLogIndex=0;
+        createdAccountsIndex=0;
+
+        scanner.close();
     }
 }
