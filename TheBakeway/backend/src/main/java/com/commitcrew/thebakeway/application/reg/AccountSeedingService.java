@@ -48,7 +48,7 @@ public class AccountSeedingService {
     //returns true if a line is invalid
     public boolean testLineValidity(String attribute, int lineCounter, String errorString){
             if(attribute.isBlank()){
-                logInvalidEntry(errorString);
+                logInvalidEntry("Account Seeding Service: -- Invalid entry at line "+lineCounter+" >>> "+errorString);
                 return true;
             } else{
                 return false;
@@ -89,40 +89,40 @@ public class AccountSeedingService {
             String parsedLine = scanner.nextLine();
 
             if (parsedLine.isBlank()){
-                logInvalidEntry(" ; Encountered blank entry at line "+lineCounter+" while seeding accounts."); 
+                logInvalidEntry("Account Seeding Service: -- Invalid entry at line "+lineCounter+" >>> blank entry."); 
                 lineCounter++;
                 continue;
             }
 
             String[] parsedVals = parsedLine.split(",",-1);
             if(parsedVals.length != 8){
-                logInvalidEntry(" ; Encountered improper number of attributes at line "+lineCounter+" while seeding accounts.");
+                logInvalidEntry("Account Seeding Service: -- Invalid entry at line "+lineCounter+" >>> improper number of attributes.");
                 //logs a blank line, as we cannot know where the password is and thus cannot remove it.
                 lineCounter++;
                 continue;
             }
 
             //parsed line minus the password, used when logging errors
-            String errorString = parsedVals[0]+parsedVals[1]+parsedVals[3]+parsedVals[4]+parsedVals[5]+parsedVals[6]+parsedVals[7];
+            String errorString = parsedVals[0]+","+parsedVals[1]+","+parsedVals[3]+","+parsedVals[4]+","+parsedVals[5]+","+parsedVals[6]+","+parsedVals[7];
 
             //error checks for parsed fields
             String accountId = parsedVals[0];
-            if(testLineValidity(accountId, lineCounter, errorString+" ; accountId missing")){
+            if(testLineValidity(accountId, lineCounter, errorString+" accountId missing")){
                 lineCounter++;
                 continue;
             }
             String username = parsedVals[1];
-            if(testLineValidity(username, lineCounter, errorString+" ; username missing")){
+            if(testLineValidity(username, lineCounter, errorString+" username missing")){
                 lineCounter++;
                 continue;
             }
             String password = parsedVals[2];
-            if(testLineValidity(password, lineCounter, errorString+" ; password missing")){
+            if(testLineValidity(password, lineCounter, errorString+" password missing")){
                 lineCounter++;
                 continue;
             }
             String displayName = parsedVals[3];
-            if(testLineValidity(displayName, lineCounter, errorString+" ; displayName missing")){
+            if(testLineValidity(displayName, lineCounter, errorString+" displayName missing")){
                 lineCounter++;
                 continue;
             }
@@ -148,7 +148,7 @@ public class AccountSeedingService {
                     role = Role.OPERATOR;
                     break;
                 default:
-                    logInvalidEntry(errorString+" ; Encountered invalid account role at line "+lineCounter+" while seeding accounts.");
+                    logInvalidEntry(errorString+" >>> Encountered invalid account role at line "+lineCounter+" while seeding accounts.");
                     lineCounter++;
                     continue;
             }
@@ -214,7 +214,7 @@ public class AccountSeedingService {
                 //add accountId to cache for duplicate checks in the following iterations
                 accountIdCache+=" ; "+accountId;
             } catch(Exception e){
-                logInvalidEntry(errorString + " ; Creation exception thrown for account at line "+lineCounter+" while seeding accounts.");
+                logInvalidEntry(errorString + " ; Creation exception thrown for account at line "+lineCounter+" while seeding accounts: "+e.getMessage());
             }
             lineCounter++;
         }
