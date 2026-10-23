@@ -4,10 +4,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
@@ -15,11 +18,14 @@ import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.order.Order;
+import com.commitcrew.thebakeway.domain.order.OrderLine;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
+import com.commitcrew.thebakeway.domain.order.OrderStatus;
 import com.commitcrew.thebakeway.domain.session.Session;
 
 @Service("orderServiceImpl")
@@ -35,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final PreparationQueue preparationQueue;
     private final TransitionPublisher transitionPublisher;
     private final InitialStateService initialStateService;
+    private final EventRepository eventRepository;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -47,7 +54,8 @@ public class OrderServiceImpl implements OrderService {
             SessionManager sessionManager,
             PreparationQueue preparationQueue,
             TransitionPublisher transitionPublisher,
-            InitialStateService initialStateService) {
+            InitialStateService initialStateService,
+            EventRepository eventRepository) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -58,14 +66,15 @@ public class OrderServiceImpl implements OrderService {
         this.preparationQueue = preparationQueue;
         this.transitionPublisher = transitionPublisher;
         this.initialStateService = initialStateService;
+        this.eventRepository = eventRepository;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
     // exist, belong to that bakery and be orderable; otherwise nothing is saved.
-    // Returns the id of the new "placed" order.
+    // Returns the new order id and the event id of the "placed" transition.
     @Override
     @Transactional
-    public String placeOrder(String sessionId, PlaceOrderRequest request) {
+    public OrderTransitionResult placeOrder(String sessionId, PlaceOrderRequest request) {
         BakewayAccount customer = currentAccount(sessionId);
         validateRequest(request);
         bakeryService.requireOpenForOrdering(request.bakeryId());
@@ -81,20 +90,20 @@ public class OrderServiceImpl implements OrderService {
             order.addOrderItem(orderableMenuItem(request.bakeryId(), item.menuItemId()), item.quantity());
         }
 
-        return saveAndPublish(order, null).getId();
+        return saveAndPublish(order, null);
     }
 
     // Cancels an order. A customer can cancel only their own order while it is placed;
     // an operator can cancel any order up to ready (the State classes enforce this).
     @Override
     @Transactional
-    public void cancelOrder(String sessionId, String orderId) {
+    public OrderTransitionResult cancelOrder(String sessionId, String orderId) {
         Session session = currentSession(sessionId);
         Order order = existingOrder(orderId);
 
         // Customers only see their own orders; operators may cancel any order
         if (session.getRole() == Role.CUSTOMER && !order.getCustomerId().equals(session.getAccountId())) {
-            throw new IllegalArgumentException("Order not found");
+            throw new OrderNotFoundException();
         }
 
         String previousState = order.getStatus();
@@ -102,62 +111,117 @@ public class OrderServiceImpl implements OrderService {
         // Leaving "accepted" also removes the order from the preparation queue
         order.cancel(session.getRole());
 
-        saveAndPublish(order, previousState);
+        return saveAndPublish(order, previousState);
     }
 
     // Bakery staff accept a placed order of their own bakery.
     @Override
     @Transactional
-    public void acceptOrder(String sessionId, String orderId) {
+    public OrderTransitionResult acceptOrder(String sessionId, String orderId) {
         Order order = staffOrder(sessionId, orderId);
         String previousState = order.getStatus();
 
         // An accepted order joins its bakery's preparation queue
         order.accept();
 
-        saveAndPublish(order, previousState);
+        return saveAndPublish(order, previousState);
     }
 
     // Bakery staff reject a placed order of their own bakery; a non-blank reason is required and stored.
     @Override
     @Transactional
-    public void rejectOrder(String sessionId, String orderId, String reason) {
+    public OrderTransitionResult rejectOrder(String sessionId, String orderId, String reason) {
         Order order = staffOrder(sessionId, orderId);
         String previousState = order.getStatus();
 
         order.reject(reason);
 
-        saveAndPublish(order, previousState);
+        return saveAndPublish(order, previousState);
     }
 
     // Bakery staff start preparing an accepted order; only the first order in their
     // bakery's preparation queue (oldest accepted order) may start.
     @Override
     @Transactional
-    public void startPreparing(String sessionId, String orderId) {
+    public OrderTransitionResult startPreparing(String sessionId, String orderId) {
         Order order = staffOrder(sessionId, orderId);
         String previousState = order.getStatus();
 
         // Checked before the state changes so a refused order stays untouched
         if (!isFirstInQueue(order)) {
-            throw new IllegalArgumentException("Order is not first in its bakery's preparation queue");
+            throw new NotFirstInQueueException();
         }
 
         order.startPreparing();
 
-        saveAndPublish(order, previousState);
+        return saveAndPublish(order, previousState);
     }
 
     // Bakery staff mark an order of their own bakery as ready once it has been prepared.
     @Override
     @Transactional
-    public void markReady(String sessionId, String orderId) {
+    public OrderTransitionResult markReady(String sessionId, String orderId) {
         Order order = staffOrder(sessionId, orderId);
         String previousState = order.getStatus();
 
         order.markReady();
 
-        saveAndPublish(order, previousState);
+        return saveAndPublish(order, previousState);
+    }
+
+    // A customer's own orders with their current state, newest first (UC-ORD-12).
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderView> listOrdersForCustomer(String sessionId) {
+        Session session = currentSession(sessionId);
+        return views(orderRegistry.findByCustomerIdOrderByCreatedAtDesc(session.getAccountId()).stream());
+    }
+
+    // The orders of the staff member's own bakery, oldest first: incoming orders,
+    // the preparation queue in arrival order, and orders being prepared or ready.
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderView> listOrdersForBakery(String sessionId) {
+        String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
+        return views(orderRegistry.findByBakeryIdOrderByCreatedAtAsc(bakeryId).stream());
+    }
+
+    // Every order of every bakery for the operator, newest first, optionally filtered
+    // by bakery and by state (UC-ORD-13).
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderView> listAllOrders(String sessionId, String bakeryId, String status) {
+        OrderStatus statusFilter = statusFilter(status);
+        return views(orderRegistry.findAll().stream()
+                .filter(order -> bakeryId == null || bakeryId.isBlank() || order.getBakeryId().equals(bakeryId))
+                .filter(order -> statusFilter == null || order.getStatus().equals(statusFilter.name()))
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())));
+    }
+
+    // One order with its lines and the history of its state changes. Customers only see their
+    // own orders and staff only their bakery's; anything else is reported as not found.
+    @Override
+    @Transactional(readOnly = true)
+    public OrderView getOrder(String sessionId, String orderId) {
+        Session session = currentSession(sessionId);
+        Order order = existingOrder(orderId);
+
+        if (session.getRole() == Role.CUSTOMER && !order.getCustomerId().equals(session.getAccountId())) {
+            throw new OrderNotFoundException();
+        }
+
+        if (session.getRole() == Role.RESTAURANT
+                && !order.getBakeryId().equals(bakeryStaffAccessService.getBakeryIdForSession(sessionId))) {
+            throw new OrderNotFoundException();
+        }
+
+        List<OrderView.Transition> history = eventRepository
+                .findByEntityTypeAndEntityIdOrderByTimestampAsc(EntityType.ORDER, orderId).stream()
+                .map(event -> new OrderView.Transition(
+                        event.getEventId(), event.getPreviousState(), event.getNewState(), event.getTimestamp()))
+                .toList();
+
+        return view(order, queuePositions(order.getBakeryId()), history);
     }
 
     @Override
@@ -239,7 +303,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = existingOrder(orderId);
 
         if (!order.getBakeryId().equals(staffBakeryId)) {
-            throw new IllegalArgumentException("Order not found");
+            throw new OrderNotFoundException();
         }
 
         return order;
@@ -248,7 +312,7 @@ public class OrderServiceImpl implements OrderService {
     // Loads an order by id, or refuses the command if it does not exist.
     private Order existingOrder(String orderId) {
         return orderRegistry.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
     }
 
     // True when the order is the oldest accepted order of its bakery's preparation queue.
@@ -319,15 +383,78 @@ public class OrderServiceImpl implements OrderService {
 
     // Saves first, then publishes exactly one event in the same transaction;
     // an observer failure rolls the state change back.
-    private Order saveAndPublish(Order order, String previousState) {
+    private OrderTransitionResult saveAndPublish(Order order, String previousState) {
         Order saved = orderRegistry.save(order);
+        String eventId = UUID.randomUUID().toString();
         transitionPublisher.notifyObservers(new StateTransitionEvent(
-                UUID.randomUUID().toString(),
+                eventId,
                 EntityType.ORDER,
                 saved.getId(),
                 previousState,
                 saved.getStatus(),
                 Instant.now()));
-        return saved;
+        return new OrderTransitionResult(
+                saved.getId(), previousState, saved.getStatus(), eventId,
+                queuePositions(saved.getBakeryId()).get(saved.getId()));
+    }
+
+    // Position (1 = first) of each order in its bakery's preparation queue
+    private Map<String, Integer> queuePositions(String bakeryId) {
+        Map<String, Integer> positions = new HashMap<>();
+        List<Order> queue = preparationQueue.getPreparationQueue(bakeryId);
+        for (int i = 0; i < queue.size(); i++) {
+            positions.put(queue.get(i).getId(), i + 1);
+        }
+        return positions;
+    }
+
+    private List<OrderView> views(Stream<Order> orders) {
+        Map<String, Map<String, Integer>> positionsByBakery = new HashMap<>();
+        return orders
+                .map(order -> view(order,
+                        positionsByBakery.computeIfAbsent(order.getBakeryId(), this::queuePositions),
+                        List.of()))
+                .toList();
+    }
+
+    private OrderView view(Order order, Map<String, Integer> queuePositions, List<OrderView.Transition> history) {
+        List<OrderView.Line> lines = order.getOrderItems().stream()
+                .map(this::line)
+                .toList();
+
+        return new OrderView(
+                order.getId(),
+                order.getBakeryId(),
+                order.getCustomerId(),
+                order.getRecipientName(),
+                order.getDeliveryAddress(),
+                order.getStatus(),
+                order.getRejectionReason(),
+                lines,
+                order.calculateTotal(),
+                order.getCreatedAt(),
+                order.getUpdatedAt(),
+                queuePositions.get(order.getId()),
+                history);
+    }
+
+    private OrderView.Line line(OrderLine line) {
+        return new OrderView.Line(
+                line.getMenuItem().getId(),
+                line.getItemName(),
+                line.getUnitPrice(),
+                line.getQuantity(),
+                line.calculateSubtotal());
+    }
+
+    private OrderStatus statusFilter(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(status.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown order state: " + status);
+        }
     }
 }

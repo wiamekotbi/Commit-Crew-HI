@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
+import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
@@ -26,7 +27,7 @@ class OrderServiceImplTest {
                 bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class),
                 mock(OrderRegistry.class), mock(AccountRegistry.class), mock(SessionManager.class),
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Croissant", "Butter croissant", 3.50, MenuItemStatus.available);
         when(accessService.getBakeryIdForSession("session-1")).thenReturn("bakery-1");
@@ -50,7 +51,7 @@ class OrderServiceImplTest {
                 bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class),
                 mock(OrderRegistry.class), mock(AccountRegistry.class), mock(SessionManager.class),
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Updated", "New description", 4.00, MenuItemStatus.available);
         when(accessService.getBakeryIdForSession("session-1")).thenReturn("bakery-1");
@@ -76,7 +77,7 @@ class OrderServiceImplTest {
                 bakeryService, menuService, accessService, mock(BakeryStatusAccessService.class),
                 mock(OrderRegistry.class), mock(AccountRegistry.class), mock(SessionManager.class),
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         MenuItem expected = new MenuItem(
                 "bakery-1", "Croissant", "Butter croissant", 3.50,
                 MenuItemStatus.sold_out);
@@ -105,7 +106,7 @@ class OrderServiceImplTest {
                 bakeryService, menuService, staffAccess, statusAccess,
                 mock(OrderRegistry.class), mock(AccountRegistry.class), mock(SessionManager.class),
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         Bakery expected = new Bakery(
                 "bakery-1", "Sweet Treats", BakeryStatus.paused, "123 Main St");
         when(statusAccess.resolvePauseTarget("session-1", "bakery-1"))
@@ -127,7 +128,7 @@ class OrderServiceImplTest {
                 bakeryService, menuService, staffAccess, statusAccess,
                 mock(OrderRegistry.class), mock(AccountRegistry.class), mock(SessionManager.class),
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         Bakery expected = new Bakery(
                 "bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main St");
         when(statusAccess.resolveReopenTarget("session-1", "bakery-1"))

@@ -7,19 +7,27 @@ import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 public interface OrderService {
 
-    String placeOrder(String sessionId, PlaceOrderRequest request);
+    OrderTransitionResult placeOrder(String sessionId, PlaceOrderRequest request);
 
-    void cancelOrder(String sessionId, String orderId);
+    OrderTransitionResult cancelOrder(String sessionId, String orderId);
 
-    void acceptOrder(String sessionId, String orderId);
+    OrderTransitionResult acceptOrder(String sessionId, String orderId);
 
-    void rejectOrder(String sessionId, String orderId, String reason);
+    OrderTransitionResult rejectOrder(String sessionId, String orderId, String reason);
 
-    void startPreparing(String sessionId, String orderId);
+    OrderTransitionResult startPreparing(String sessionId, String orderId);
 
-    void markReady(String sessionId, String orderId);
+    OrderTransitionResult markReady(String sessionId, String orderId);
 
-    List<Bakery> getOpenBakeries(String sessionId); 
+    List<OrderView> listOrdersForCustomer(String sessionId);
+
+    List<OrderView> listOrdersForBakery(String sessionId);
+
+    List<OrderView> listAllOrders(String sessionId, String bakeryId, String status);
+
+    OrderView getOrder(String sessionId, String orderId);
+
+    List<Bakery> getOpenBakeries(String sessionId);
 
     List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId);
 

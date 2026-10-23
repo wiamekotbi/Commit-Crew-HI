@@ -29,6 +29,7 @@ import com.commitcrew.thebakeway.application.ord.PreparationQueue;
 import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
+import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
@@ -59,7 +60,7 @@ class BakeryBrowsingIntegrationTest {
                 bakeryService, menuService, staffAccessService, statusAccessService,
                 mock(OrderRegistry.class), mock(AccountRegistry.class), sessionManager,
                 mock(PreparationQueue.class), new TransitionPublisher(),
-                mock(InitialStateService.class));
+                mock(InitialStateService.class), mock(EventRepository.class));
         OrderServiceProxy proxy = new OrderServiceProxy(
                 implementation, sessionManager, new PermissionPolicy());
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new BakeryController(proxy)).build();
