@@ -35,7 +35,7 @@ public class LoginController {
             Session session = loginService.login(request.username(), request.password());
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, sessionCookie(session.getSessionId()).toString())
-                    .body(SessionResponse.from(session));
+                    .body(describe(session));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", e.getMessage()));
@@ -46,7 +46,7 @@ public class LoginController {
     public ResponseEntity<?> getSession(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
         return loginService.findSession(sessionId)
-                .<ResponseEntity<?>>map(session -> ResponseEntity.ok(SessionResponse.from(session)))
+                .<ResponseEntity<?>>map(session -> ResponseEntity.ok(describe(session)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Authentication required")));
     }
@@ -59,6 +59,10 @@ public class LoginController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, expiredSessionCookie().toString())
                 .body(Map.of("message", "Logged out"));
+    }
+
+    private SessionResponse describe(Session session) {
+        return SessionResponse.from(session, loginService.findAccount(session.getAccountId()).orElse(null));
     }
 
     private ResponseCookie sessionCookie(String sessionId) {

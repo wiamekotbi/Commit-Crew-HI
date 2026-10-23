@@ -44,6 +44,11 @@ public class LoginService {
         return sessionManager.findSession(sessionId);
     }
 
+    // The account behind a session, so the dashboard can show who is logged in
+    public Optional<BakewayAccount> findAccount(String accountId) {
+        return accountRegistry.findById(accountId);
+    }
+
     public void logout(String sessionId) {
         sessionManager.invalidateSession(sessionId);
     }
