@@ -11,6 +11,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+
+import jakarta.persistence.EntityManager;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +71,9 @@ class InitialStateServiceTest {
     @Mock
     private CommandConsole console;
 
+    @Mock
+    private EntityManager entityManager;
+
     private InitialStateService service;
 
     private final CityConfiguration city = new CityConfiguration(
@@ -87,7 +92,8 @@ class InitialStateServiceTest {
                 passwordEncoder,
                 sessionManager,
                 dashboardReadModel,
-                console);
+                console,
+                entityManager);
     }
 
     @Test
@@ -105,12 +111,13 @@ class InitialStateServiceTest {
 
         // Orders and events are cleared, and rows are removed before the ones they reference
         InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, accountRegistry, bakeryRegistry,
-                dashboardReadModel);
+                entityManager, dashboardReadModel);
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
         order.verify(menuItemRegistry).deleteAllInBatch();
         order.verify(accountRegistry).deleteAllInBatch();
         order.verify(bakeryRegistry).deleteAllInBatch();
+        order.verify(entityManager).clear();
         order.verify(bakeryRegistry).saveAll(city.bakeries());
         order.verify(menuItemRegistry).saveAll(city.menuItems());
         order.verify(accountRegistry).deleteAll();

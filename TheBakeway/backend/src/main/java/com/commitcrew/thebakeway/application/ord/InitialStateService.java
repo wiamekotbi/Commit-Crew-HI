@@ -7,6 +7,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import jakarta.persistence.EntityManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -46,6 +48,7 @@ public class InitialStateService {
     private final SessionManager sessionManager;
     private final DashboardReadModel dashboardReadModel;
     private final CommandConsole console;
+    private final EntityManager entityManager;
 
     public InitialStateService(
             CityConfigurationReader cityConfigurationReader,
@@ -57,7 +60,8 @@ public class InitialStateService {
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
             DashboardReadModel dashboardReadModel,
-            CommandConsole console) {
+            CommandConsole console,
+            EntityManager entityManager) {
         this.cityConfigurationReader = cityConfigurationReader;
         this.orderRegistry = orderRegistry;
         this.eventRepository = eventRepository;
@@ -68,6 +72,7 @@ public class InitialStateService {
         this.sessionManager = sessionManager;
         this.dashboardReadModel = dashboardReadModel;
         this.console = console;
+        this.entityManager = entityManager;
     }
 
     // Replaces bakeries, menus and accounts with the config files and clears orders, queues and events.
@@ -99,6 +104,9 @@ public class InitialStateService {
         // Accounts before bakeries: staff accounts reference their bakery
         accountRegistry.deleteAllInBatch();
         bakeryRegistry.deleteAllInBatch();
+        // Deleting the orders loaded their menu items; forget them so the config rows are inserted fresh
+        // instead of updating rows that no longer exist
+        entityManager.clear();
 
         bakeryRegistry.saveAll(city.bakeries());
         bakeryRegistry.flush();
