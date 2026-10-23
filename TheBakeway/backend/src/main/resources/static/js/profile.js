@@ -1,15 +1,17 @@
-const params = new URLSearchParams(window.location.search);
-const accountId = params.get("accountId");
+// The profile shown is always the one of the logged-in account (UC-REG-04)
+let accountId = null;
 
 const form = document.getElementById("profileForm");
 const message = document.getElementById("message");
 const logoutButton = document.getElementById("logoutButton");
 
 async function loadProfile() {
-    if (!accountId) {
-        message.textContent = "No account selected.";
+    const sessionResponse = await fetch("/api/session", { credentials: "same-origin" });
+    if (!sessionResponse.ok) {
+        window.location.href = "/login.html";
         return;
     }
+    accountId = (await sessionResponse.json()).accountId;
 
     const response = await fetch("/api/profiles/" + accountId);
     const profile = await response.json();
