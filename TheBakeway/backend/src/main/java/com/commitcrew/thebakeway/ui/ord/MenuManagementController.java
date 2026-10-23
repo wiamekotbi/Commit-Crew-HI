@@ -1,5 +1,6 @@
 package com.commitcrew.thebakeway.ui.ord;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +41,13 @@ public class MenuManagementController {
      */
     public MenuManagementController(OrderService orderService) {
         this.orderService = orderService;
+    }
+
+    // The staff member's own bakery menu, with every item's status
+    @GetMapping
+    public List<MenuItem> listOwnMenuItems(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
+        return orderService.listOwnMenuItems(sessionId);
     }
 
     @PostMapping

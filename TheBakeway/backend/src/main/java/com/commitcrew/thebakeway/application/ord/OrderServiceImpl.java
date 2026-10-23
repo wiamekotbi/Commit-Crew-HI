@@ -230,10 +230,23 @@ public class OrderServiceImpl implements OrderService {
         return bakeryService.getOpenBakeries();
     }
 
+    // Every bakery with its status, for the operator
+    @Override
+    public List<Bakery> listAllBakeries(String sessionId) {
+        return bakeryService.getAllBakeries();
+    }
+
     @Override
     public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
         // MenuService checks bakery availability and preserves sold-out items in the result.
         return menuService.getMenuForBrowsing(bakeryId);
+    }
+
+    // The staff member's own bakery menu; the bakery comes from the account, never from the request
+    @Override
+    public List<MenuItem> listOwnMenuItems(String sessionId) {
+        String bakeryId = bakeryStaffAccessService.getBakeryIdForSession(sessionId);
+        return menuService.getAllMenuItemsByBakeryId(bakeryId);
     }
 
     @Override

@@ -40,6 +40,11 @@ public class BakeryService {
         return bakeryRegistry.findByBakeryStatus(BakeryStatus.open);
     }
 
+    // Every bakery whatever its status, for the operator (pause or reopen any bakery, UC-ORD-11)
+    public List<Bakery> getAllBakeries() {
+        return bakeryRegistry.findAll();
+    }
+
     // 4. Fetch Status of a specific bakery by its ID
     public BakeryStatus getBakeryStatus(String bakeryId) {
         Bakery bakery = getBakeryById(bakeryId);

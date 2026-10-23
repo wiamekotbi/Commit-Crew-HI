@@ -649,4 +649,13 @@ class OrderServiceImplOrderFlowTest {
         verify(orderRegistry, never()).save(any());
         verify(transitionPublisher, never()).notifyObservers(any());
     }
+
+    @Test
+    void staffMenuComesFromTheirOwnBakery() {
+        givenStaffOf(BAKERY_ID);
+        MenuItem item = new MenuItem(BAKERY_ID, "Croissant", "", 3.50, MenuItemStatus.sold_out);
+        when(menuService.getAllMenuItemsByBakeryId(BAKERY_ID)).thenReturn(List.of(item));
+
+        assertEquals(List.of(item), orderService.listOwnMenuItems(SESSION_ID));
+    }
 }

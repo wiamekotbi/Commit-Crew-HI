@@ -194,4 +194,16 @@ class MenuManagementControllerTest {
         ReflectionTestUtils.setField(item, "id", ITEM_ID);
         return item;
     }
+
+    @Test
+    void listsTheStaffMembersOwnMenu() throws Exception {
+        MenuItem soldOut = new MenuItem("bakery-1", "Eclair", "Chocolate eclair", 4.50, MenuItemStatus.sold_out);
+        when(orderService.listOwnMenuItems(SESSION_ID)).thenReturn(java.util.List.of(soldOut));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(ITEMS_URL)
+                        .cookie(new Cookie("BAKEWAY_SESSION_ID", SESSION_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Eclair"))
+                .andExpect(jsonPath("$[0].status").value("sold_out"));
+    }
 }

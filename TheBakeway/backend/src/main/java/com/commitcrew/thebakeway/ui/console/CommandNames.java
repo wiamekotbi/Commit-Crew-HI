@@ -19,6 +19,7 @@ final class CommandNames {
             route("GET", "/api/profiles/" + ID, "VIEW_PROFILE"),
             route("PUT", "/api/profiles/" + ID, "UPDATE_PROFILE"),
             route("GET", "/api/bakeries", "BROWSE_BAKERIES"),
+            route("GET", "/api/bakeries/all", "VIEW_ALL_BAKERIES"),
             route("GET", "/api/bakeries/" + ID + "/menu", "BROWSE_MENU"),
             route("PATCH", "/api/bakeries/" + ID + "/pause", "PAUSE_BAKERY"),
             route("PATCH", "/api/bakeries/" + ID + "/reopen", "REOPEN_BAKERY"),

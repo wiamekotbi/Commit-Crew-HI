@@ -17,6 +17,7 @@ class CommandNamesTest {
             "GET,/api/bakeries,BROWSE_BAKERIES",
             "GET,/api/bakeries/bakery-1/menu,BROWSE_MENU",
             "PATCH,/api/bakeries/bakery-1/pause,PAUSE_BAKERY",
+            "GET,/api/menu-items,VIEW_OWN_MENU",
             "PATCH,/api/menu-items/item-1/availability,CHANGE_ITEM_AVAILABILITY",
             "POST,/api/orders,PLACE_ORDER",
             "PATCH,/api/orders/o-1/accept,ACCEPT_ORDER",

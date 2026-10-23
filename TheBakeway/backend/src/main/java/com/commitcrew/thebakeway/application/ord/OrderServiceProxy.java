@@ -123,9 +123,23 @@ public class OrderServiceProxy implements OrderService {
     }
 
     @Override
+    public List<Bakery> listAllBakeries(String sessionId) {
+        // The operator sees every bakery, including paused and closed ones.
+        checkAccess(sessionId, VIEW_SIMULATOR_DASHBOARD);
+        return realSubject.listAllBakeries(sessionId);
+    }
+
+    @Override
     public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
         checkAccess(sessionId, BROWSE_MENU);
         return realSubject.getMenuForBrowsing(sessionId, bakeryId);
+    }
+
+    @Override
+    public List<MenuItem> listOwnMenuItems(String sessionId) {
+        // Staff see their own bakery's full menu, sold-out items included (UC-ORD-09 step 2).
+        checkAccess(sessionId, MANAGE_MENU_ITEMS);
+        return realSubject.listOwnMenuItems(sessionId);
     }
 
     @Override

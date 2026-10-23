@@ -29,7 +29,11 @@ public interface OrderService {
 
     List<Bakery> getOpenBakeries(String sessionId);
 
+    List<Bakery> listAllBakeries(String sessionId);
+
     List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId);
+
+    List<MenuItem> listOwnMenuItems(String sessionId);
 
     MenuItem addMenuItem(String sessionId, String name, String description, double price);
 

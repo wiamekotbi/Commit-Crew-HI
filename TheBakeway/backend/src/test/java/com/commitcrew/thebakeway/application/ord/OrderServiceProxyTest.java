@@ -402,4 +402,22 @@ class OrderServiceProxyTest {
                 .thenReturn(Optional.of(new Session(SESSION_ID, "account-1", role)));
         when(permissionPolicy.isAllowed(operation, role)).thenReturn(allowed);
     }
+
+    @Test
+    void listsAllBakeriesOnlyForTheOperator() {
+        givenRole(Role.CUSTOMER, OrderServiceProxy.VIEW_SIMULATOR_DASHBOARD, false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.listAllBakeries(SESSION_ID));
+
+        verify(realSubject, never()).listAllBakeries(SESSION_ID);
+    }
+
+    @Test
+    void listsOwnMenuOnlyWithMenuPermission() {
+        givenRole(Role.CUSTOMER, OrderServiceProxy.MANAGE_MENU_ITEMS, false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.listOwnMenuItems(SESSION_ID));
+
+        verify(realSubject, never()).listOwnMenuItems(SESSION_ID);
+    }
 }
