@@ -93,7 +93,8 @@ public class BakewayAccount {
         this.contactEmail = contactEmail;
         this.deliveryAddress = deliveryAddress;
         this.role = role;
-        this.bakeryId = bakeryId;
+        // A blank bakery id (non-restaurant accounts in the seed file) is stored as no bakery
+        this.bakeryId = (bakeryId == null || bakeryId.isBlank()) ? null : bakeryId;
     }
 
     public String getAccountId() {
