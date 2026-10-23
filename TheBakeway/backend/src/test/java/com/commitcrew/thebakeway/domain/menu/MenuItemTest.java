@@ -81,4 +81,26 @@ class MenuItemTest {
         item.setDiscontinued(true);
         assertTrue(item.isDiscontinued());
     }
+
+    @Test
+    void shouldGiveNewItemsAUniqueId() {
+        MenuItem first = new MenuItem("bakery-123", "Cookie", "Choc chip", 2.00, MenuItemStatus.available);
+        MenuItem second = new MenuItem("bakery-123", "Cookie", "Choc chip", 2.00, MenuItemStatus.available);
+
+        assertNotNull(first.getId());
+        assertNotEquals(first.getId(), second.getId());
+    }
+
+    @Test
+    void shouldKeepTheIdFromTheCityConfig() {
+        MenuItem item = new MenuItem("item-croissant", "bakery-123", "Croissant", "Butter", 3.50, MenuItemStatus.available);
+
+        assertEquals("item-croissant", item.getId());
+    }
+
+    @Test
+    void shouldRejectABlankId() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new MenuItem(" ", "bakery-123", "Croissant", "Butter", 3.50, MenuItemStatus.available));
+    }
 }

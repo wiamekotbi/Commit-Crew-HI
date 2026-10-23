@@ -29,6 +29,7 @@ import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
@@ -74,6 +75,12 @@ class OrderServiceImplOrderFlowTest {
     @Mock
     private TransitionPublisher transitionPublisher;
 
+    @Mock
+    private InitialStateService initialStateService;
+
+    @Mock
+    private EventRepository eventRepository;
+
     private OrderServiceImpl orderService;
 
     @BeforeEach
@@ -87,7 +94,9 @@ class OrderServiceImplOrderFlowTest {
                 accountRegistry,
                 sessionManager,
                 preparationQueue,
-                transitionPublisher);
+                transitionPublisher,
+                initialStateService,
+                eventRepository);
     }
 
     // Placing an order
@@ -99,12 +108,13 @@ class OrderServiceImplOrderFlowTest {
         givenMenuItem("item-2", BAKERY_ID, "Baguette", 4.50, MenuItemStatus.available, false);
         givenSaveAssignsId();
 
-        String orderId = orderService.placeOrder(SESSION_ID, request("Montreal",
+        OrderTransitionResult result = orderService.placeOrder(SESSION_ID, request("Montreal",
                 new OrderItemRequest("item-1", 2),
                 new OrderItemRequest("item-2", 1)));
 
         Order saved = savedOrder();
-        assertEquals(ORDER_ID, orderId);
+        assertEquals(ORDER_ID, result.orderId());
+        assertEquals("placed", result.newState());
         assertEquals("placed", saved.getStatus());
         assertEquals(CUSTOMER_ID, saved.getCustomerId());
         assertEquals(BAKERY_ID, saved.getBakeryId());
@@ -330,7 +340,7 @@ class OrderServiceImplOrderFlowTest {
         ReflectionTestUtils.setField(earlier, "id", "order-0");
         when(preparationQueue.getPreparationQueue(BAKERY_ID)).thenReturn(List.of(earlier, order));
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.startPreparing(SESSION_ID, ORDER_ID));
+        assertThrows(NotFirstInQueueException.class, () -> orderService.startPreparing(SESSION_ID, ORDER_ID));
 
         assertEquals("accepted", order.getStatus());
         assertNothingSavedOrPublished();
@@ -342,7 +352,7 @@ class OrderServiceImplOrderFlowTest {
         Order order = givenStoredOrder();
         when(preparationQueue.getPreparationQueue(BAKERY_ID)).thenReturn(List.of());
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.startPreparing(SESSION_ID, ORDER_ID));
+        assertThrows(NotFirstInQueueException.class, () -> orderService.startPreparing(SESSION_ID, ORDER_ID));
 
         assertEquals("placed", order.getStatus());
         assertNothingSavedOrPublished();
@@ -382,6 +392,113 @@ class OrderServiceImplOrderFlowTest {
         assertThrows(IllegalArgumentException.class, () -> orderService.markReady(SESSION_ID, ORDER_ID));
 
         assertNothingSavedOrPublished();
+    }
+
+    // Command results (new state, event id, queue position)
+
+    @Test
+    void acceptReturnsTheEventIdAndTheQueuePosition() {
+        givenStaffOf(BAKERY_ID);
+        Order order = givenStoredOrder();
+        givenSaveReturnsOrder();
+        Order earlier = storedOrder("order-0");
+        when(preparationQueue.getPreparationQueue(BAKERY_ID)).thenReturn(List.of(earlier, order));
+
+        OrderTransitionResult result = orderService.acceptOrder(SESSION_ID, ORDER_ID);
+
+        StateTransitionEvent event = assertTransitionPublished("placed", "accepted");
+        assertEquals(ORDER_ID, result.orderId());
+        assertEquals("placed", result.previousState());
+        assertEquals("accepted", result.newState());
+        assertEquals(event.getEventId(), result.eventId());
+        assertEquals(2, result.queuePosition());
+    }
+
+    // Reading orders
+
+    @Test
+    void customerSeesOnlyTheirOwnOrders() {
+        givenSession(CUSTOMER_ID, Role.CUSTOMER);
+        Order order = storedOrder(ORDER_ID);
+        when(orderRegistry.findByCustomerIdOrderByCreatedAtDesc(CUSTOMER_ID)).thenReturn(List.of(order));
+
+        List<OrderView> orders = orderService.listOrdersForCustomer(SESSION_ID);
+
+        assertEquals(1, orders.size());
+        assertEquals(ORDER_ID, orders.get(0).orderId());
+        assertEquals("placed", orders.get(0).status());
+    }
+
+    @Test
+    void staffSeeTheirBakeryOrdersWithQueuePositions() {
+        givenStaffOf(BAKERY_ID);
+        Order first = storedOrder("order-1");
+        first.accept();
+        Order second = storedOrder("order-2");
+        second.accept();
+        Order incoming = storedOrder("order-3");
+        when(orderRegistry.findByBakeryIdOrderByCreatedAtAsc(BAKERY_ID)).thenReturn(List.of(first, second, incoming));
+        when(preparationQueue.getPreparationQueue(BAKERY_ID)).thenReturn(List.of(first, second));
+
+        List<OrderView> orders = orderService.listOrdersForBakery(SESSION_ID);
+
+        assertEquals(1, orders.get(0).queuePosition());
+        assertEquals(2, orders.get(1).queuePosition());
+        assertNull(orders.get(2).queuePosition());
+    }
+
+    @Test
+    void operatorFiltersAllOrdersByBakeryAndState() {
+        Order placed = storedOrder("order-1");
+        Order accepted = storedOrder("order-2");
+        accepted.accept();
+        Order otherBakery = new Order(CUSTOMER_ID, "bakery-2", "Maria", "Montreal");
+        ReflectionTestUtils.setField(otherBakery, "id", "order-3");
+        when(orderRegistry.findAll()).thenReturn(List.of(placed, accepted, otherBakery));
+
+        List<OrderView> orders = orderService.listAllOrders(SESSION_ID, BAKERY_ID, "accepted");
+
+        assertEquals(1, orders.size());
+        assertEquals("order-2", orders.get(0).orderId());
+    }
+
+    @Test
+    void operatorFilterRefusesUnknownState() {
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.listAllOrders(SESSION_ID, null, "lost"));
+    }
+
+    @Test
+    void orderDetailsIncludeTheHistoryOfChanges() {
+        givenSession(CUSTOMER_ID, Role.CUSTOMER);
+        Order order = givenStoredOrder();
+        when(eventRepository.findByEntityTypeAndEntityIdOrderByTimestampAsc(EntityType.ORDER, ORDER_ID))
+                .thenReturn(List.of(new StateTransitionEvent(
+                        "event-1", EntityType.ORDER, ORDER_ID, null, "placed", java.time.Instant.now())));
+
+        OrderView view = orderService.getOrder(SESSION_ID, ORDER_ID);
+
+        assertEquals(order.getId(), view.orderId());
+        assertEquals(1, view.history().size());
+        assertEquals("event-1", view.history().get(0).eventId());
+        assertEquals("placed", view.history().get(0).newState());
+    }
+
+    @Test
+    void customerCannotOpenAnotherCustomersOrder() {
+        givenSession("customer-2", Role.CUSTOMER);
+        givenStoredOrder();
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.getOrder(SESSION_ID, ORDER_ID));
+    }
+
+    @Test
+    void staffCannotOpenAnotherBakerysOrder() {
+        givenSession("staff-2", Role.RESTAURANT);
+        givenStaffOf("bakery-2");
+        givenStoredOrder();
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.getOrder(SESSION_ID, ORDER_ID));
     }
 
     // Cancelling
@@ -471,6 +588,12 @@ class OrderServiceImplOrderFlowTest {
         when(menuService.getMenuItem(id)).thenReturn(item);
     }
 
+    private Order storedOrder(String id) {
+        Order order = new Order(CUSTOMER_ID, BAKERY_ID, "Maria", "Montreal");
+        ReflectionTestUtils.setField(order, "id", id);
+        return order;
+    }
+
     private Order givenStoredOrder() {
         Order order = new Order(CUSTOMER_ID, BAKERY_ID, "Maria", "Montreal");
         ReflectionTestUtils.setField(order, "id", ORDER_ID);
@@ -525,5 +648,14 @@ class OrderServiceImplOrderFlowTest {
     private void assertNothingSavedOrPublished() {
         verify(orderRegistry, never()).save(any());
         verify(transitionPublisher, never()).notifyObservers(any());
+    }
+
+    @Test
+    void staffMenuComesFromTheirOwnBakery() {
+        givenStaffOf(BAKERY_ID);
+        MenuItem item = new MenuItem(BAKERY_ID, "Croissant", "", 3.50, MenuItemStatus.sold_out);
+        when(menuService.getAllMenuItemsByBakeryId(BAKERY_ID)).thenReturn(List.of(item));
+
+        assertEquals(List.of(item), orderService.listOwnMenuItems(SESSION_ID));
     }
 }

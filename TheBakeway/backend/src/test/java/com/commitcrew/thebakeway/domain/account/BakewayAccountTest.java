@@ -131,4 +131,19 @@ class BakewayAccountTest {
         assertEquals("bakery-1", account.getBakeryId());
         assertEquals(Role.RESTAURANT, account.getRole());
     }
+
+    @Test
+    void blankBakeryIdIsStoredAsNoBakery() {
+        BakewayAccount account = new BakewayAccount(
+                "courier-1",
+                "courier",
+                "password",
+                "Courier",
+                "",
+                "",
+                Role.COURIER,
+                "");
+
+        assertNull(account.getBakeryId());
+    }
 }

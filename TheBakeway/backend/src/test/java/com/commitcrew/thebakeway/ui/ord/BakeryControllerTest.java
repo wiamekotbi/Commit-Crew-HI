@@ -205,4 +205,14 @@ class BakeryControllerTest {
             verify(orderService).getMenuForBrowsing(sessionId, BAKERY_ID);
         }
     }
+
+    @Test
+    void returnsAllBakeriesForTheOperator() throws Exception {
+        Bakery paused = new Bakery("bakery-2", "Old Mill", BakeryStatus.paused, "8 Mill Road");
+        when(orderService.listAllBakeries(SESSION_ID)).thenReturn(List.of(paused));
+
+        mockMvc.perform(get(BAKERIES_URL + "/all").cookie(sessionCookie(SESSION_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].bakeryStatus").value("paused"));
+    }
 }

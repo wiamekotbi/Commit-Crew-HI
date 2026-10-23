@@ -25,6 +25,10 @@ public class OrderServiceProxy implements OrderService {
     static final String MANAGE_MENU_ITEMS = "MANAGE_MENU_ITEMS";
     static final String PAUSE_BAKERY = "PAUSE_BAKERY";
     static final String REOPEN_BAKERY = "REOPEN_BAKERY";
+    static final String RESTORE_INITIAL_STATE = "RESTORE_INITIAL_STATE";
+    static final String VIEW_ORDER_HISTORY = "VIEW_ORDER_HISTORY";
+    static final String VIEW_SIMULATOR_DASHBOARD = "VIEW_SIMULATOR_DASHBOARD";
+    static final String VIEW_ORDER_DETAILS = "VIEW_ORDER_DETAILS";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -51,39 +55,65 @@ public class OrderServiceProxy implements OrderService {
     }
 
     @Override
-    public String placeOrder(String sessionId, PlaceOrderRequest request) {
+    public OrderTransitionResult placeOrder(String sessionId, PlaceOrderRequest request) {
         checkAccess(sessionId, PLACE_ORDER);
         return realSubject.placeOrder(sessionId, request);
     }
 
     @Override
-    public void cancelOrder(String sessionId, String orderId) {
+    public OrderTransitionResult cancelOrder(String sessionId, String orderId) {
         checkAccess(sessionId, CANCEL_ORDER);
-        realSubject.cancelOrder(sessionId, orderId);
+        return realSubject.cancelOrder(sessionId, orderId);
     }
 
     @Override
-    public void acceptOrder(String sessionId, String orderId) {
+    public OrderTransitionResult acceptOrder(String sessionId, String orderId) {
         checkAccess(sessionId, MANAGE_ORDERS);
-        realSubject.acceptOrder(sessionId, orderId);
+        return realSubject.acceptOrder(sessionId, orderId);
     }
 
     @Override
-    public void rejectOrder(String sessionId, String orderId, String reason) {
+    public OrderTransitionResult rejectOrder(String sessionId, String orderId, String reason) {
         checkAccess(sessionId, MANAGE_ORDERS);
-        realSubject.rejectOrder(sessionId, orderId, reason);
+        return realSubject.rejectOrder(sessionId, orderId, reason);
     }
 
     @Override
-    public void startPreparing(String sessionId, String orderId) {
+    public OrderTransitionResult startPreparing(String sessionId, String orderId) {
         checkAccess(sessionId, PREPARE_ORDERS);
-        realSubject.startPreparing(sessionId, orderId);
+        return realSubject.startPreparing(sessionId, orderId);
     }
 
     @Override
-    public void markReady(String sessionId, String orderId) {
+    public OrderTransitionResult markReady(String sessionId, String orderId) {
         checkAccess(sessionId, PREPARE_ORDERS);
-        realSubject.markReady(sessionId, orderId);
+        return realSubject.markReady(sessionId, orderId);
+    }
+
+    @Override
+    public List<OrderView> listOrdersForCustomer(String sessionId) {
+        checkAccess(sessionId, VIEW_ORDER_HISTORY);
+        return realSubject.listOrdersForCustomer(sessionId);
+    }
+
+    @Override
+    public List<OrderView> listOrdersForBakery(String sessionId) {
+        checkAccess(sessionId, MANAGE_ORDERS);
+        return realSubject.listOrdersForBakery(sessionId);
+    }
+
+    @Override
+    public List<OrderView> listAllOrders(String sessionId, String bakeryId, String status) {
+        // Only the operator sees every bakery's orders (UC-ORD-13).
+        checkAccess(sessionId, VIEW_SIMULATOR_DASHBOARD);
+        return realSubject.listAllOrders(sessionId, bakeryId, status);
+    }
+
+    @Override
+    public OrderView getOrder(String sessionId, String orderId) {
+        // Customers, staff and the operator may open an order; ownership is checked in OrderServiceImpl.
+        checkAccess(sessionId, VIEW_ORDER_DETAILS);
+        return realSubject.getOrder(sessionId, orderId);
     }
 
     @Override
@@ -93,9 +123,23 @@ public class OrderServiceProxy implements OrderService {
     }
 
     @Override
+    public List<Bakery> listAllBakeries(String sessionId) {
+        // The operator sees every bakery, including paused and closed ones.
+        checkAccess(sessionId, VIEW_SIMULATOR_DASHBOARD);
+        return realSubject.listAllBakeries(sessionId);
+    }
+
+    @Override
     public List<MenuItem> getMenuForBrowsing(String sessionId, String bakeryId) {
         checkAccess(sessionId, BROWSE_MENU);
         return realSubject.getMenuForBrowsing(sessionId, bakeryId);
+    }
+
+    @Override
+    public List<MenuItem> listOwnMenuItems(String sessionId) {
+        // Staff see their own bakery's full menu, sold-out items included (UC-ORD-09 step 2).
+        checkAccess(sessionId, MANAGE_MENU_ITEMS);
+        return realSubject.listOwnMenuItems(sessionId);
     }
 
     @Override
@@ -133,5 +177,12 @@ public class OrderServiceProxy implements OrderService {
         // PermissionPolicy grants this operation only to operators.
         checkAccess(sessionId, REOPEN_BAKERY);
         return realSubject.reopenBakery(sessionId, bakeryId);
+    }
+
+    @Override
+    public InitialStateSummary restoreInitialState(String sessionId) {
+        // Only the operator may restore the initial state (UC-REG-03, UC-ORD-01).
+        checkAccess(sessionId, RESTORE_INITIAL_STATE);
+        return realSubject.restoreInitialState(sessionId);
     }
 }

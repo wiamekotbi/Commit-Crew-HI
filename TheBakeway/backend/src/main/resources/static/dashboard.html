@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bakeway - Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+</head>
+<body class="dashboard-page">
+
+    <header class="dashboard-header">
+        <h1>
+            <span class="brand-icon"><i class="fa-solid fa-bread-slice"></i></span>
+            <span class="brand-name">The Bakeway</span>
+        </h1>
+        <div class="user-box">
+            <span id="userName"><i class="fa-solid fa-circle-user"></i></span>
+            <span id="userRole" class="role-chip"></span>
+            <a href="/profile.html" class="header-link"><i class="fa-solid fa-id-card"></i> Profile</a>
+            <button type="button" id="logoutButton" class="header-link">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+        </div>
+    </header>
+
+    <div id="banner" class="banner" hidden></div>
+
+    <main class="dashboard-main">
+        <div id="panel" class="panel">
+            <p class="muted"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
+        </div>
+
+        <section class="card console-card">
+            <div class="card-title">
+                <h2><i class="fa-solid fa-terminal"></i> Output console</h2>
+                <span class="muted">Every command and every error, newest first</span>
+            </div>
+            <ol id="console" class="console"></ol>
+        </section>
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/dashboard-customer.js"></script>
+    <script src="/js/dashboard-restaurant.js"></script>
+    <script src="/js/dashboard-operator.js"></script>
+    <script>Dashboard.start();</script>
+</body>
+</html>

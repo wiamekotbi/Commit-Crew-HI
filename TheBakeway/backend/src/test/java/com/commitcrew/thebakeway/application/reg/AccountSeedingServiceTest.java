@@ -3,7 +3,9 @@ package com.commitcrew.thebakeway.application.reg;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -191,7 +193,7 @@ class AccountSeedingServiceTest {
     }
 
     @Test
-    void createsSessionsForSeededAccounts() {
+    void seedingEndsSessionsWithoutOpeningNewOnes() {
         String accountData =
                 "1,customer,password,Customer,email1,Montreal,CUSTOMER,\n"
             + "2,restaurant,password,Restaurant,email2,,RESTAURANT,B01\n"
@@ -202,9 +204,8 @@ class AccountSeedingServiceTest {
 
         accountSeedingService.seedAccounts(scanner);
 
-        verify(sessionManager).createSession("1", Role.CUSTOMER);
-        verify(sessionManager).createSession("2", Role.RESTAURANT);
-        verify(sessionManager).createSession("3", Role.COURIER);
-        verify(sessionManager).createSession("4", Role.OPERATOR);
+        // Seeding ends every session and opens none: users log in themselves
+        verify(sessionManager).invalidateAllSessions();
+        verify(sessionManager, never()).createSession(any(), any());
     }
 }

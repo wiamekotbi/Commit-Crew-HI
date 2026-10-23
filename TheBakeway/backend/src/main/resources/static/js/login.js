@@ -20,7 +20,8 @@ form.addEventListener("submit", async function (event) {
     const result = await response.json();
 
     if (response.ok) {
-        window.location.href = "/profile.html?accountId=" + encodeURIComponent(result.accountId);
+        // Every role lands on the dashboard, which shows what that role can do (UC-REG-02)
+        window.location.href = "/dashboard.html";
     } else {
         message.textContent = result.error;
     }

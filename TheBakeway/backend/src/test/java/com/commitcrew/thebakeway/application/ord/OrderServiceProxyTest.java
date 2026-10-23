@@ -78,11 +78,12 @@ class OrderServiceProxyTest {
         when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
         when(permissionPolicy.isAllowed(OrderServiceProxy.PLACE_ORDER, Role.CUSTOMER)).thenReturn(true);
 
-        when(realSubject.placeOrder(SESSION_ID, REQUEST)).thenReturn(ORDER_ID);
+        OrderTransitionResult placed = new OrderTransitionResult(ORDER_ID, null, "placed", "event-1", null);
+        when(realSubject.placeOrder(SESSION_ID, REQUEST)).thenReturn(placed);
 
-        String orderId = orderServiceProxy.placeOrder(SESSION_ID, REQUEST);
+        OrderTransitionResult result = orderServiceProxy.placeOrder(SESSION_ID, REQUEST);
 
-        assertEquals(ORDER_ID, orderId);
+        assertEquals(placed, result);
         verify(realSubject).placeOrder(SESSION_ID, REQUEST);
     }
 
@@ -344,4 +345,79 @@ class OrderServiceProxyTest {
         verify(realSubject).reopenBakery(SESSION_ID, "bakery-1");
     }
 
+    @Test
+    void rejectsRestoreWhenUserIsNotOperator() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.RESTORE_INITIAL_STATE, Role.RESTAURANT))
+                .thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.restoreInitialState(SESSION_ID));
+
+        verify(realSubject, never()).restoreInitialState(SESSION_ID);
+    }
+
+    @Test
+    void delegatesRestoreWhenOperatorIsAuthorized() {
+        Session session = new Session(SESSION_ID, "operator-1", Role.OPERATOR);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.RESTORE_INITIAL_STATE, Role.OPERATOR))
+                .thenReturn(true);
+
+        orderServiceProxy.restoreInitialState(SESSION_ID);
+
+        verify(realSubject).restoreInitialState(SESSION_ID);
+    }
+
+    @Test
+    void readMethodsCheckTheirPermission() {
+        givenRole(Role.OPERATOR, OrderServiceProxy.VIEW_SIMULATOR_DASHBOARD, true);
+        orderServiceProxy.listAllOrders(SESSION_ID, null, null);
+        verify(realSubject).listAllOrders(SESSION_ID, null, null);
+
+        givenRole(Role.CUSTOMER, OrderServiceProxy.VIEW_ORDER_HISTORY, true);
+        orderServiceProxy.listOrdersForCustomer(SESSION_ID);
+        verify(realSubject).listOrdersForCustomer(SESSION_ID);
+
+        givenRole(Role.RESTAURANT, OrderServiceProxy.MANAGE_ORDERS, true);
+        orderServiceProxy.listOrdersForBakery(SESSION_ID);
+        verify(realSubject).listOrdersForBakery(SESSION_ID);
+
+        givenRole(Role.CUSTOMER, OrderServiceProxy.VIEW_ORDER_DETAILS, true);
+        orderServiceProxy.getOrder(SESSION_ID, ORDER_ID);
+        verify(realSubject).getOrder(SESSION_ID, ORDER_ID);
+    }
+
+    @Test
+    void rejectsAllOrdersListForNonOperator() {
+        givenRole(Role.CUSTOMER, OrderServiceProxy.VIEW_SIMULATOR_DASHBOARD, false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.listAllOrders(SESSION_ID, null, null));
+
+        verify(realSubject, never()).listAllOrders(SESSION_ID, null, null);
+    }
+
+    private void givenRole(Role role, String operation, boolean allowed) {
+        when(sessionManager.findSession(SESSION_ID))
+                .thenReturn(Optional.of(new Session(SESSION_ID, "account-1", role)));
+        when(permissionPolicy.isAllowed(operation, role)).thenReturn(allowed);
+    }
+
+    @Test
+    void listsAllBakeriesOnlyForTheOperator() {
+        givenRole(Role.CUSTOMER, OrderServiceProxy.VIEW_SIMULATOR_DASHBOARD, false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.listAllBakeries(SESSION_ID));
+
+        verify(realSubject, never()).listAllBakeries(SESSION_ID);
+    }
+
+    @Test
+    void listsOwnMenuOnlyWithMenuPermission() {
+        givenRole(Role.CUSTOMER, OrderServiceProxy.MANAGE_MENU_ITEMS, false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.listOwnMenuItems(SESSION_ID));
+
+        verify(realSubject, never()).listOwnMenuItems(SESSION_ID);
+    }
 }

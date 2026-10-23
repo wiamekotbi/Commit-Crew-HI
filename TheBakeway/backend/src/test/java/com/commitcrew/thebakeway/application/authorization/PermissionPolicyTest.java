@@ -30,7 +30,9 @@ class PermissionPolicyTest {
             "VIEW_ASSIGNED_DELIVERIES",
             "CONFIRM_PICKUP",
             "CONFIRM_DELIVERY",
-            "VIEW_SIMULATOR_DASHBOARD");
+            "VIEW_SIMULATOR_DASHBOARD",
+            "RESTORE_INITIAL_STATE",
+            "VIEW_ORDER_DETAILS");
 
     private static final Set<String> PROFILE_OPERATIONS = Set.of(
             "VIEW_PROFILE",
@@ -44,7 +46,8 @@ class PermissionPolicyTest {
                 "BROWSE_MENU",
                 "PLACE_ORDER",
                 "CANCEL_ORDER",
-                "VIEW_ORDER_HISTORY"));
+                "VIEW_ORDER_HISTORY",
+                "VIEW_ORDER_DETAILS"));
     }
 
     @Test
@@ -55,7 +58,8 @@ class PermissionPolicyTest {
                 "PAUSE_BAKERY",
                 "MANAGE_ORDERS",
                 "PREPARE_ORDERS",
-                "ASSIGN_READY_ORDERS_TO_COURIERS"));
+                "ASSIGN_READY_ORDERS_TO_COURIERS",
+                "VIEW_ORDER_DETAILS"));
     }
 
     @Test
@@ -72,7 +76,9 @@ class PermissionPolicyTest {
                 "VIEW_SIMULATOR_DASHBOARD",
                 "PAUSE_BAKERY",
                 "REOPEN_BAKERY",
-                "CANCEL_ORDER"));
+                "CANCEL_ORDER",
+                "RESTORE_INITIAL_STATE",
+                "VIEW_ORDER_DETAILS"));
     }
 
     @Test

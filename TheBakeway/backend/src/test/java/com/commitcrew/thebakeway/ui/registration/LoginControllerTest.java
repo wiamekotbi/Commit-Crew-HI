@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.commitcrew.thebakeway.application.reg.LoginService;
+import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.session.Session;
 
@@ -45,7 +46,7 @@ class LoginControllerTest {
                 new LoginRequest("maria", "password"));
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(new SessionResponse("account-1", Role.CUSTOMER), response.getBody());
+        assertEquals(new SessionResponse("account-1", Role.CUSTOMER, null, null, null), response.getBody());
         String cookie = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
         assertNotNull(cookie);
         assertFalse(cookie.isBlank());
@@ -71,7 +72,7 @@ class LoginControllerTest {
         ResponseEntity<?> response = loginController.getSession("session-1");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(new SessionResponse("account-1", Role.CUSTOMER), response.getBody());
+        assertEquals(new SessionResponse("account-1", Role.CUSTOMER, null, null, null), response.getBody());
     }
 
     @Test
@@ -96,5 +97,18 @@ class LoginControllerTest {
 
     private Session session() {
         return new Session("session-1", "account-1", Role.CUSTOMER);
+    }
+
+    @Test
+    void sessionIncludesNameAndBakery() {
+        Session staffSession = new Session("session-2", "staff-1", Role.RESTAURANT);
+        when(loginService.findSession("session-2")).thenReturn(Optional.of(staffSession));
+        when(loginService.findAccount("staff-1")).thenReturn(Optional.of(new BakewayAccount(
+                "staff-1", "staff1", "encoded", "Sweet Treats Staff", "", null, Role.RESTAURANT, "bakery-1")));
+
+        ResponseEntity<?> response = loginController.getSession("session-2");
+
+        assertEquals(new SessionResponse("staff-1", Role.RESTAURANT, "staff1", "Sweet Treats Staff", "bakery-1"),
+                response.getBody());
     }
 }

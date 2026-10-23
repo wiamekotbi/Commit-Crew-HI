@@ -265,4 +265,17 @@ public class BakeryServiceTest {
         verify(bakeryRegistry, never()).save(unavailableBakery);
         verifyNoInteractions(transitionPublisher);
     }
+
+    @Test
+    void shouldReturnEveryBakeryWhateverItsStatus() {
+        BakeryRegistry bakeryRegistry = mock(BakeryRegistry.class);
+        BakeryService bakeryService = new BakeryService(
+                bakeryRegistry, mock(TransitionPublisher.class));
+        List<Bakery> bakeries = List.of(
+                new Bakery("bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main St"),
+                new Bakery("bakery-2", "Old Mill", BakeryStatus.paused, "8 Mill Road"));
+        when(bakeryRegistry.findAll()).thenReturn(bakeries);
+
+        assertEquals(bakeries, bakeryService.getAllBakeries());
+    }
 }

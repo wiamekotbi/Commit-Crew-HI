@@ -20,14 +20,16 @@ public class PermissionPolicy {
                     "BROWSE_MENU",
                     "PLACE_ORDER",
                     "CANCEL_ORDER",
-                    "VIEW_ORDER_HISTORY"),
+                    "VIEW_ORDER_HISTORY",
+                    "VIEW_ORDER_DETAILS"),
             Role.RESTAURANT, withProfileOperations(
                     "MANAGE_MENU_ITEMS",
                     "MANAGE_ITEM_AVAILABILITY",
                     "PAUSE_BAKERY",
                     "MANAGE_ORDERS",
                     "PREPARE_ORDERS",
-                    "ASSIGN_READY_ORDERS_TO_COURIERS"),
+                    "ASSIGN_READY_ORDERS_TO_COURIERS",
+                    "VIEW_ORDER_DETAILS"),
             Role.COURIER, withProfileOperations(
                     "VIEW_ASSIGNED_DELIVERIES",
                     "CONFIRM_PICKUP",
@@ -36,7 +38,9 @@ public class PermissionPolicy {
                     "VIEW_SIMULATOR_DASHBOARD",
                     "PAUSE_BAKERY",
                     "REOPEN_BAKERY",
-                    "CANCEL_ORDER"));
+                    "CANCEL_ORDER",
+                    "RESTORE_INITIAL_STATE",
+                    "VIEW_ORDER_DETAILS"));
 
     public boolean isAllowed(String operation, Role role) {
         if (operation == null || role == null) {

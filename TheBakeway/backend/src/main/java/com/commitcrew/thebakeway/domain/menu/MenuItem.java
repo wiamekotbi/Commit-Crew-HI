@@ -1,22 +1,20 @@
 package com.commitcrew.thebakeway.domain.menu;
 
+import java.util.UUID;
+
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 
-import org.hibernate.annotations.UuidGenerator;
-
 @Entity
 @Table(name = "menu_items")
 public class MenuItem {
 
+    // Assigned in Java: from the city config file, or a random UUID for items created by staff
     @Id
-    @GeneratedValue
-    @UuidGenerator
     @Column(name = "menu_item_id", updatable = false, nullable = false)
     private String id;
 
@@ -44,10 +42,19 @@ public class MenuItem {
     }
 
     public MenuItem(String bakeryId, String name, String description, double price, MenuItemStatus status) {
+        this(UUID.randomUUID().toString(), bakeryId, name, description, price, status);
+    }
+
+    // Used when loading the menu from the city config file, which gives each item its id
+    public MenuItem(String id, String bakeryId, String name, String description, double price, MenuItemStatus status) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Menu item ID cannot be null or empty.");
+        }
         validateBakeryId(bakeryId);
         validateName(name);
         validatePrice(price);
-        
+
+        this.id = id;
         this.bakeryId = bakeryId;
         this.name = name;
         this.description = description;

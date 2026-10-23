@@ -42,6 +42,13 @@ public class BakeryController {
         return orderService.getOpenBakeries(sessionId);
     }
 
+    // Operator only: every bakery, including paused and closed ones
+    @GetMapping("/all")
+    public List<Bakery> listAllBakeries(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
+        return orderService.listAllBakeries(sessionId);
+    }
+
     @GetMapping("/{bakeryId}/menu")
     public List<MenuItem> getMenuForBrowsing(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
