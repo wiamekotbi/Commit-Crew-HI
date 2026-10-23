@@ -35,4 +35,8 @@ public class SessionManager {
             sessions.remove(sessionId);
         }
     }
+
+    public void invalidateAllSessions(){
+        sessions.clear();
+    }
 }

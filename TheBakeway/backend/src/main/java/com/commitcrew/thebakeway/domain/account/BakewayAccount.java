@@ -82,7 +82,7 @@ public class BakewayAccount {
             throw new IllegalArgumentException("Restaurant account must have a bakery ID");
         }
 
-        if (role != Role.RESTAURANT && bakeryId != null) {
+        if (role != Role.RESTAURANT && (bakeryId != null && !bakeryId.isBlank())) {
             throw new IllegalArgumentException("Only restaurant accounts can have a bakery ID");
         }
 
