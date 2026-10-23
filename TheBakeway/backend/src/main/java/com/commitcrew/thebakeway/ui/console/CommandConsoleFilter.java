@@ -104,16 +104,57 @@ public class CommandConsoleFilter extends OncePerRequestFilter {
         return null;
     }
 
-    // For order commands: the new state, the event id and the queue position, when the reply has them
+    // Reads: the request and how many results. Commands: the order, its state change, the event id
+    // and the queue position, when the reply has them.
     private String summary(HttpServletRequest request, String body) {
-        StringBuilder summary = new StringBuilder(request.getMethod() + " " + request.getRequestURI());
-        field(body, "orderId").ifPresent(id -> summary.append(" | order ").append(shortId(id)));
+        String target = request.getMethod() + " " + request.getRequestURI()
+                + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
+        if ("GET".equals(request.getMethod())) {
+            return body.startsWith("[") ? target + " | " + count(body) + " result(s)" : target;
+        }
+        if (field(body, "orderId").isEmpty()) {
+            return target;
+        }
+
+        StringBuilder summary = new StringBuilder();
+        field(body, "orderId").ifPresent(id -> summary.append("order ").append(shortId(id)));
         field(body, "previousState").ifPresent(previous -> summary.append(" | ").append(previous).append(" ->"));
         field(body, "newState").ifPresent(state -> summary.append(field(body, "previousState").isPresent() ? " " : " | ")
                 .append(state));
         field(body, "eventId").ifPresent(id -> summary.append(" | event ").append(shortId(id)));
         field(body, "queuePosition").ifPresent(position -> summary.append(" | queue position ").append(position));
         return summary.toString();
+    }
+
+    // Number of top-level items in a JSON array reply
+    static int count(String jsonArray) {
+        int depth = 0;
+        int items = 0;
+        boolean inString = false;
+        for (int i = 0; i < jsonArray.length(); i++) {
+            char c = jsonArray.charAt(i);
+            if (inString) {
+                if (c == '\\') {
+                    i++;
+                } else if (c == '"') {
+                    inString = false;
+                }
+            } else if (c == '"') {
+                inString = true;
+            } else if (c == '[' || c == '{') {
+                if (depth == 1 && items == 0) {
+                    items = 1;
+                }
+                depth++;
+            } else if (c == ']' || c == '}') {
+                depth--;
+            } else if (c == ',' && depth == 1) {
+                items++;
+            } else if (depth == 1 && items == 0 && !Character.isWhitespace(c)) {
+                items = 1;
+            }
+        }
+        return items;
     }
 
     private String error(int status, String body) {

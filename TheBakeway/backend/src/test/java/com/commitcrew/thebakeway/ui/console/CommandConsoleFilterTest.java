@@ -67,6 +67,11 @@ class CommandConsoleFilterTest {
             return Map.of("accountId", "acc-1", "role", "CUSTOMER");
         }
 
+        @GetMapping("/api/orders/mine")
+        List<Map<String, String>> myOrders() {
+            return List.of(Map.of("orderId", "order-1"), Map.of("orderId", "order-2"));
+        }
+
         @GetMapping("/api/console")
         List<String> console() {
             return List.of();
@@ -131,6 +136,22 @@ class CommandConsoleFilterTest {
         mockMvc.perform(get("/api/console").cookie(staffCookie)).andExpect(status().isOk());
 
         assertTrue(console.entriesAfter(0).isEmpty());
+    }
+
+    @Test
+    void logsAReadWithItsNumberOfResults() throws Exception {
+        mockMvc.perform(get("/api/orders/mine").cookie(staffCookie)).andExpect(status().isOk());
+
+        ConsoleEntry entry = onlyEntry();
+        assertEquals("VIEW_MY_ORDERS", entry.command());
+        assertEquals("GET /api/orders/mine | 2 result(s)", entry.detail());
+    }
+
+    @Test
+    void countsTopLevelItems() {
+        assertEquals(0, CommandConsoleFilter.count("[]"));
+        assertEquals(1, CommandConsoleFilter.count("[{\"a\":[1,2],\"b\":\"x,y\"}]"));
+        assertEquals(3, CommandConsoleFilter.count("[{},{},{}]"));
     }
 
     @Test
