@@ -18,7 +18,6 @@ async function loadProfile() {
         message.textContent = profile.error;
         return;
     }
-    
 
     document.getElementById("accountId").value = profile.accountId;
     document.getElementById("username").value = profile.username;
@@ -26,10 +25,6 @@ async function loadProfile() {
     document.getElementById("displayName").value = profile.displayName;
     document.getElementById("contactEmail").value = profile.contactEmail || "";
     document.getElementById("deliveryAddress").value = profile.deliveryAddress || "";
-    if (profile.role !== "CUSTOMER") {
-    document.querySelector('label[for="deliveryAddress"]').style.display = "none";
-    document.getElementById("deliveryAddress").style.display = "none";
-}
 }
 
 form.addEventListener("submit", async function (event) {
