@@ -225,7 +225,6 @@ public class AccountSeedingService {
 
             for(int i=0; i<createdAccountsIndex; i++){
                 accountRegistry.save(createdAccounts[i]);
-                sessionManager.createSession(createdAccounts[i].getAccountId(), createdAccounts[i].getRole());
             }
             logger.info("Account seeding successful.\nTotal of "+errorLogIndex+" errors logged\nTotal of "+createdAccountsIndex+" accounts seeded.");
         } else {
