@@ -1,0 +1,16 @@
+# Initial city (UC-ORD-01). One entry per line, values separated by commas (no commas inside values).
+# BAKERY,bakeryId,name,status(open|paused|closed),address
+# MENU_ITEM,itemId,bakeryId,name,description,price,status(available|sold_out)
+BAKERY,bakery-sweet-treats,Sweet Treats,open,123 Main Street Montreal
+BAKERY,bakery-crumbs,Crumbs and Co,open,45 Oak Avenue Montreal
+BAKERY,bakery-old-mill,Old Mill Bakery,paused,8 Mill Road Montreal
+BAKERY,bakery-corner,Corner Bakery,closed,2 Corner Lane Montreal
+MENU_ITEM,item-croissant,bakery-sweet-treats,Croissant,Butter croissant,3.50,available
+MENU_ITEM,item-pain-chocolat,bakery-sweet-treats,Pain au chocolat,Chocolate pastry,3.75,available
+MENU_ITEM,item-baguette,bakery-sweet-treats,Baguette,Traditional French baguette,4.00,available
+MENU_ITEM,item-eclair,bakery-sweet-treats,Eclair,Chocolate eclair,4.50,sold_out
+MENU_ITEM,item-sourdough,bakery-crumbs,Sourdough loaf,Slow fermented sourdough,6.50,available
+MENU_ITEM,item-cinnamon-roll,bakery-crumbs,Cinnamon roll,Glazed cinnamon roll,3.25,available
+MENU_ITEM,item-muffin,bakery-crumbs,Blueberry muffin,Muffin with fresh blueberries,2.75,sold_out
+MENU_ITEM,item-rye,bakery-old-mill,Rye bread,Dark rye bread,5.00,available
+MENU_ITEM,item-scone,bakery-corner,Scone,Butter scone,2.50,available

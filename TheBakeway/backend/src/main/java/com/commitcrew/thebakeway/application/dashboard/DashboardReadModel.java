@@ -36,6 +36,11 @@ public class DashboardReadModel {
         return Optional.ofNullable(currentStates.get(new EntityKey(entityType, entityId)));
     }
 
+    /** Forgets every known state, used when the initial state is restored. */
+    public void clear() {
+        currentStates.clear();
+    }
+
     /** Entity type is part of the key because IDs can overlap across domains. */
     private record EntityKey(EntityType entityType, String entityId) {
     }
