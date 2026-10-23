@@ -53,8 +53,102 @@ The system allows customers to order bakery products, bakery staff to manage and
 - **DASH** – Simulator Dashboard
 - **PRC** – Pricing, Billing & Order History
 
+## Platform Requirements
+
+- Java 17 or newer
+- Windows, macOS, or Linux
+- PostgreSQL/Supabase database
+- Internet access for Maven dependencies
+
+Maven does not need to be installed because the Maven Wrapper is included.
+
+## Database Configuration
+
+Set the Supabase environment variables before running the application.
+
+### Windows PowerShell
+
+```powershell
+$env:SUPABASE_DB_URL="jdbc:postgresql://HOST:5432/postgres?sslmode=require"
+$env:SUPABASE_DB_USERNAME="YOUR_USERNAME"
+$env:SUPABASE_DB_PASSWORD="YOUR_PASSWORD"
+```
+
+### macOS/Linux
+
+```bash
+export SUPABASE_DB_URL="jdbc:postgresql://HOST:5432/postgres?sslmode=require"
+export SUPABASE_DB_USERNAME="YOUR_USERNAME"
+export SUPABASE_DB_PASSWORD="YOUR_PASSWORD"
+```
+
+## Compile and Test
+
+### Windows
+
+```powershell
+cd TheBakeway/backend
+.\mvnw.cmd clean test
+```
+
+### macOS/Linux
+
+```bash
+cd TheBakeway/backend
+./mvnw clean test
+```
+
+## Run Locally
+
+### Windows
+
+```powershell
+cd TheBakeway/backend
+.\mvnw.cmd spring-boot:run
+```
+
+### macOS/Linux
+
+```bash
+cd TheBakeway/backend
+./mvnw spring-boot:run
+```
+
+Then open:
+
+```text
+http://localhost:8080/login.html
+```
+
+The application runs on port `8080` by default.
+
+## Build
+
+### Windows
+
+```powershell
+cd TheBakeway/backend
+.\mvnw.cmd clean package
+```
+
+### macOS/Linux
+
+```bash
+cd TheBakeway/backend
+./mvnw clean package
+```
+
+The generated JAR can then be run from the `target` folder.
+
+## Demo Accounts
+
+- Customer: `customer1` / `customer123`
+- Restaurant staff: `staff1` / `staff123`
+- Courier: `courier1` / `courier123`
+- Operator: `operator1` / `operator123`
+
 ## Repository
 
-This repository contains the source code, diagrams, and documentation for the project.
+This repository contains the source code, diagrams, tests, and documentation for the project.
 
-More detailed requirements, architecture decisions, assumptions, context diagrams, and domain models are documented in the project report.
+More detailed requirements, architecture decisions, use cases, and design patterns are documented in the project report.
