@@ -43,7 +43,8 @@ The system allows customers to order bakery products, bakery staff to manage and
 - **Frontend:** HTML, CSS, JavaScript
 - **Version Control:** Git + GitHub
 - **Modelling:** Draw.io 
-- **Testing:** JUnit.
+- **Testing:** JUnit 5 and Mockito
+- **Database:** PostgreSQL (Supabase) through Spring Data JPA
 
 ## Project Modules
 
@@ -82,6 +83,21 @@ export SUPABASE_DB_USERNAME="YOUR_USERNAME"
 export SUPABASE_DB_PASSWORD="YOUR_PASSWORD"
 ```
 
+## Initial State (Configuration Files)
+
+At startup the application loads its initial state from two configuration files (UC-REG-03, UC-ORD-01):
+
+- `TheBakeway/backend/src/main/resources/config/initialAccounts.txt`: the seeded accounts, at least one per role
+- `TheBakeway/backend/src/main/resources/config/initialCity.txt`: the bakeries (name, status, address) and their menu items (name, price, status)
+
+**Starting the application replaces the accounts, bakeries and menus in the database with these files and deletes all orders and events.** An invalid entry is reported in the console and the previous data is kept. The platform operator can restore the same initial state at any time from the dashboard.
+
+To start without reloading the data, set this in `TheBakeway/backend/src/main/resources/application.properties`:
+
+```properties
+bakeway.load-initial-state=false
+```
+
 ## Compile and Test
 
 ### Windows
@@ -97,6 +113,8 @@ cd TheBakeway/backend
 cd TheBakeway/backend
 ./mvnw clean test
 ```
+
+The database environment variables must be set: the application context test connects to the database. The tests do not reload the initial state.
 
 ## Run Locally
 
@@ -120,7 +138,11 @@ Then open:
 http://localhost:8080/login.html
 ```
 
-The application runs on port `8080` by default.
+The application runs on port `8080` by default. Wait for the `LOAD_INITIAL_STATE` line and then `Tomcat started on port 8080` in the terminal before logging in.
+
+After login, every role lands on its dashboard (`/dashboard.html`):
+
+One browser keeps one session, so use separate browsers or private windows to be logged in with several roles at the same time.
 
 ## Build
 
@@ -138,17 +160,29 @@ cd TheBakeway/backend
 ./mvnw clean package
 ```
 
-The generated JAR can then be run from the `target` folder.
+Run the generated JAR (with the database environment variables set):
+
+```bash
+java -jar target/thebakeway-0.0.1-SNAPSHOT.jar
+```
 
 ## Demo Accounts
 
-- Customer: `customer1` / `customer123`
-- Restaurant staff: `staff1` / `staff123`
-- Courier: `courier1` / `courier123`
-- Operator: `operator1` / `operator123`
+Loaded from `initialAccounts.txt` at startup:
+
+| Role | Username | Password | Notes |
+|---|---|---|---|
+| Customer | `customer1` | `customer123` | |
+| Customer | `customer2` | `customer123` | |
+| Bakery staff | `staff1` | `staff123` | Sweet Treats |
+| Bakery staff | `staff2` | `staff123` | Crumbs and Co |
+| Courier | `courier1` | `courier123` | |
+| Operator | `operator1` | `operator123` | |
+
+New customers can also register from the login page.
 
 ## Repository
 
-This repository contains the source code, diagrams, tests, and documentation for the project.
+This repository contains the source code, tests and configuration files of the project.
 
-More detailed requirements, architecture decisions, use cases, and design patterns are documented in the project report.
+The requirements, use cases, architecture decisions and design pattern diagrams are documented in the project report.
