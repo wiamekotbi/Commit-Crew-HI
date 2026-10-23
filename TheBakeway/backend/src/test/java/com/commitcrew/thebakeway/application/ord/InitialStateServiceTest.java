@@ -3,6 +3,7 @@ package com.commitcrew.thebakeway.application.ord;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
@@ -64,6 +66,9 @@ class InitialStateServiceTest {
     @Mock
     private DashboardReadModel dashboardReadModel;
 
+    @Mock
+    private CommandConsole console;
+
     private InitialStateService service;
 
     private final CityConfiguration city = new CityConfiguration(
@@ -81,7 +86,8 @@ class InitialStateServiceTest {
                 accountRegistry,
                 passwordEncoder,
                 sessionManager,
-                dashboardReadModel);
+                dashboardReadModel,
+                console);
     }
 
     @Test
@@ -112,6 +118,7 @@ class InitialStateServiceTest {
 
         // The shipped accounts file is seeded and every session ends
         verify(sessionManager).invalidateAllSessions();
+        verify(console).record(eq("system"), eq("SYSTEM"), eq("LOAD_INITIAL_STATE"), eq(true), any());
     }
 
     @Test
@@ -123,6 +130,8 @@ class InitialStateServiceTest {
 
         verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, accountRegistry,
                 sessionManager, dashboardReadModel);
+        verify(console).record("system", "SYSTEM", "LOAD_INITIAL_STATE", false,
+                "Invalid city config entry at line 3: price cannot be negative");
     }
 
     @Test

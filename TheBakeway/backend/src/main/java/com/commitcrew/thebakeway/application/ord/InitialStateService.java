@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
 import com.commitcrew.thebakeway.application.reg.AccountSeedingService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
@@ -44,6 +45,7 @@ public class InitialStateService {
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
     private final DashboardReadModel dashboardReadModel;
+    private final CommandConsole console;
 
     public InitialStateService(
             CityConfigurationReader cityConfigurationReader,
@@ -54,7 +56,8 @@ public class InitialStateService {
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
-            DashboardReadModel dashboardReadModel) {
+            DashboardReadModel dashboardReadModel,
+            CommandConsole console) {
         this.cityConfigurationReader = cityConfigurationReader;
         this.orderRegistry = orderRegistry;
         this.eventRepository = eventRepository;
@@ -64,12 +67,26 @@ public class InitialStateService {
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
         this.dashboardReadModel = dashboardReadModel;
+        this.console = console;
     }
 
     // Replaces bakeries, menus and accounts with the config files and clears orders, queues and events.
     // Sessions end (the account seeding invalidates them).
     @Transactional
     public InitialStateSummary loadInitialState() {
+        try {
+            InitialStateSummary summary = replaceState();
+            console.record("system", "SYSTEM", "LOAD_INITIAL_STATE", true, summary.bakeries() + " bakeries, "
+                    + summary.menuItems() + " menu items, accounts per role " + summary.accountsPerRole());
+            return summary;
+        } catch (RuntimeException e) {
+            // UC-REG-03 / UC-ORD-01: the error names the bad entry; the transaction keeps the previous state
+            console.record("system", "SYSTEM", "LOAD_INITIAL_STATE", false, e.getMessage());
+            throw e;
+        }
+    }
+
+    private InitialStateSummary replaceState() {
         // Read and check both files first, so a bad file changes nothing
         CityConfiguration city = cityConfigurationReader.read(scanner(CITY_FILE));
         String accounts = read(ACCOUNTS_FILE);
