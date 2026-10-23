@@ -344,4 +344,28 @@ class OrderServiceProxyTest {
         verify(realSubject).reopenBakery(SESSION_ID, "bakery-1");
     }
 
+    @Test
+    void rejectsRestoreWhenUserIsNotOperator() {
+        Session session = new Session(SESSION_ID, "staff-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.RESTORE_INITIAL_STATE, Role.RESTAURANT))
+                .thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.restoreInitialState(SESSION_ID));
+
+        verify(realSubject, never()).restoreInitialState(SESSION_ID);
+    }
+
+    @Test
+    void delegatesRestoreWhenOperatorIsAuthorized() {
+        Session session = new Session(SESSION_ID, "operator-1", Role.OPERATOR);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.RESTORE_INITIAL_STATE, Role.OPERATOR))
+                .thenReturn(true);
+
+        orderServiceProxy.restoreInitialState(SESSION_ID);
+
+        verify(realSubject).restoreInitialState(SESSION_ID);
+    }
+
 }

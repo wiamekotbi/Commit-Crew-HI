@@ -34,6 +34,7 @@ public class OrderServiceImpl implements OrderService {
     private final SessionManager sessionManager;
     private final PreparationQueue preparationQueue;
     private final TransitionPublisher transitionPublisher;
+    private final InitialStateService initialStateService;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -45,7 +46,8 @@ public class OrderServiceImpl implements OrderService {
             AccountRegistry accountRegistry,
             SessionManager sessionManager,
             PreparationQueue preparationQueue,
-            TransitionPublisher transitionPublisher) {
+            TransitionPublisher transitionPublisher,
+            InitialStateService initialStateService) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -55,6 +57,7 @@ public class OrderServiceImpl implements OrderService {
         this.sessionManager = sessionManager;
         this.preparationQueue = preparationQueue;
         this.transitionPublisher = transitionPublisher;
+        this.initialStateService = initialStateService;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
@@ -208,6 +211,13 @@ public class OrderServiceImpl implements OrderService {
         String authorizedBakeryId = bakeryStatusAccessService.resolveReopenTarget(
                 sessionId, bakeryId);
         return bakeryService.reopenBakery(authorizedBakeryId);
+    }
+
+    // Operator command: reload accounts, bakeries and menus from the config files and clear
+    // orders, queues and events. Every session ends, including the operator's.
+    @Override
+    public InitialStateSummary restoreInitialState(String sessionId) {
+        return initialStateService.loadInitialState();
     }
 
     // Returns the caller's session, or refuses the command if they are not logged in.

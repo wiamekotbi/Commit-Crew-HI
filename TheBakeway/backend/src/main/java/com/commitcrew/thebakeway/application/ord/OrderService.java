@@ -34,4 +34,6 @@ public interface OrderService {
     Bakery pauseBakery(String sessionId, String bakeryId);
 
     Bakery reopenBakery(String sessionId, String bakeryId);
+
+    InitialStateSummary restoreInitialState(String sessionId);
 }

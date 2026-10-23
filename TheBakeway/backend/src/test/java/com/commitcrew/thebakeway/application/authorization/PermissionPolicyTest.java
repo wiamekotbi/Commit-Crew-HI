@@ -30,7 +30,8 @@ class PermissionPolicyTest {
             "VIEW_ASSIGNED_DELIVERIES",
             "CONFIRM_PICKUP",
             "CONFIRM_DELIVERY",
-            "VIEW_SIMULATOR_DASHBOARD");
+            "VIEW_SIMULATOR_DASHBOARD",
+            "RESTORE_INITIAL_STATE");
 
     private static final Set<String> PROFILE_OPERATIONS = Set.of(
             "VIEW_PROFILE",
@@ -72,7 +73,8 @@ class PermissionPolicyTest {
                 "VIEW_SIMULATOR_DASHBOARD",
                 "PAUSE_BAKERY",
                 "REOPEN_BAKERY",
-                "CANCEL_ORDER"));
+                "CANCEL_ORDER",
+                "RESTORE_INITIAL_STATE"));
     }
 
     @Test

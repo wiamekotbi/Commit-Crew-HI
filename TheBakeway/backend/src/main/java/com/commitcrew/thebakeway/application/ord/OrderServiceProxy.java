@@ -25,6 +25,7 @@ public class OrderServiceProxy implements OrderService {
     static final String MANAGE_MENU_ITEMS = "MANAGE_MENU_ITEMS";
     static final String PAUSE_BAKERY = "PAUSE_BAKERY";
     static final String REOPEN_BAKERY = "REOPEN_BAKERY";
+    static final String RESTORE_INITIAL_STATE = "RESTORE_INITIAL_STATE";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -133,5 +134,12 @@ public class OrderServiceProxy implements OrderService {
         // PermissionPolicy grants this operation only to operators.
         checkAccess(sessionId, REOPEN_BAKERY);
         return realSubject.reopenBakery(sessionId, bakeryId);
+    }
+
+    @Override
+    public InitialStateSummary restoreInitialState(String sessionId) {
+        // Only the operator may restore the initial state (UC-REG-03, UC-ORD-01).
+        checkAccess(sessionId, RESTORE_INITIAL_STATE);
+        return realSubject.restoreInitialState(sessionId);
     }
 }

@@ -36,7 +36,8 @@ public class PermissionPolicy {
                     "VIEW_SIMULATOR_DASHBOARD",
                     "PAUSE_BAKERY",
                     "REOPEN_BAKERY",
-                    "CANCEL_ORDER"));
+                    "CANCEL_ORDER",
+                    "RESTORE_INITIAL_STATE"));
 
     public boolean isAllowed(String operation, Role role) {
         if (operation == null || role == null) {

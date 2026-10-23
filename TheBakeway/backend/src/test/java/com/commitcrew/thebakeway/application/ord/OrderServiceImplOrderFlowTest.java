@@ -74,6 +74,9 @@ class OrderServiceImplOrderFlowTest {
     @Mock
     private TransitionPublisher transitionPublisher;
 
+    @Mock
+    private InitialStateService initialStateService;
+
     private OrderServiceImpl orderService;
 
     @BeforeEach
@@ -87,7 +90,8 @@ class OrderServiceImplOrderFlowTest {
                 accountRegistry,
                 sessionManager,
                 preparationQueue,
-                transitionPublisher);
+                transitionPublisher,
+                initialStateService);
     }
 
     // Placing an order
