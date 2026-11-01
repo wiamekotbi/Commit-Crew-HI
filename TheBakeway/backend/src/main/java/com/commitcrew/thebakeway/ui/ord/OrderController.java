@@ -24,7 +24,7 @@ import com.commitcrew.thebakeway.application.ord.OrderView;
 import com.commitcrew.thebakeway.application.ord.PlaceOrderRequest;
 import com.commitcrew.thebakeway.domain.order.IllegalTransitionException;
 
-// Order commands and queries (UC-ORD-03 to UC-ORD-08, UC-ORD-12, UC-ORD-13).
+// Order commands and queries (UC-ORD-03 to UC-ORD-08, UC-ORD-12, UC-ORD-13, UC-DLV-05, UC-DLV-06).
 // Every call goes through the OrderServiceProxy, which checks the session and the role.
 @RestController
 @RequestMapping("/api/orders")
@@ -74,6 +74,20 @@ public class OrderController {
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
             @PathVariable("orderId") String orderId) {
         return orderService.markReady(sessionId, orderId);
+    }
+
+    @PatchMapping("/{orderId}/pickup")
+    public OrderTransitionResult confirmPickup(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
+            @PathVariable("orderId") String orderId) {
+        return orderService.confirmPickup(sessionId, orderId);
+    }
+
+    @PatchMapping("/{orderId}/deliver")
+    public OrderTransitionResult confirmDelivery(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
+            @PathVariable("orderId") String orderId) {
+        return orderService.confirmDelivery(sessionId, orderId);
     }
 
     @PatchMapping("/{orderId}/cancel")
