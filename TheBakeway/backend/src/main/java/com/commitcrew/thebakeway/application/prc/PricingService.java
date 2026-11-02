@@ -6,19 +6,23 @@ import com.commitcrew.thebakeway.domain.pricing.PriceBreakdown;
 
 public class PricingService {
 
-    public PriceBreakdown calculatePrice(Order order, double deliveryFee,
-            double serviceFee, double smallOrderThreshold,
-            double smallOrderSurcharge) {
+    public PriceBreakdown calculatePrice(Order order, PricingConfiguration config) {
 
         double subtotal = order.calculateTotal();
         double surcharge = 0;
 
-        if (subtotal < smallOrderThreshold) {
-            surcharge = smallOrderSurcharge;
+        if (subtotal < config.smallOrderThreshold()) {
+            surcharge = config.smallOrderSurcharge();
         }
 
-        double total = subtotal + deliveryFee + serviceFee + surcharge;
+        double total = subtotal + config.deliveryFee()
+                + config.serviceFee() + surcharge;
 
-        return new PriceBreakdown(subtotal, deliveryFee, serviceFee, surcharge, total);
+        return new PriceBreakdown(
+                subtotal,
+                config.deliveryFee(),
+                config.serviceFee(),
+                surcharge,
+                total);
     }
 }
