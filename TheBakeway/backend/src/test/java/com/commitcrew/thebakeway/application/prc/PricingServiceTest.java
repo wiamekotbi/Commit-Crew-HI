@@ -56,4 +56,17 @@ class PricingServiceTest {
         assertEquals(26.0, result.total());
         assertEquals(0.0, result.smallOrderSurcharge());
     }
+
+    @Test
+    void roundsTotalToTwoDecimalPlaces() {
+        Order order = mock(Order.class);
+
+        when(order.calculateTotal()).thenReturn(10.123);
+        when(reader.read()).thenReturn(
+                new PricingConfiguration(4.0, 2.0, 20.0, 3.0));
+
+        PriceBreakdown result = service.calculatePrice(order);
+
+        assertEquals(19.12, result.total());
+    }
 }
