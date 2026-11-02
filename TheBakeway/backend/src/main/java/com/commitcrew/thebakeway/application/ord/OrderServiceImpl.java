@@ -169,6 +169,32 @@ public class OrderServiceImpl implements OrderService {
         return saveAndPublish(order, previousState);
     }
 
+    // A courier confirms they picked up a ready order at the bakery (UC-DLV-05).
+    // An order cannot be picked up before it is ready (R-ORD-04, enforced by the State classes).
+    @Override
+    @Transactional
+    public OrderTransitionResult confirmPickup(String sessionId, String orderId) {
+        Order order = courierOrder(sessionId, orderId);
+        String previousState = order.getStatus();
+
+        order.confirmPickup();
+
+        return saveAndPublish(order, previousState);
+    }
+
+    // A courier confirms they delivered a picked-up order to the customer (UC-DLV-06).
+    // No state can be skipped: a ready order must be picked up first (R-ORD-04).
+    @Override
+    @Transactional
+    public OrderTransitionResult confirmDelivery(String sessionId, String orderId) {
+        Order order = courierOrder(sessionId, orderId);
+        String previousState = order.getStatus();
+
+        order.confirmDelivery();
+
+        return saveAndPublish(order, previousState);
+    }
+
     // A customer's own orders with their current state, newest first (UC-ORD-12).
     @Override
     @Transactional(readOnly = true)
@@ -320,6 +346,12 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return order;
+    }
+
+    // Loads an order for a courier command; the caller must be logged in.
+    private Order courierOrder(String sessionId, String orderId) {
+        currentSession(sessionId);
+        return existingOrder(orderId);
     }
 
     // Loads an order by id, or refuses the command if it does not exist.

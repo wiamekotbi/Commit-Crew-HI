@@ -108,6 +108,33 @@ class OrderControllerTest {
     }
 
     @Test
+    void forwardsPickupAndDelivery() throws Exception {
+        when(orderService.confirmPickup(SESSION_ID, ORDER_ID))
+                .thenReturn(new OrderTransitionResult(ORDER_ID, "ready", "picked_up", "event-4", null));
+        when(orderService.confirmDelivery(SESSION_ID, ORDER_ID))
+                .thenReturn(new OrderTransitionResult(ORDER_ID, "picked_up", "delivered", "event-5", null));
+
+        mockMvc.perform(patch("/api/orders/order-1/pickup").cookie(sessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newState").value("picked_up"))
+                .andExpect(jsonPath("$.eventId").value("event-4"));
+        mockMvc.perform(patch("/api/orders/order-1/deliver").cookie(sessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newState").value("delivered"))
+                .andExpect(jsonPath("$.eventId").value("event-5"));
+    }
+
+    @Test
+    void pickupBeforeReadyIsAConflict() throws Exception {
+        when(orderService.confirmPickup(SESSION_ID, ORDER_ID))
+                .thenThrow(new IllegalTransitionException("preparing", "confirm pickup of"));
+
+        mockMvc.perform(patch("/api/orders/order-1/pickup").cookie(sessionCookie()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Cannot confirm pickup of an order that is preparing"));
+    }
+
+    @Test
     void listsOrdersForEachRole() throws Exception {
         when(orderService.listOrdersForCustomer(SESSION_ID)).thenReturn(List.of(view()));
         when(orderService.listOrdersForBakery(SESSION_ID)).thenReturn(List.of(view()));

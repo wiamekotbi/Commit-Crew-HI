@@ -19,6 +19,10 @@ public interface OrderService {
 
     OrderTransitionResult markReady(String sessionId, String orderId);
 
+    OrderTransitionResult confirmPickup(String sessionId, String orderId);
+
+    OrderTransitionResult confirmDelivery(String sessionId, String orderId);
+
     List<OrderView> listOrdersForCustomer(String sessionId);
 
     List<OrderView> listOrdersForBakery(String sessionId);

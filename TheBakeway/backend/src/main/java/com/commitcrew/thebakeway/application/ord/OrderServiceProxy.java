@@ -21,6 +21,8 @@ public class OrderServiceProxy implements OrderService {
     static final String CANCEL_ORDER = "CANCEL_ORDER";
     static final String MANAGE_ORDERS = "MANAGE_ORDERS";
     static final String PREPARE_ORDERS = "PREPARE_ORDERS";
+    static final String CONFIRM_PICKUP = "CONFIRM_PICKUP";
+    static final String CONFIRM_DELIVERY = "CONFIRM_DELIVERY";
     static final String BROWSE_MENU = "BROWSE_MENU";
     static final String MANAGE_MENU_ITEMS = "MANAGE_MENU_ITEMS";
     static final String PAUSE_BAKERY = "PAUSE_BAKERY";
@@ -88,6 +90,18 @@ public class OrderServiceProxy implements OrderService {
     public OrderTransitionResult markReady(String sessionId, String orderId) {
         checkAccess(sessionId, PREPARE_ORDERS);
         return realSubject.markReady(sessionId, orderId);
+    }
+
+    @Override
+    public OrderTransitionResult confirmPickup(String sessionId, String orderId) {
+        checkAccess(sessionId, CONFIRM_PICKUP);
+        return realSubject.confirmPickup(sessionId, orderId);
+    }
+
+    @Override
+    public OrderTransitionResult confirmDelivery(String sessionId, String orderId) {
+        checkAccess(sessionId, CONFIRM_DELIVERY);
+        return realSubject.confirmDelivery(sessionId, orderId);
     }
 
     @Override

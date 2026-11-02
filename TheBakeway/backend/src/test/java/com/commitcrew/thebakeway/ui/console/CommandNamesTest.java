@@ -24,6 +24,8 @@ class CommandNamesTest {
             "PATCH,/api/orders/o-1/reject,REJECT_ORDER",
             "PATCH,/api/orders/o-1/start-preparing,START_PREPARING",
             "PATCH,/api/orders/o-1/ready,MARK_READY",
+            "PATCH,/api/orders/o-1/pickup,CONFIRM_PICKUP",
+            "PATCH,/api/orders/o-1/deliver,CONFIRM_DELIVERY",
             "PATCH,/api/orders/o-1/cancel,CANCEL_ORDER",
             "GET,/api/orders/mine,VIEW_MY_ORDERS",
             "GET,/api/orders/bakery,VIEW_BAKERY_ORDERS",

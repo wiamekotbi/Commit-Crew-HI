@@ -102,6 +102,34 @@ class OrderServiceProxyTest {
     }
 
     @Test
+    void delegatesCourierOperationsWhenAuthorized() {
+        Session session = new Session(SESSION_ID, "courier-1", Role.COURIER);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CONFIRM_PICKUP, Role.COURIER)).thenReturn(true);
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CONFIRM_DELIVERY, Role.COURIER)).thenReturn(true);
+
+        orderServiceProxy.confirmPickup(SESSION_ID, ORDER_ID);
+        orderServiceProxy.confirmDelivery(SESSION_ID, ORDER_ID);
+
+        verify(realSubject).confirmPickup(SESSION_ID, ORDER_ID);
+        verify(realSubject).confirmDelivery(SESSION_ID, ORDER_ID);
+    }
+
+    @Test
+    void rejectsPickupAndDeliveryForNonCourier() {
+        Session session = new Session(SESSION_ID, "restaurant-1", Role.RESTAURANT);
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CONFIRM_PICKUP, Role.RESTAURANT)).thenReturn(false);
+        when(permissionPolicy.isAllowed(OrderServiceProxy.CONFIRM_DELIVERY, Role.RESTAURANT)).thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> orderServiceProxy.confirmPickup(SESSION_ID, ORDER_ID));
+        assertThrows(SecurityException.class, () -> orderServiceProxy.confirmDelivery(SESSION_ID, ORDER_ID));
+
+        verify(realSubject, never()).confirmPickup(SESSION_ID, ORDER_ID);
+        verify(realSubject, never()).confirmDelivery(SESSION_ID, ORDER_ID);
+    }
+
+    @Test
     void delegatesRejectWithReasonWhenAuthorized() {
         Session session = new Session(SESSION_ID, "restaurant-1", Role.RESTAURANT);
         when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(session));

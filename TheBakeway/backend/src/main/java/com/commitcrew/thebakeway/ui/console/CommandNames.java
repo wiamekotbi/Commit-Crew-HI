@@ -32,6 +32,8 @@ final class CommandNames {
             route("PATCH", "/api/orders/" + ID + "/reject", "REJECT_ORDER"),
             route("PATCH", "/api/orders/" + ID + "/start-preparing", "START_PREPARING"),
             route("PATCH", "/api/orders/" + ID + "/ready", "MARK_READY"),
+            route("PATCH", "/api/orders/" + ID + "/pickup", "CONFIRM_PICKUP"),
+            route("PATCH", "/api/orders/" + ID + "/deliver", "CONFIRM_DELIVERY"),
             route("PATCH", "/api/orders/" + ID + "/cancel", "CANCEL_ORDER"),
             route("GET", "/api/orders/mine", "VIEW_MY_ORDERS"),
             route("GET", "/api/orders/bakery", "VIEW_BAKERY_ORDERS"),
