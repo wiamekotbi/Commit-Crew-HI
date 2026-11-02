@@ -25,8 +25,8 @@ public class PricingService {
             surcharge = config.smallOrderSurcharge();
         }
 
-        double total = subtotal + config.deliveryFee()
-                + config.serviceFee() + surcharge;
+        double total = round(subtotal + config.deliveryFee()
+                + config.serviceFee() + surcharge);
 
         return new PriceBreakdown(
                 subtotal,
@@ -34,5 +34,9 @@ public class PricingService {
                 config.serviceFee(),
                 surcharge,
                 total);
+    }
+
+    private double round(double amount) {
+        return Math.round(amount * 100.0) / 100.0;
     }
 }
