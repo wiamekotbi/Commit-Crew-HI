@@ -384,6 +384,106 @@ class OrderServiceImplOrderFlowTest {
         assertNothingSavedOrPublished();
     }
 
+    // Pickup and delivery
+
+    @Test
+    void courierConfirmsPickupOfReadyOrder() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenReadyOrder();
+        givenSaveReturnsOrder();
+
+        OrderTransitionResult result = orderService.confirmPickup(SESSION_ID, ORDER_ID);
+
+        assertEquals("picked_up", order.getStatus());
+        assertEquals("ready", result.previousState());
+        assertEquals("picked_up", result.newState());
+        StateTransitionEvent event = assertTransitionPublished("ready", "picked_up");
+        assertEquals(event.getEventId(), result.eventId());
+    }
+
+    @Test
+    void refusesPickupBeforeReady() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenStoredOrder();
+        order.accept();
+        order.startPreparing();
+
+        assertThrows(IllegalTransitionException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertEquals("preparing", order.getStatus());
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void refusesPickingUpAnOrderTwice() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenReadyOrder();
+        order.confirmPickup();
+
+        assertThrows(IllegalTransitionException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertEquals("picked_up", order.getStatus());
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void courierConfirmsDeliveryOfPickedUpOrder() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenReadyOrder();
+        order.confirmPickup();
+        givenSaveReturnsOrder();
+
+        OrderTransitionResult result = orderService.confirmDelivery(SESSION_ID, ORDER_ID);
+
+        assertEquals("delivered", order.getStatus());
+        assertEquals("delivered", result.newState());
+        StateTransitionEvent event = assertTransitionPublished("picked_up", "delivered");
+        assertEquals(event.getEventId(), result.eventId());
+    }
+
+    @Test
+    void refusesDeliveryBeforePickup() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenReadyOrder();
+
+        assertThrows(IllegalTransitionException.class, () -> orderService.confirmDelivery(SESSION_ID, ORDER_ID));
+
+        assertEquals("ready", order.getStatus());
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void refusesDeliveringAnOrderTwice() {
+        givenSession("courier-1", Role.COURIER);
+        Order order = givenReadyOrder();
+        order.confirmPickup();
+        order.confirmDelivery();
+
+        assertThrows(IllegalTransitionException.class, () -> orderService.confirmDelivery(SESSION_ID, ORDER_ID));
+
+        assertEquals("delivered", order.getStatus());
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void refusesPickupWithoutSession() {
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void refusesPickupOfUnknownOrder() {
+        givenSession("courier-1", Role.COURIER);
+        when(orderRegistry.findById(ORDER_ID)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertNothingSavedOrPublished();
+    }
+
     @Test
     void refusesTransitionOnUnknownOrder() {
         givenStaffOf(BAKERY_ID);
@@ -598,6 +698,14 @@ class OrderServiceImplOrderFlowTest {
         Order order = new Order(CUSTOMER_ID, BAKERY_ID, "Maria", "Montreal");
         ReflectionTestUtils.setField(order, "id", ORDER_ID);
         when(orderRegistry.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        return order;
+    }
+
+    private Order givenReadyOrder() {
+        Order order = givenStoredOrder();
+        order.accept();
+        order.startPreparing();
+        order.markReady();
         return order;
     }
 
