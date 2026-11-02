@@ -1,0 +1,4 @@
+deliveryFee=4.00
+serviceFee=2.00
+smallOrderThreshold=20.00
+smallOrderSurcharge=3.00
