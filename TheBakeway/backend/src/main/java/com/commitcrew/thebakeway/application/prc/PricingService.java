@@ -2,10 +2,11 @@
 package com.commitcrew.thebakeway.application.prc;
 
 import com.commitcrew.thebakeway.domain.order.Order;
+import com.commitcrew.thebakeway.domain.pricing.PriceBreakdown;
 
 public class PricingService {
 
-    public double calculateTotal(Order order, double deliveryFee,
+    public PriceBreakdown calculatePrice(Order order, double deliveryFee,
             double serviceFee, double smallOrderThreshold,
             double smallOrderSurcharge) {
 
@@ -16,6 +17,8 @@ public class PricingService {
             surcharge = smallOrderSurcharge;
         }
 
-        return subtotal + deliveryFee + serviceFee + surcharge;
+        double total = subtotal + deliveryFee + serviceFee + surcharge;
+
+        return new PriceBreakdown(subtotal, deliveryFee, serviceFee, surcharge, total);
     }
 }
