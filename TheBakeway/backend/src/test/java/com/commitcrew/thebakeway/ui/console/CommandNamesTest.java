@@ -31,6 +31,7 @@ class CommandNamesTest {
             "GET,/api/orders/bakery,VIEW_BAKERY_ORDERS",
             "GET,/api/orders,VIEW_ALL_ORDERS",
             "GET,/api/orders/o-1,VIEW_ORDER",
+            "GET,/api/orders/o-1/summary,VIEW_ORDER_SUMMARY",
             "POST,/api/initial-state/restore,RESTORE_INITIAL_STATE",
             "DELETE,/api/orders/o-1,DELETE /api/orders/o-1",
     })
