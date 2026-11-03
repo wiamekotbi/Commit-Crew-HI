@@ -38,6 +38,7 @@ final class CommandNames {
             route("GET", "/api/orders/mine", "VIEW_MY_ORDERS"),
             route("GET", "/api/orders/bakery", "VIEW_BAKERY_ORDERS"),
             route("GET", "/api/orders", "VIEW_ALL_ORDERS"),
+            route("GET", "/api/orders/" + ID + "/summary", "VIEW_ORDER_SUMMARY"),
             route("GET", "/api/orders/" + ID, "VIEW_ORDER"),
             route("POST", "/api/initial-state/restore", "RESTORE_INITIAL_STATE"));
 
