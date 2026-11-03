@@ -82,7 +82,8 @@ Frontend tests execute the production dashboard helper and summary script with a
 and HTTP responses. They cover loading, amounts, refunds, errors, session handling, retry,
 HTML escaping, and summary links from customer history. They are not visual browser tests.
 
-On this implementation run, 438 backend tests passed and the single existing
-`TheBakewayApplicationTests.contextLoads` test errored because the Supabase database
-environment variables were unset. All 15 frontend tests passed. A successful live receipt
+The latest focused run passed 68 backend tests covering summary, pricing, and console behavior,
+and all 15 frontend tests. The broader run excluding `TheBakewayApplicationTests` passed 440
+backend tests. The database-context test previously errored because the database environment
+variables were unset; it was not rerun against the shared database. A successful live receipt
 and full database-backed suite still require the billing adapter and configured database.

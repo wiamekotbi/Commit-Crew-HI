@@ -70,6 +70,11 @@ test("shows loading until the real API response arrives, then renders all charge
         "Service fee", "Small-order surcharge", "Final total", "Delivered:", "$14.00"]) {
         assert.ok(html.includes(label), label);
     }
+    for (const [label, amount] of [["Subtotal", "8.00"], ["Delivery fee", "3.00"],
+        ["Service fee", "1.00"], ["Small-order surcharge", "2.00"]]) {
+        assert.ok(html.includes(`${label}</th><td>$${amount}</td>`)
+            || new RegExp(`${label}</th>\\s*<td>\\$${amount.replace(".", "\\.")}</td>`).test(html), label);
+    }
     assert.equal(view.elements.orderSummary.attributes["aria-busy"], "false");
     assert.equal(view.elements.retrySummary.disabled, false);
     assert.equal(view.requests[1].url, "/api/orders/order-1/summary");
@@ -92,6 +97,9 @@ test("shows refunds separately and keeps the original final total", async () => 
     assert.match(view.elements.orderSummary.innerHTML, /Final total/);
     assert.match(view.elements.orderSummary.innerHTML, /original charge above is unchanged/);
     assert.match(view.elements.orderSummary.innerHTML, /refund-1/);
+    assert.match(view.elements.orderSummary.innerHTML, /Croissant/);
+    assert.match(view.elements.orderSummary.innerHTML, /<td>2<\/td>/);
+    assert.match(view.elements.orderSummary.innerHTML, /<td>\$4\.00<\/td>/);
     assert.equal((view.elements.orderSummary.innerHTML.match(/\$14\.00/g) || []).length, 2);
 });
 

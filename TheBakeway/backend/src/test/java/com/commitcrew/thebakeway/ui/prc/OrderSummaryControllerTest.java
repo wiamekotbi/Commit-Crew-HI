@@ -18,6 +18,8 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,7 +35,10 @@ import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.order.Order;
+import com.commitcrew.thebakeway.domain.order.OrderLine;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.pricing.PriceBreakdown;
 import com.commitcrew.thebakeway.ui.console.CommandConsoleFilter;
 
@@ -61,10 +66,15 @@ class OrderSummaryControllerTest {
                 .addFilters(new CommandConsoleFilter(console, sessions, accountRegistry)).build();
     }
 
-    @Test
-    void returnsSummaryFromRealServiceAndLogsSuccessfulCommand() throws Exception {
-        Order order = order("delivered", "customer-1");
+    @ParameterizedTest
+    @ValueSource(strings = {"delivered", "refunded"})
+    void returnsOriginalItemsFromRealServiceAndLogsSuccessfulCommand(String orderStatus) throws Exception {
+        Order order = order(orderStatus, "customer-1");
         when(order.getId()).thenReturn("order-1");
+        MenuItem item = new MenuItem("bakery-1", "Original croissant", "", 4, MenuItemStatus.available);
+        OrderLine line = new OrderLine(order, item, 3);
+        when(order.getOrderItems()).thenReturn(List.of(line));
+        item.updateDetails("Changed menu item", "", 100);
         when(billing.findCharge("order-1")).thenReturn(Optional.of(new OrderSummaryBilling.Charge(
                 "charge-1", new PriceBreakdown(12, 4, 1, 2, 19))));
         when(eventRepository.findByEntityTypeAndEntityIdOrderByTimestampAsc(EntityType.ORDER, "order-1"))
@@ -74,6 +84,11 @@ class OrderSummaryControllerTest {
         mvc.perform(get("/api/orders/order-1/summary").cookie(session(Role.CUSTOMER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value("order-1"))
+                .andExpect(jsonPath("$.status").value(orderStatus))
+                .andExpect(jsonPath("$.items[0].itemName").value("Original croissant"))
+                .andExpect(jsonPath("$.items[0].quantity").value(3))
+                .andExpect(jsonPath("$.items[0].unitPrice").value(4))
+                .andExpect(jsonPath("$.items[0].subtotal").value(12))
                 .andExpect(jsonPath("$.pricing.subtotal").value(12))
                 .andExpect(jsonPath("$.pricing.deliveryFee").value(4))
                 .andExpect(jsonPath("$.pricing.serviceFee").value(1))

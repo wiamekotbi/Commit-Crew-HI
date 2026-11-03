@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -55,11 +56,12 @@ class OrderSummaryServiceTest {
         service = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.of(billing));
     }
 
-    @Test
-    void returnsDeliveredOrderWithSavedPricesAndActualDeliveryTimestamp() {
+    @ParameterizedTest
+    @ValueSource(strings = {"delivered", "refunded"})
+    void returnsOriginalItemsAndDeliveryTimestampForDeliveredAndRefundedOrders(String status) {
         customerSession();
         MenuItem item = new MenuItem("bakery-1", "Original croissant", "", 4.5, MenuItemStatus.available);
-        Order order = new Order("customer-1", "bakery-1", "Maria", "Montreal");
+        Order order = spy(new Order("customer-1", "bakery-1", "Maria", "Montreal"));
         ReflectionTestUtils.setField(order, "id", "order-1");
         order.addOrderItem(item, 2);
         order.accept();
@@ -67,6 +69,7 @@ class OrderSummaryServiceTest {
         order.markReady();
         order.confirmPickup();
         order.confirmDelivery();
+        when(order.getStatus()).thenReturn(status);
         item.updateDetails("New croissant", "", 100);
         when(orderRegistry.findById("order-1")).thenReturn(Optional.of(order));
         PriceBreakdown saved = new PriceBreakdown(9, 3, 1, 2, 15);
@@ -75,7 +78,7 @@ class OrderSummaryServiceTest {
         OrderSummary result = service.getSummary("session-1", "order-1");
 
         assertEquals("order-1", result.orderId());
-        assertEquals("delivered", result.status());
+        assertEquals(status, result.status());
         assertEquals(List.of(new OrderSummary.Item("Original croissant", 2, 4.5, 9)), result.items());
         assertEquals("charge-1", result.chargeId());
         assertSame(saved, result.pricing());
