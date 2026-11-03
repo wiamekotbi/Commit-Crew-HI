@@ -9,7 +9,7 @@ const scripts = ["dashboard.js", "order-summary.js"]
     .map(name => readFileSync(resolve(staticRoot, "js", name), "utf8"));
 
 function page(replies, search = "?orderId=order-1") {
-    const elements = Object.fromEntries(["orderSummary", "retrySummary", "logoutButton"].map(id => [id, {
+    const elements = Object.fromEntries(["orderSummary", "retrySummary", "logoutButton", "userName", "userRole"].map(id => [id, {
         innerHTML: "",
         disabled: false,
         attributes: {},

@@ -69,6 +69,9 @@
                 showError("Only customers can view order summaries.");
                 return;
             }
+            document.getElementById("userName").innerHTML = `<i class="fa-solid fa-circle-user"></i> ${D.escape(
+                session.data.displayName || session.data.username || session.data.accountId)}`;
+            document.getElementById("userRole").innerHTML = `<i class="fa-solid fa-user"></i> ${D.escape(session.data.role)}`;
             if (!orderId || !orderId.trim()) {
                 showError("No order selected. Open a delivered order from My orders.");
                 return;
