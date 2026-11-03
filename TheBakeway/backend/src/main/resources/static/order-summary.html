@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bakeway - Order Summary</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body class="dashboard-page">
+    <header class="dashboard-header">
+        <h1>The Bakeway</h1>
+        <div class="user-box">
+            <a href="/dashboard.html" class="header-link">Back to my orders</a>
+            <button type="button" id="logoutButton" class="header-link">Logout</button>
+        </div>
+    </header>
+    <main class="dashboard-main">
+        <section class="card">
+            <div class="card-title">
+                <h2>Order summary</h2>
+                <button type="button" class="btn secondary" id="retrySummary">Refresh</button>
+            </div>
+            <div id="orderSummary" aria-live="polite" aria-busy="true">
+                <p class="muted">Loading order summary...</p>
+            </div>
+        </section>
+    </main>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/order-summary.js"></script>
+</body>
+</html>
