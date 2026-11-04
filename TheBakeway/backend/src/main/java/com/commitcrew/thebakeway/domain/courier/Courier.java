@@ -1,6 +1,11 @@
 package com.commitcrew.thebakeway.domain.courier;
 
+import com.commitcrew.thebakeway.domain.location.Coordinates;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -29,6 +34,15 @@ public class Courier {
     @Column(name = "stalled_order_id")
     private String stalledOrderId;
 
+    // The configured starting location is used by the selection strategy.
+    // Courier duty and assignment eligibility still come exclusively from status.
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "latitude", column = @Column(name = "latitude")),
+            @AttributeOverride(name = "longitude", column = @Column(name = "longitude"))
+    })
+    private Coordinates coordinates;
+
     protected Courier() {
     }
 
@@ -36,6 +50,19 @@ public class Courier {
         requireNonBlank(courierId, "Courier ID is required");
         this.courierId = courierId;
         this.status = CourierStatus.OFFLINE;
+    }
+
+    /**
+     * Creates a configured courier at a known location. The existing
+     * constructor remains available so Wiame's lifecycle callers and tests do
+     * not need to change until the initial-state configuration is migrated.
+     */
+    public Courier(String courierId, Coordinates coordinates) {
+        this(courierId);
+        if (coordinates == null) {
+            throw new IllegalArgumentException("Courier coordinates cannot be null.");
+        }
+        this.coordinates = coordinates;
     }
 
     public void goOnDuty() {
@@ -102,6 +129,10 @@ public class Courier {
 
     public String getStalledOrderId() {
         return stalledOrderId;
+    }
+
+    public Coordinates getCoordinates() {
+        return coordinates;
     }
 
     private void requireStatus(CourierStatus expected, String action) {

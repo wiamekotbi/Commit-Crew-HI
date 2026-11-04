@@ -1,5 +1,7 @@
 package com.commitcrew.thebakeway.domain.bakery;
 
+import com.commitcrew.thebakeway.domain.location.Coordinates;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +32,23 @@ public class BakeryTest {
         
         // Assert
         assertEquals(BakeryStatus.closed, bakery3.getBakeryStatus());
+    }
+
+    @Test
+    void shouldKeepCoordinatesRequiredForCourierDispatch() {
+        // The text address remains customer-facing, while dispatch uses the
+        // precise coordinates loaded from the city configuration.
+        Coordinates coordinates = new Coordinates(45.4972, -73.5789);
+        Bakery bakery = new Bakery(
+                "bakery-123",
+                "Sweet Treats",
+                BakeryStatus.open,
+                "123 Main St",
+                coordinates);
+
+        assertSame(coordinates, bakery.getCoordinates());
+        assertEquals(45.4972, bakery.getCoordinates().getLatitude());
+        assertEquals(-73.5789, bakery.getCoordinates().getLongitude());
     }
 
 
