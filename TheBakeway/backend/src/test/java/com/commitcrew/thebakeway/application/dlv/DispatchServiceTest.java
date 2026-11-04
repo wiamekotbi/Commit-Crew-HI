@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.courier.CourierStatus;
 import com.commitcrew.thebakeway.domain.location.Coordinates;
 import com.commitcrew.thebakeway.domain.order.Order;
@@ -36,6 +37,9 @@ class DispatchServiceTest {
     private OrderRegistry orderRegistry;
 
     @Mock
+    private CourierRegistry courierRegistry;
+
+    @Mock
     private CourierSelectionService courierSelectionService;
 
     private ActiveDispatchOffers activeOffers;
@@ -47,7 +51,7 @@ class DispatchServiceTest {
         activeOffers = new ActiveDispatchOffers();
         waitingQueue = new DispatchWaitingQueue();
         service = new DispatchService(
-                orderRegistry, courierSelectionService, activeOffers, waitingQueue);
+                orderRegistry, courierRegistry, courierSelectionService, activeOffers, waitingQueue);
     }
 
     @Test
@@ -137,6 +141,67 @@ class DispatchServiceTest {
         when(orderRegistry.findById(ORDER_ID)).thenReturn(Optional.empty());
         assertThrows(OrderNotFoundException.class,
                 () -> service.dispatchReadyOrder(ORDER_ID));
+    }
+
+    @Test
+    void acceptedOfferIsReleasedAndCannotBeDispatchedAgain() {
+        Order order = readyOrder();
+        Courier courier = idleCourier("courier-1");
+        courier.assignOrder(ORDER_ID);
+        DispatchOffer offer = new DispatchOffer(
+                "offer-1", ORDER_ID, "courier-1", Instant.now());
+        activeOffers.add(offer);
+        when(courierRegistry.findById("courier-1")).thenReturn(Optional.of(courier));
+
+        assertEquals(offer, service.recordOfferAccepted("offer-1", "courier-1"));
+        assertTrue(activeOffers.snapshot().isEmpty());
+        assertTrue(waitingQueue.snapshot().isEmpty());
+
+        when(orderRegistry.findById(ORDER_ID)).thenReturn(Optional.of(order));
+        when(courierRegistry.findByCurrentOrderId(ORDER_ID)).thenReturn(Optional.of(courier));
+        assertTrue(service.dispatchReadyOrder(ORDER_ID).isEmpty());
+        verifyNoInteractions(courierSelectionService);
+    }
+
+    @Test
+    void acceptanceRequiresCompletedMatchingCourierAssignment() {
+        Courier idleCourier = idleCourier("courier-1");
+        DispatchOffer offer = new DispatchOffer(
+                "offer-1", ORDER_ID, "courier-1", Instant.now());
+        activeOffers.add(offer);
+        when(courierRegistry.findById("courier-1"))
+                .thenReturn(Optional.of(idleCourier));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.recordOfferAccepted("offer-1", "courier-1"));
+
+        assertEquals(offer, activeOffers.findByOfferId("offer-1").orElseThrow());
+    }
+
+    @Test
+    void declinedOfferIsReleasedAndQueuedWithoutImmediateReoffer() {
+        DispatchOffer offer = new DispatchOffer(
+                "offer-1", ORDER_ID, "courier-1", Instant.now());
+        activeOffers.add(offer);
+
+        assertEquals(offer, service.recordOfferDeclined("offer-1", "courier-1"));
+
+        assertTrue(activeOffers.snapshot().isEmpty());
+        assertEquals(List.of(ORDER_ID), waitingQueue.snapshot());
+        verifyNoInteractions(courierSelectionService);
+    }
+
+    @Test
+    void courierCannotRespondToAnotherCouriersOffer() {
+        DispatchOffer offer = new DispatchOffer(
+                "offer-1", ORDER_ID, "courier-1", Instant.now());
+        activeOffers.add(offer);
+
+        assertThrows(SecurityException.class,
+                () -> service.recordOfferDeclined("offer-1", "courier-2"));
+
+        assertEquals(offer, activeOffers.findByOfferId("offer-1").orElseThrow());
+        assertTrue(waitingQueue.snapshot().isEmpty());
     }
 
     private Order readyOrder() {

@@ -9,5 +9,7 @@ public interface CourierRegistry extends JpaRepository<Courier, String> {
 
     List<Courier> findByStatus(CourierStatus status);
 
+    Optional<Courier> findByCurrentOrderId(String orderId);
+
     Optional<Courier> findByStalledOrderId(String orderId);
 }

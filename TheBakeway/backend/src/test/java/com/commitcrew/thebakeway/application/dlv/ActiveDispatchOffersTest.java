@@ -18,6 +18,7 @@ class ActiveDispatchOffersTest {
         DispatchOffer offer = offer("offer-1", "order-1", "courier-1");
 
         assertEquals(offer, activeOffers.add(offer));
+        assertEquals(offer, activeOffers.findByOfferId("offer-1").orElseThrow());
         assertEquals(offer, activeOffers.findByOrderId("order-1").orElseThrow());
         assertEquals(offer, activeOffers.findByCourierId("courier-1").orElseThrow());
         assertTrue(activeOffers.isCourierReserved("courier-1"));
@@ -30,6 +31,15 @@ class ActiveDispatchOffersTest {
 
         assertThrows(IllegalStateException.class,
                 () -> activeOffers.add(offer("offer-2", "order-1", "courier-2")));
+        assertEquals(1, activeOffers.snapshot().size());
+    }
+
+    @Test
+    void refusesDuplicateOfferId() {
+        activeOffers.add(offer("offer-1", "order-1", "courier-1"));
+
+        assertThrows(IllegalStateException.class,
+                () -> activeOffers.add(offer("offer-1", "order-2", "courier-2")));
         assertEquals(1, activeOffers.snapshot().size());
     }
 
@@ -49,6 +59,7 @@ class ActiveDispatchOffersTest {
 
         assertEquals(offer, activeOffers.removeByOrderId("order-1").orElseThrow());
         assertTrue(activeOffers.findByOrderId("order-1").isEmpty());
+        assertTrue(activeOffers.findByOfferId("offer-1").isEmpty());
         assertTrue(activeOffers.findByCourierId("courier-1").isEmpty());
         assertFalse(activeOffers.isCourierReserved("courier-1"));
     }
@@ -67,14 +78,28 @@ class ActiveDispatchOffersTest {
     }
 
     @Test
+    void removesOfferUsingPublicOfferId() {
+        DispatchOffer offer = offer("offer-1", "order-1", "courier-1");
+        activeOffers.add(offer);
+
+        assertEquals(offer, activeOffers.removeByOfferId("offer-1").orElseThrow());
+        assertTrue(activeOffers.findByOrderId("order-1").isEmpty());
+        assertTrue(activeOffers.findByCourierId("courier-1").isEmpty());
+    }
+
+    @Test
     void rejectsMissingOfferAndLookupIds() {
         assertThrows(IllegalArgumentException.class, () -> activeOffers.add(null));
         assertThrows(IllegalArgumentException.class,
                 () -> activeOffers.findByOrderId(" "));
         assertThrows(IllegalArgumentException.class,
+                () -> activeOffers.findByOfferId(" "));
+        assertThrows(IllegalArgumentException.class,
                 () -> activeOffers.findByCourierId(null));
         assertThrows(IllegalArgumentException.class,
                 () -> activeOffers.removeByOrderId(" "));
+        assertThrows(IllegalArgumentException.class,
+                () -> activeOffers.removeByOfferId(null));
     }
 
     private DispatchOffer offer(String offerId, String orderId, String courierId) {

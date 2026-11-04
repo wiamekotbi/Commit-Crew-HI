@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ActiveDispatchOffers {
 
+    private final Map<String, DispatchOffer> offersByOfferId = new LinkedHashMap<>();
     private final Map<String, DispatchOffer> offersByOrderId = new LinkedHashMap<>();
     private final Map<String, DispatchOffer> offersByCourierId = new LinkedHashMap<>();
 
@@ -26,6 +27,10 @@ public class ActiveDispatchOffers {
     public synchronized DispatchOffer add(DispatchOffer offer) {
         if (offer == null) {
             throw new IllegalArgumentException("Dispatch offer is required.");
+        }
+        if (offersByOfferId.containsKey(offer.offerId())) {
+            throw new IllegalStateException(
+                    "Offer ID is already active: " + offer.offerId());
         }
         if (offersByOrderId.containsKey(offer.orderId())) {
             throw new IllegalStateException(
@@ -36,9 +41,15 @@ public class ActiveDispatchOffers {
                     "Courier already has an active offer: " + offer.courierId());
         }
 
+        offersByOfferId.put(offer.offerId(), offer);
         offersByOrderId.put(offer.orderId(), offer);
         offersByCourierId.put(offer.courierId(), offer);
         return offer;
+    }
+
+    public synchronized Optional<DispatchOffer> findByOfferId(String offerId) {
+        requireId(offerId, "Offer ID is required.");
+        return Optional.ofNullable(offersByOfferId.get(offerId));
     }
 
     public synchronized Optional<DispatchOffer> findByOrderId(String orderId) {
@@ -68,9 +79,19 @@ public class ActiveDispatchOffers {
         requireId(orderId, "Order ID is required.");
         DispatchOffer removed = offersByOrderId.remove(orderId);
         if (removed != null) {
+            offersByOfferId.remove(removed.offerId());
             offersByCourierId.remove(removed.courierId());
         }
         return Optional.ofNullable(removed);
+    }
+
+    public synchronized Optional<DispatchOffer> removeByOfferId(String offerId) {
+        requireId(offerId, "Offer ID is required.");
+        DispatchOffer offer = offersByOfferId.get(offerId);
+        if (offer == null) {
+            return Optional.empty();
+        }
+        return removeByOrderId(offer.orderId());
     }
 
     /** Returns a defensive creation-order snapshot for inspection and tests. */
@@ -79,6 +100,7 @@ public class ActiveDispatchOffers {
     }
 
     public synchronized void clear() {
+        offersByOfferId.clear();
         offersByOrderId.clear();
         offersByCourierId.clear();
     }
