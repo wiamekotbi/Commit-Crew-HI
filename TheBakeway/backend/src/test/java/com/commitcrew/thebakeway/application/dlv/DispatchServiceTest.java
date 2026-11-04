@@ -204,6 +204,61 @@ class DispatchServiceTest {
         assertTrue(waitingQueue.snapshot().isEmpty());
     }
 
+    @Test
+    void idleCourierAvailabilityRetriesWaitingOrdersInFifoOrder() {
+        Courier firstCourier = idleCourier("courier-1");
+        Courier secondCourier = idleCourier("courier-2");
+        Order firstOrder = readyOrder();
+        Order secondOrder = readyOrder();
+        waitingQueue.enqueue("order-1");
+        waitingQueue.enqueue("order-2");
+
+        when(courierRegistry.findById("courier-1"))
+                .thenReturn(Optional.of(firstCourier));
+        when(orderRegistry.findById("order-1")).thenReturn(Optional.of(firstOrder));
+        when(orderRegistry.findById("order-2")).thenReturn(Optional.of(secondOrder));
+        when(courierSelectionService.selectCourierForBakery(BAKERY_ID, Set.of()))
+                .thenReturn(Optional.of(firstCourier));
+        when(courierSelectionService.selectCourierForBakery(
+                BAKERY_ID, Set.of("courier-1")))
+                .thenReturn(Optional.of(secondCourier));
+
+        List<DispatchOffer> offers = service
+                .retryWaitingOrdersWhenCourierBecomesIdle("courier-1");
+
+        assertEquals(List.of("order-1", "order-2"),
+                offers.stream().map(DispatchOffer::orderId).toList());
+        assertEquals(List.of("courier-1", "courier-2"),
+                offers.stream().map(DispatchOffer::courierId).toList());
+        assertTrue(waitingQueue.snapshot().isEmpty());
+    }
+
+    @Test
+    void nonIdleCourierDoesNotTriggerWaitingRetries() {
+        Courier assignedCourier = idleCourier("courier-1");
+        assignedCourier.assignOrder("assigned-order");
+        waitingQueue.enqueue(ORDER_ID);
+        when(courierRegistry.findById("courier-1"))
+                .thenReturn(Optional.of(assignedCourier));
+
+        assertTrue(service.retryWaitingOrdersWhenCourierBecomesIdle("courier-1").isEmpty());
+
+        assertEquals(List.of(ORDER_ID), waitingQueue.snapshot());
+        verifyNoInteractions(orderRegistry, courierSelectionService);
+    }
+
+    @Test
+    void availabilityRetryRejectsMissingOrUnknownCourier() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.retryWaitingOrdersWhenCourierBecomesIdle(" "));
+
+        when(courierRegistry.findById("courier-missing")).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class,
+                () -> service.retryWaitingOrdersWhenCourierBecomesIdle("courier-missing"));
+
+        verifyNoInteractions(orderRegistry, courierSelectionService);
+    }
+
     private Order readyOrder() {
         Order order = new Order(
                 "customer-1", BAKERY_ID, "Customer", "123 Main Street");

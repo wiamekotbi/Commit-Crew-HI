@@ -1,6 +1,8 @@
 package com.commitcrew.thebakeway.application.dlv;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -129,6 +131,38 @@ public class DispatchService {
         activeOffers.removeByOfferId(offerId);
         waitingQueue.enqueue(offer.orderId());
         return offer;
+    }
+
+    /**
+     * Hook for Wiame's courier workflow after a successful transition into
+     * IDLE, such as going on duty or completing a delivery. Waiting orders are
+     * retried in FIFO order, and each new offer reserves its courier before the
+     * next order is considered.
+     *
+     * Decline must not call this hook: a decline leaves the courier IDLE but is
+     * not a new availability transition, so retrying immediately could offer
+     * the same order repeatedly without an external state change.
+     */
+    public synchronized List<DispatchOffer> retryWaitingOrdersWhenCourierBecomesIdle(
+            String courierId) {
+        if (courierId == null || courierId.isBlank()) {
+            throw new IllegalArgumentException("Courier ID is required.");
+        }
+
+        Courier courier = courierRegistry.findById(courierId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Courier not found with ID: " + courierId));
+        if (courier.getStatus() != CourierStatus.IDLE) {
+            return List.of();
+        }
+
+        // Iterate over a snapshot because successful dispatch removes entries
+        // from the live queue while the retry is in progress.
+        List<DispatchOffer> createdOffers = new ArrayList<>();
+        for (String orderId : waitingQueue.snapshot()) {
+            dispatchReadyOrder(orderId).ifPresent(createdOffers::add);
+        }
+        return List.copyOf(createdOffers);
     }
 
     private DispatchOffer matchingOffer(String offerId, String courierId) {
