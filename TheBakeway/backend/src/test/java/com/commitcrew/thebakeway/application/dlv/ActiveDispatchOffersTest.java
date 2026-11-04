@@ -21,6 +21,7 @@ class ActiveDispatchOffersTest {
         assertEquals(offer, activeOffers.findByOrderId("order-1").orElseThrow());
         assertEquals(offer, activeOffers.findByCourierId("courier-1").orElseThrow());
         assertTrue(activeOffers.isCourierReserved("courier-1"));
+        assertEquals(java.util.Set.of("courier-1"), activeOffers.reservedCourierIds());
     }
 
     @Test
@@ -62,6 +63,7 @@ class ActiveDispatchOffersTest {
         assertTrue(activeOffers.snapshot().isEmpty());
         assertFalse(activeOffers.isCourierReserved("courier-1"));
         assertFalse(activeOffers.isCourierReserved("courier-2"));
+        assertTrue(activeOffers.reservedCourierIds().isEmpty());
     }
 
     @Test

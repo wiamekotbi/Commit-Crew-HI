@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,26 @@ class CourierSelectionServiceTest {
     }
 
     @Test
+    void excludesCouriersReservedByActiveOffers() {
+        Bakery bakery = configuredBakery();
+        Courier reserved = idleCourier("courier-reserved");
+        Courier available = idleCourier("courier-available");
+        List<Courier> allIdleCouriers = List.of(reserved, available);
+        List<Courier> unreservedCouriers = List.of(available);
+
+        when(bakeryRegistry.findById(BAKERY_ID)).thenReturn(Optional.of(bakery));
+        when(courierRegistry.findByStatus(CourierStatus.IDLE)).thenReturn(allIdleCouriers);
+        when(selectionStrategy.selectCourier(BAKERY_LOCATION, unreservedCouriers))
+                .thenReturn(Optional.of(available));
+
+        Optional<Courier> result = service.selectCourierForBakery(
+                BAKERY_ID, Set.of("courier-reserved"));
+
+        assertEquals(available, result.orElseThrow());
+        verify(selectionStrategy).selectCourier(BAKERY_LOCATION, unreservedCouriers);
+    }
+
+    @Test
     void rejectsMissingBakeryWithoutQueryingCouriers() {
         when(bakeryRegistry.findById(BAKERY_ID)).thenReturn(Optional.empty());
 
@@ -113,6 +134,14 @@ class CourierSelectionServiceTest {
                 () -> service.selectCourierForBakery("  "));
         assertThrows(IllegalArgumentException.class,
                 () -> service.selectCourierForBakery(null));
+
+        verifyNoInteractions(bakeryRegistry, courierRegistry, selectionStrategy);
+    }
+
+    @Test
+    void rejectsMissingExclusionSet() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.selectCourierForBakery(BAKERY_ID, null));
 
         verifyNoInteractions(bakeryRegistry, courierRegistry, selectionStrategy);
     }

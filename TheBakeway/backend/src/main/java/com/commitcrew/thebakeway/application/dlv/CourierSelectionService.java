@@ -2,6 +2,7 @@ package com.commitcrew.thebakeway.application.dlv;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,8 +45,22 @@ public class CourierSelectionService {
      */
     @Transactional(readOnly = true)
     public Optional<Courier> selectCourierForBakery(String bakeryId) {
+        return selectCourierForBakery(bakeryId, Set.of());
+    }
+
+    /**
+     * Selects a candidate while excluding couriers already reserved by active
+     * offers. Those couriers remain IDLE until they accept, so status alone is
+     * not enough to prevent conflicting simultaneous offers.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Courier> selectCourierForBakery(
+            String bakeryId, Set<String> excludedCourierIds) {
         if (bakeryId == null || bakeryId.isBlank()) {
             throw new IllegalArgumentException("Bakery ID is required.");
+        }
+        if (excludedCourierIds == null) {
+            throw new IllegalArgumentException("Excluded courier IDs are required.");
         }
 
         Bakery bakery = bakeryRegistry.findById(bakeryId)
@@ -57,7 +72,9 @@ public class CourierSelectionService {
                     "Bakery has no coordinates configured: " + bakeryId);
         }
 
-        List<Courier> idleCouriers = courierRegistry.findByStatus(CourierStatus.IDLE);
+        List<Courier> idleCouriers = courierRegistry.findByStatus(CourierStatus.IDLE).stream()
+                .filter(courier -> !excludedCourierIds.contains(courier.getCourierId()))
+                .toList();
         return selectionStrategy.selectCourier(bakery.getCoordinates(), idleCouriers);
     }
 }
