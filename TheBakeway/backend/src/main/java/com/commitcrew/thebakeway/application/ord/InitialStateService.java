@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
+import com.commitcrew.thebakeway.application.dlv.ActiveDispatchOffers;
 import com.commitcrew.thebakeway.application.dlv.DispatchWaitingQueue;
 import com.commitcrew.thebakeway.application.reg.AccountSeedingService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
@@ -51,6 +52,7 @@ public class InitialStateService {
     private final SessionManager sessionManager;
     private final DashboardReadModel dashboardReadModel;
     private final DispatchWaitingQueue dispatchWaitingQueue;
+    private final ActiveDispatchOffers activeDispatchOffers;
     private final CommandConsole console;
     private final EntityManager entityManager;
 
@@ -66,6 +68,7 @@ public class InitialStateService {
             SessionManager sessionManager,
             DashboardReadModel dashboardReadModel,
             DispatchWaitingQueue dispatchWaitingQueue,
+            ActiveDispatchOffers activeDispatchOffers,
             CommandConsole console,
             EntityManager entityManager) {
         this.cityConfigurationReader = cityConfigurationReader;
@@ -79,6 +82,7 @@ public class InitialStateService {
         this.sessionManager = sessionManager;
         this.dashboardReadModel = dashboardReadModel;
         this.dispatchWaitingQueue = dispatchWaitingQueue;
+        this.activeDispatchOffers = activeDispatchOffers;
         this.console = console;
         this.entityManager = entityManager;
     }
@@ -142,6 +146,7 @@ public class InitialStateService {
         // Reset also removes transient READY-order retry state. The orders were
         // deleted above, so retaining their queue IDs would create stale work.
         dispatchWaitingQueue.clear();
+        activeDispatchOffers.clear();
 
         InitialStateSummary summary = new InitialStateSummary(
                 city.bakeries().size(), city.menuItems().size(), accountsPerRole);
