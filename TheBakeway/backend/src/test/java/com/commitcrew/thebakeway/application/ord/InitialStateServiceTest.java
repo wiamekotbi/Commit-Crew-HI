@@ -25,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
+import com.commitcrew.thebakeway.application.dlv.DispatchWaitingQueue;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -75,6 +76,9 @@ class InitialStateServiceTest {
     private DashboardReadModel dashboardReadModel;
 
     @Mock
+    private DispatchWaitingQueue dispatchWaitingQueue;
+
+    @Mock
     private CommandConsole console;
 
     @Mock
@@ -105,6 +109,7 @@ class InitialStateServiceTest {
                 passwordEncoder,
                 sessionManager,
                 dashboardReadModel,
+                dispatchWaitingQueue,
                 console,
                 entityManager);
     }
@@ -124,7 +129,7 @@ class InitialStateServiceTest {
 
         // Orders and events are cleared, and rows are removed before the ones they reference
         InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, courierRegistry,
-                accountRegistry, bakeryRegistry, entityManager, dashboardReadModel);
+                accountRegistry, bakeryRegistry, entityManager, dashboardReadModel, dispatchWaitingQueue);
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
         order.verify(menuItemRegistry).deleteAllInBatch();
@@ -137,6 +142,7 @@ class InitialStateServiceTest {
         order.verify(courierRegistry).saveAll(city.couriers());
         order.verify(accountRegistry).deleteAll();
         order.verify(dashboardReadModel).clear();
+        order.verify(dispatchWaitingQueue).clear();
 
         // The shipped accounts file is seeded and every session ends
         verify(sessionManager).invalidateAllSessions();
@@ -151,7 +157,7 @@ class InitialStateServiceTest {
         assertThrows(InvalidConfigurationException.class, () -> service.loadInitialState());
 
         verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, courierRegistry,
-                accountRegistry, sessionManager, dashboardReadModel);
+                accountRegistry, sessionManager, dashboardReadModel, dispatchWaitingQueue);
         verify(console).record("system", "SYSTEM", "LOAD_INITIAL_STATE", false,
                 "Invalid city config entry at line 3: price cannot be negative");
     }

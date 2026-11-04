@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
+import com.commitcrew.thebakeway.application.dlv.DispatchWaitingQueue;
 import com.commitcrew.thebakeway.application.reg.AccountSeedingService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
@@ -49,6 +50,7 @@ public class InitialStateService {
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
     private final DashboardReadModel dashboardReadModel;
+    private final DispatchWaitingQueue dispatchWaitingQueue;
     private final CommandConsole console;
     private final EntityManager entityManager;
 
@@ -63,6 +65,7 @@ public class InitialStateService {
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
             DashboardReadModel dashboardReadModel,
+            DispatchWaitingQueue dispatchWaitingQueue,
             CommandConsole console,
             EntityManager entityManager) {
         this.cityConfigurationReader = cityConfigurationReader;
@@ -75,6 +78,7 @@ public class InitialStateService {
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
         this.dashboardReadModel = dashboardReadModel;
+        this.dispatchWaitingQueue = dispatchWaitingQueue;
         this.console = console;
         this.entityManager = entityManager;
     }
@@ -135,6 +139,9 @@ public class InitialStateService {
         }
 
         dashboardReadModel.clear();
+        // Reset also removes transient READY-order retry state. The orders were
+        // deleted above, so retaining their queue IDs would create stale work.
+        dispatchWaitingQueue.clear();
 
         InitialStateSummary summary = new InitialStateSummary(
                 city.bakeries().size(), city.menuItems().size(), accountsPerRole);
