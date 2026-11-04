@@ -32,7 +32,10 @@ import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
 import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
+import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
+import com.commitcrew.thebakeway.domain.location.Coordinates;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
@@ -57,6 +60,9 @@ class InitialStateServiceTest {
     private BakeryRegistry bakeryRegistry;
 
     @Mock
+    private CourierRegistry courierRegistry;
+
+    @Mock
     private AccountRegistry accountRegistry;
 
     @Mock
@@ -77,8 +83,14 @@ class InitialStateServiceTest {
     private InitialStateService service;
 
     private final CityConfiguration city = new CityConfiguration(
-            List.of(new Bakery("bakery-1", "Sweet Treats", BakeryStatus.open, "123 Main Street")),
-            List.of(new MenuItem("item-1", "bakery-1", "Croissant", "", 3.50, MenuItemStatus.available)));
+            List.of(new Bakery(
+                    "bakery-1",
+                    "Sweet Treats",
+                    BakeryStatus.open,
+                    "123 Main Street",
+                    new Coordinates(45.4972, -73.5789))),
+            List.of(new MenuItem("item-1", "bakery-1", "Croissant", "", 3.50, MenuItemStatus.available)),
+            List.of(new Courier("3", new Coordinates(45.5048, -73.5772))));
 
     @BeforeEach
     void setUp() {
@@ -88,6 +100,7 @@ class InitialStateServiceTest {
                 eventRepository,
                 menuItemRegistry,
                 bakeryRegistry,
+                courierRegistry,
                 accountRegistry,
                 passwordEncoder,
                 sessionManager,
@@ -110,16 +123,18 @@ class InitialStateServiceTest {
                 summary.accountsPerRole());
 
         // Orders and events are cleared, and rows are removed before the ones they reference
-        InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, accountRegistry, bakeryRegistry,
-                entityManager, dashboardReadModel);
+        InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, courierRegistry,
+                accountRegistry, bakeryRegistry, entityManager, dashboardReadModel);
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
         order.verify(menuItemRegistry).deleteAllInBatch();
+        order.verify(courierRegistry).deleteAllInBatch();
         order.verify(accountRegistry).deleteAllInBatch();
         order.verify(bakeryRegistry).deleteAllInBatch();
         order.verify(entityManager).clear();
         order.verify(bakeryRegistry).saveAll(city.bakeries());
         order.verify(menuItemRegistry).saveAll(city.menuItems());
+        order.verify(courierRegistry).saveAll(city.couriers());
         order.verify(accountRegistry).deleteAll();
         order.verify(dashboardReadModel).clear();
 
@@ -135,8 +150,8 @@ class InitialStateServiceTest {
 
         assertThrows(InvalidConfigurationException.class, () -> service.loadInitialState());
 
-        verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, accountRegistry,
-                sessionManager, dashboardReadModel);
+        verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, courierRegistry,
+                accountRegistry, sessionManager, dashboardReadModel);
         verify(console).record("system", "SYSTEM", "LOAD_INITIAL_STATE", false,
                 "Invalid city config entry at line 3: price cannot be negative");
     }

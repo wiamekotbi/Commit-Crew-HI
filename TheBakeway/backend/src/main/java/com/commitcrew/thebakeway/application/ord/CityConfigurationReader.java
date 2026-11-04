@@ -10,12 +10,15 @@ import org.springframework.stereotype.Component;
 
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
+import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.location.Coordinates;
 import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 // Reads the city part of the config file (UC-ORD-01). Same line format as the accounts file:
-//   BAKERY,bakeryId,name,status,address
+//   BAKERY,bakeryId,name,status,address,latitude,longitude
 //   MENU_ITEM,itemId,bakeryId,name,description,price,status
+//   COURIER,courierId,latitude,longitude
 // Blank lines and lines starting with # are ignored. Any invalid entry refuses the whole file.
 @Component
 public class CityConfigurationReader {
@@ -23,8 +26,10 @@ public class CityConfigurationReader {
     public CityConfiguration read(Scanner scanner) {
         List<Bakery> bakeries = new ArrayList<>();
         List<MenuItem> menuItems = new ArrayList<>();
+        List<Courier> couriers = new ArrayList<>();
         Set<String> bakeryIds = new HashSet<>();
         Set<String> menuItemIds = new HashSet<>();
+        Set<String> courierIds = new HashSet<>();
 
         int lineNumber = 0;
         while (scanner.hasNextLine()) {
@@ -39,6 +44,7 @@ public class CityConfigurationReader {
             switch (values[0]) {
                 case "BAKERY" -> bakeries.add(bakery(values, lineNumber, bakeryIds));
                 case "MENU_ITEM" -> menuItems.add(menuItem(values, lineNumber, bakeryIds, menuItemIds));
+                case "COURIER" -> couriers.add(courier(values, lineNumber, courierIds));
                 default -> throw invalid(lineNumber, "unknown entry type '" + values[0] + "'");
             }
         }
@@ -47,11 +53,11 @@ public class CityConfigurationReader {
             throw new InvalidConfigurationException("City config has no bakery");
         }
 
-        return new CityConfiguration(bakeries, menuItems);
+        return new CityConfiguration(bakeries, menuItems, couriers);
     }
 
     private Bakery bakery(String[] values, int lineNumber, Set<String> bakeryIds) {
-        requireFieldCount(values, 5, lineNumber);
+        requireFieldCount(values, 7, lineNumber);
         String id = required(values[1], "bakery id", lineNumber);
 
         if (!bakeryIds.add(id)) {
@@ -62,7 +68,19 @@ public class CityConfigurationReader {
                 id,
                 required(values[2], "bakery name", lineNumber),
                 bakeryStatus(values[3], lineNumber),
-                required(values[4], "bakery address", lineNumber));
+                required(values[4], "bakery address", lineNumber),
+                coordinates(values[5], values[6], lineNumber));
+    }
+
+    private Courier courier(String[] values, int lineNumber, Set<String> courierIds) {
+        requireFieldCount(values, 4, lineNumber);
+        String id = required(values[1], "courier id", lineNumber);
+
+        if (!courierIds.add(id)) {
+            throw invalid(lineNumber, "duplicate courier id '" + id + "'");
+        }
+
+        return new Courier(id, coordinates(values[2], values[3], lineNumber));
     }
 
     // Menu items must come after the bakery they belong to
@@ -129,6 +147,25 @@ public class CityConfigurationReader {
             throw invalid(lineNumber, "price cannot be negative");
         }
         return price;
+    }
+
+    private Coordinates coordinates(String latitudeValue, String longitudeValue, int lineNumber) {
+        double latitude;
+        double longitude;
+        try {
+            latitude = Double.parseDouble(latitudeValue.trim());
+            longitude = Double.parseDouble(longitudeValue.trim());
+        } catch (NumberFormatException e) {
+            throw invalid(lineNumber, "latitude and longitude must be numbers");
+        }
+
+        try {
+            return new Coordinates(latitude, longitude);
+        } catch (IllegalArgumentException e) {
+            // Preserve the coordinate validation reason while adding the config
+            // line number needed to locate and correct the invalid entry.
+            throw invalid(lineNumber, e.getMessage());
+        }
     }
 
     private InvalidConfigurationException invalid(int lineNumber, String reason) {
