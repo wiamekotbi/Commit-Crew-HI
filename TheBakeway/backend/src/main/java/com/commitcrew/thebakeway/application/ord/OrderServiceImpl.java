@@ -2,6 +2,8 @@ package com.commitcrew.thebakeway.application.ord;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -12,11 +14,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.Bakery;
+import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
@@ -42,6 +47,8 @@ public class OrderServiceImpl implements OrderService {
     private final TransitionPublisher transitionPublisher;
     private final InitialStateService initialStateService;
     private final EventRepository eventRepository;
+    private final CourierRegistry courierRegistry;
+    private final DispatchService dispatchService;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -55,7 +62,9 @@ public class OrderServiceImpl implements OrderService {
             PreparationQueue preparationQueue,
             TransitionPublisher transitionPublisher,
             InitialStateService initialStateService,
-            EventRepository eventRepository) {
+            EventRepository eventRepository,
+            CourierRegistry courierRegistry,
+            DispatchService dispatchService) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -67,6 +76,8 @@ public class OrderServiceImpl implements OrderService {
         this.transitionPublisher = transitionPublisher;
         this.initialStateService = initialStateService;
         this.eventRepository = eventRepository;
+        this.courierRegistry = courierRegistry;
+        this.dispatchService = dispatchService;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
@@ -169,30 +180,40 @@ public class OrderServiceImpl implements OrderService {
         return saveAndPublish(order, previousState);
     }
 
-    // A courier confirms they picked up a ready order at the bakery (UC-DLV-05).
-    // An order cannot be picked up before it is ready (R-ORD-04, enforced by the State classes).
+    // A courier confirms they picked up their order at the bakery (UC-DLV-05): the order
+    // becomes picked_up and the courier carrying. An order cannot be picked up before it is
+    // ready (R-ORD-04, enforced by the State classes).
     @Override
     @Transactional
     public OrderTransitionResult confirmPickup(String sessionId, String orderId) {
-        Order order = courierOrder(sessionId, orderId);
+        Courier courier = courierHolding(sessionId, orderId);
+        Order order = existingOrder(orderId);
         String previousState = order.getStatus();
 
         order.confirmPickup();
+        courier.markPickedUp();
 
+        courierRegistry.save(courier);
         return saveAndPublish(order, previousState);
     }
 
-    // A courier confirms they delivered a picked-up order to the customer (UC-DLV-06).
+    // A courier confirms they delivered their order to the customer (UC-DLV-06): the order
+    // becomes delivered and the courier idle again, so waiting orders are offered again.
     // No state can be skipped: a ready order must be picked up first (R-ORD-04).
     @Override
     @Transactional
     public OrderTransitionResult confirmDelivery(String sessionId, String orderId) {
-        Order order = courierOrder(sessionId, orderId);
+        Courier courier = courierHolding(sessionId, orderId);
+        Order order = existingOrder(orderId);
         String previousState = order.getStatus();
 
         order.confirmDelivery();
+        courier.markDelivered();
 
-        return saveAndPublish(order, previousState);
+        courierRegistry.save(courier);
+        OrderTransitionResult result = saveAndPublish(order, previousState);
+        retryWaitingOrdersAfterCommit(courier.getCourierId());
+        return result;
     }
 
     // A customer's own orders with their current state, newest first (UC-ORD-12).
@@ -348,10 +369,34 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    // Loads an order for a courier command; the caller must be logged in.
-    private Order courierOrder(String sessionId, String orderId) {
-        currentSession(sessionId);
-        return existingOrder(orderId);
+    // Loads the courier of the logged-in account; a courier only acts on the order bound to
+    // them (UC-DLV-05 3a, UC-DLV-06 3a). The courier id is the courier's account id.
+    private Courier courierHolding(String sessionId, String orderId) {
+        Session session = currentSession(sessionId);
+        Courier courier = courierRegistry.findById(session.getAccountId())
+                .orElseThrow(() -> new IllegalStateException("No courier found for this account"));
+
+        if (!orderId.equals(courier.getCurrentOrderId())) {
+            throw new IllegalStateException("This order is not assigned to you");
+        }
+
+        return courier;
+    }
+
+    // The courier is idle again, so waiting orders are dispatched (UC-DLV-06 step 7, R-DLV-04).
+    // This runs after the commit, so a delivery that rolls back never creates an offer.
+    private void retryWaitingOrdersAfterCommit(String courierId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            dispatchService.retryWaitingOrdersWhenCourierBecomesIdle(courierId);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                dispatchService.retryWaitingOrdersWhenCourierBecomesIdle(courierId);
+            }
+        });
     }
 
     // Loads an order by id, or refuses the command if it does not exist.

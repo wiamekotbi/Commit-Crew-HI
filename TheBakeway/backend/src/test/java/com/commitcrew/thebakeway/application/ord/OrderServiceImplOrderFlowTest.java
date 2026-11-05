@@ -23,11 +23,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
+import com.commitcrew.thebakeway.domain.courier.CourierStatus;
 import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
@@ -47,6 +53,7 @@ class OrderServiceImplOrderFlowTest {
     private static final String CUSTOMER_ID = "customer-1";
     private static final String BAKERY_ID = "bakery-1";
     private static final String ORDER_ID = "order-1";
+    private static final String COURIER_ID = "courier-1";
 
     @Mock
     private BakeryService bakeryService;
@@ -81,6 +88,12 @@ class OrderServiceImplOrderFlowTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private CourierRegistry courierRegistry;
+
+    @Mock
+    private DispatchService dispatchService;
+
     private OrderServiceImpl orderService;
 
     @BeforeEach
@@ -96,7 +109,9 @@ class OrderServiceImplOrderFlowTest {
                 preparationQueue,
                 transitionPublisher,
                 initialStateService,
-                eventRepository);
+                eventRepository,
+                courierRegistry,
+                dispatchService);
     }
 
     // Placing an order
@@ -387,14 +402,18 @@ class OrderServiceImplOrderFlowTest {
     // Pickup and delivery
 
     @Test
-    void courierConfirmsPickupOfReadyOrder() {
-        givenSession("courier-1", Role.COURIER);
+    void courierConfirmsPickupOfTheirReadyOrder() {
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.ASSIGNED);
         Order order = givenReadyOrder();
         givenSaveReturnsOrder();
 
         OrderTransitionResult result = orderService.confirmPickup(SESSION_ID, ORDER_ID);
 
         assertEquals("picked_up", order.getStatus());
+        assertEquals(CourierStatus.CARRYING, courier.getStatus());
+        verify(courierRegistry).save(courier);
+        verify(dispatchService, never()).retryWaitingOrdersWhenCourierBecomesIdle(any());
         assertEquals("ready", result.previousState());
         assertEquals("picked_up", result.newState());
         StateTransitionEvent event = assertTransitionPublished("ready", "picked_up");
@@ -403,7 +422,8 @@ class OrderServiceImplOrderFlowTest {
 
     @Test
     void refusesPickupBeforeReady() {
-        givenSession("courier-1", Role.COURIER);
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.ASSIGNED);
         Order order = givenStoredOrder();
         order.accept();
         order.startPreparing();
@@ -411,24 +431,54 @@ class OrderServiceImplOrderFlowTest {
         assertThrows(IllegalTransitionException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
 
         assertEquals("preparing", order.getStatus());
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
         assertNothingSavedOrPublished();
     }
 
     @Test
     void refusesPickingUpAnOrderTwice() {
-        givenSession("courier-1", Role.COURIER);
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.CARRYING);
         Order order = givenReadyOrder();
         order.confirmPickup();
 
         assertThrows(IllegalTransitionException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
 
         assertEquals("picked_up", order.getStatus());
+        assertEquals(CourierStatus.CARRYING, courier.getStatus());
         assertNothingSavedOrPublished();
     }
 
     @Test
-    void courierConfirmsDeliveryOfPickedUpOrder() {
-        givenSession("courier-1", Role.COURIER);
+    void refusesPickupOfAnOrderNotAssignedToTheCourier() {
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+        courier.assignOrder("another-order");
+        when(courierRegistry.findById(COURIER_ID)).thenReturn(Optional.of(courier));
+
+        IllegalStateException refused = assertThrows(IllegalStateException.class,
+                () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertEquals("This order is not assigned to you", refused.getMessage());
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void refusesPickupWhenTheAccountHasNoCourier() {
+        givenSession(COURIER_ID, Role.COURIER);
+        when(courierRegistry.findById(COURIER_ID)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
+
+        assertNothingSavedOrPublished();
+    }
+
+    @Test
+    void courierConfirmsDeliveryOfTheirPickedUpOrder() {
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.CARRYING);
         Order order = givenReadyOrder();
         order.confirmPickup();
         givenSaveReturnsOrder();
@@ -436,32 +486,58 @@ class OrderServiceImplOrderFlowTest {
         OrderTransitionResult result = orderService.confirmDelivery(SESSION_ID, ORDER_ID);
 
         assertEquals("delivered", order.getStatus());
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+        verify(courierRegistry).save(courier);
+        verify(dispatchService).retryWaitingOrdersWhenCourierBecomesIdle(COURIER_ID);
         assertEquals("delivered", result.newState());
         StateTransitionEvent event = assertTransitionPublished("picked_up", "delivered");
         assertEquals(event.getEventId(), result.eventId());
     }
 
     @Test
+    void offersWaitingOrdersOnlyAfterTheDeliveryIsCommitted() {
+        givenSession(COURIER_ID, Role.COURIER);
+        givenCourierHolding(CourierStatus.CARRYING);
+        Order order = givenReadyOrder();
+        order.confirmPickup();
+        givenSaveReturnsOrder();
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            orderService.confirmDelivery(SESSION_ID, ORDER_ID);
+            verify(dispatchService, never()).retryWaitingOrdersWhenCourierBecomesIdle(any());
+
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        verify(dispatchService).retryWaitingOrdersWhenCourierBecomesIdle(COURIER_ID);
+    }
+
+    @Test
     void refusesDeliveryBeforePickup() {
-        givenSession("courier-1", Role.COURIER);
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.ASSIGNED);
         Order order = givenReadyOrder();
 
         assertThrows(IllegalTransitionException.class, () -> orderService.confirmDelivery(SESSION_ID, ORDER_ID));
 
         assertEquals("ready", order.getStatus());
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
         assertNothingSavedOrPublished();
     }
 
     @Test
-    void refusesDeliveringAnOrderTwice() {
-        givenSession("courier-1", Role.COURIER);
-        Order order = givenReadyOrder();
-        order.confirmPickup();
-        order.confirmDelivery();
+    void refusesDeliveryOfAnOrderTheCourierNoLongerHolds() {
+        givenSession(COURIER_ID, Role.COURIER);
+        Courier courier = givenCourierHolding(CourierStatus.CARRYING);
+        courier.markDelivered();
 
-        assertThrows(IllegalTransitionException.class, () -> orderService.confirmDelivery(SESSION_ID, ORDER_ID));
+        assertThrows(IllegalStateException.class, () -> orderService.confirmDelivery(SESSION_ID, ORDER_ID));
 
-        assertEquals("delivered", order.getStatus());
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
         assertNothingSavedOrPublished();
     }
 
@@ -476,7 +552,8 @@ class OrderServiceImplOrderFlowTest {
 
     @Test
     void refusesPickupOfUnknownOrder() {
-        givenSession("courier-1", Role.COURIER);
+        givenSession(COURIER_ID, Role.COURIER);
+        givenCourierHolding(CourierStatus.ASSIGNED);
         when(orderRegistry.findById(ORDER_ID)).thenReturn(Optional.empty());
 
         assertThrows(OrderNotFoundException.class, () -> orderService.confirmPickup(SESSION_ID, ORDER_ID));
@@ -709,6 +786,18 @@ class OrderServiceImplOrderFlowTest {
         return order;
     }
 
+    // The logged-in courier, bound to ORDER_ID and either assigned or carrying it
+    private Courier givenCourierHolding(CourierStatus status) {
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+        courier.assignOrder(ORDER_ID);
+        if (status == CourierStatus.CARRYING) {
+            courier.markPickedUp();
+        }
+        when(courierRegistry.findById(COURIER_ID)).thenReturn(Optional.of(courier));
+        return courier;
+    }
+
     private void givenSaveAssignsId() {
         when(orderRegistry.save(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
@@ -755,7 +844,9 @@ class OrderServiceImplOrderFlowTest {
 
     private void assertNothingSavedOrPublished() {
         verify(orderRegistry, never()).save(any());
+        verify(courierRegistry, never()).save(any());
         verify(transitionPublisher, never()).notifyObservers(any());
+        verify(dispatchService, never()).retryWaitingOrdersWhenCourierBecomesIdle(any());
     }
 
     @Test
