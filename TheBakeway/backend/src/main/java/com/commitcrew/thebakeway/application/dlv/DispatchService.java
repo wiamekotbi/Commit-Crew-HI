@@ -99,6 +99,16 @@ public class DispatchService {
     }
 
     /**
+     * Returns an active offer only to its intended courier. Courier commands
+     * use this before changing domain state, while dispatch retains ownership
+     * of offer lookup and authorization.
+     */
+    public synchronized DispatchOffer getActiveOfferForCourier(
+            String offerId, String courierId) {
+        return matchingOffer(offerId, courierId);
+    }
+
+    /**
      * Hook for Wiame's acceptance command. The caller must first complete and
      * save Courier.assignOrder(orderId); this method then closes dispatch state.
      */
