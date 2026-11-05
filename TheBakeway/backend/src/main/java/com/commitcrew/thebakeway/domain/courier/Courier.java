@@ -101,6 +101,16 @@ public class Courier {
         status = CourierStatus.ASSIGNED;
     }
 
+    /** Accepts the active dispatch offer for one order. */
+    public void acceptOffer(String orderId) {
+        assignOrder(orderId);
+    }
+
+    /** Declining an offer does not change an available courier's status. */
+    public void declineOffer() {
+        requireStatus(CourierStatus.IDLE, "decline an order");
+    }
+
     public void markPickedUp() {
         requireStatus(CourierStatus.ASSIGNED, "pick up an order");
         if (currentOrderId == null) {
