@@ -117,6 +117,39 @@ class CourierTest {
     }
 
     @Test
+    void acceptingOfferAssignsIdleCourier() {
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+
+        courier.acceptOffer(ORDER_ID);
+
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
+    }
+
+    @Test
+    void decliningOfferLeavesCourierIdle() {
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+
+        courier.declineOffer();
+
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+    }
+
+    @Test
+    void assignedCourierCannotAcceptOrDeclineAnotherOffer() {
+        Courier courier = assignedCourier();
+
+        assertThrows(IllegalStateException.class,
+                () -> courier.acceptOffer("order-2"));
+        assertThrows(IllegalStateException.class, courier::declineOffer);
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
+    }
+
+    @Test
     void rejectsAssignmentUnlessCourierIsIdle() {
         Courier courier = new Courier(COURIER_ID);
 
