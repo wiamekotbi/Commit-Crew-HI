@@ -2,9 +2,12 @@ package com.commitcrew.thebakeway.domain.courier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+
+import com.commitcrew.thebakeway.domain.location.Coordinates;
 
 class CourierTest {
 
@@ -19,6 +22,28 @@ class CourierTest {
         assertEquals(CourierStatus.OFFLINE, courier.getStatus());
         assertNull(courier.getCurrentOrderId());
         assertNull(courier.getStalledOrderId());
+    }
+
+    @Test
+    void configuredCourierKeepsCoordinatesAndStartsOffline() {
+        // Dispatch needs the configured location, but adding it must not alter
+        // Wiame's courier lifecycle: a newly loaded courier still starts offline.
+        Coordinates coordinates = new Coordinates(45.5019, -73.5674);
+        Courier courier = new Courier(COURIER_ID, coordinates);
+
+        assertSame(coordinates, courier.getCoordinates());
+        assertEquals(45.5019, courier.getCoordinates().getLatitude());
+        assertEquals(-73.5674, courier.getCoordinates().getLongitude());
+        assertEquals(CourierStatus.OFFLINE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+    }
+
+    @Test
+    void configuredCourierRejectsMissingCoordinates() {
+        // A courier without a location cannot participate safely in nearest-
+        // courier selection, so configured construction refuses a null value.
+        assertThrows(IllegalArgumentException.class,
+                () -> new Courier(COURIER_ID, null));
     }
 
     @Test
@@ -89,6 +114,39 @@ class CourierTest {
         assertThrows(IllegalStateException.class, () -> courier.assignOrder("order-2"));
         assertEquals(ORDER_ID, courier.getCurrentOrderId());
         assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+    }
+
+    @Test
+    void acceptingOfferAssignsIdleCourier() {
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+
+        courier.acceptOffer(ORDER_ID);
+
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
+    }
+
+    @Test
+    void decliningOfferLeavesCourierIdle() {
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+
+        courier.declineOffer();
+
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+    }
+
+    @Test
+    void assignedCourierCannotAcceptOrDeclineAnotherOffer() {
+        Courier courier = assignedCourier();
+
+        assertThrows(IllegalStateException.class,
+                () -> courier.acceptOffer("order-2"));
+        assertThrows(IllegalStateException.class, courier::declineOffer);
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
     }
 
     @Test

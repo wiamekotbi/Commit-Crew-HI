@@ -18,12 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dashboard.DashboardReadModel;
+import com.commitcrew.thebakeway.application.dlv.ActiveDispatchOffers;
+import com.commitcrew.thebakeway.application.dlv.DispatchWaitingQueue;
 import com.commitcrew.thebakeway.application.reg.AccountSeedingService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
+import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
@@ -43,10 +46,13 @@ public class InitialStateService {
     private final EventRepository eventRepository;
     private final MenuItemRegistry menuItemRegistry;
     private final BakeryRegistry bakeryRegistry;
+    private final CourierRegistry courierRegistry;
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
     private final DashboardReadModel dashboardReadModel;
+    private final DispatchWaitingQueue dispatchWaitingQueue;
+    private final ActiveDispatchOffers activeDispatchOffers;
     private final CommandConsole console;
     private final EntityManager entityManager;
 
@@ -56,10 +62,13 @@ public class InitialStateService {
             EventRepository eventRepository,
             MenuItemRegistry menuItemRegistry,
             BakeryRegistry bakeryRegistry,
+            CourierRegistry courierRegistry,
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
             DashboardReadModel dashboardReadModel,
+            DispatchWaitingQueue dispatchWaitingQueue,
+            ActiveDispatchOffers activeDispatchOffers,
             CommandConsole console,
             EntityManager entityManager) {
         this.cityConfigurationReader = cityConfigurationReader;
@@ -67,15 +76,19 @@ public class InitialStateService {
         this.eventRepository = eventRepository;
         this.menuItemRegistry = menuItemRegistry;
         this.bakeryRegistry = bakeryRegistry;
+        this.courierRegistry = courierRegistry;
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
         this.dashboardReadModel = dashboardReadModel;
+        this.dispatchWaitingQueue = dispatchWaitingQueue;
+        this.activeDispatchOffers = activeDispatchOffers;
         this.console = console;
         this.entityManager = entityManager;
     }
 
-    // Replaces bakeries, menus and accounts with the config files and clears orders, queues and events.
+    // Replaces bakeries, menus, couriers and accounts with the config files and
+    // clears orders, queues and events.
     // Sessions end (the account seeding invalidates them).
     @Transactional
     public InitialStateSummary loadInitialState() {
@@ -101,6 +114,9 @@ public class InitialStateService {
         orderRegistry.flush();
         eventRepository.deleteAllInBatch();
         menuItemRegistry.deleteAllInBatch();
+        // Courier rows contain assignment state from the previous city run and
+        // must be replaced by the configured locations and clean lifecycle state.
+        courierRegistry.deleteAllInBatch();
         // Accounts before bakeries: staff accounts reference their bakery
         accountRegistry.deleteAllInBatch();
         bakeryRegistry.deleteAllInBatch();
@@ -112,6 +128,8 @@ public class InitialStateService {
         bakeryRegistry.flush();
         menuItemRegistry.saveAll(city.menuItems());
         menuItemRegistry.flush();
+        courierRegistry.saveAll(city.couriers());
+        courierRegistry.flush();
 
         new AccountSeedingService(accountRegistry, passwordEncoder, sessionManager)
                 .seedAccounts(new Scanner(accounts));
@@ -125,6 +143,10 @@ public class InitialStateService {
         }
 
         dashboardReadModel.clear();
+        // Reset also removes transient READY-order retry state. The orders were
+        // deleted above, so retaining their queue IDs would create stale work.
+        dispatchWaitingQueue.clear();
+        activeDispatchOffers.clear();
 
         InitialStateSummary summary = new InitialStateSummary(
                 city.bakeries().size(), city.menuItems().size(), accountsPerRole);

@@ -1,6 +1,11 @@
 package com.commitcrew.thebakeway.domain.bakery;
 
+import com.commitcrew.thebakeway.domain.location.Coordinates;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -26,6 +31,15 @@ public class Bakery {
     @Column(nullable = false)
     private String bakeryAddress;
 
+    // Dispatch compares this fixed bakery location with configured courier
+    // locations. The address remains available for display and Google Maps.
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "latitude", column = @Column(name = "latitude")),
+            @AttributeOverride(name = "longitude", column = @Column(name = "longitude"))
+    })
+    private Coordinates coordinates;
+
     // Required by JPA when loading a bakery from the database.
     protected Bakery() {
     }
@@ -44,6 +58,25 @@ public class Bakery {
         this.bakeryAddress = bakeryAddress;  
     }
 
+    /**
+     * Creates a bakery with the location needed by courier dispatch. The
+     * original constructor is retained temporarily for existing callers while
+     * the city configuration is migrated to supply coordinates.
+     */
+    public Bakery(
+            String bakeryId,
+            String bakeryName,
+            BakeryStatus bakeryStatus,
+            String bakeryAddress,
+            Coordinates coordinates) {
+        this(bakeryId, bakeryName, bakeryStatus, bakeryAddress);
+
+        if (coordinates == null) {
+            throw new IllegalArgumentException("Bakery coordinates cannot be null.");
+        }
+        this.coordinates = coordinates;
+    }
+
     // Getters
     public String getBakeryId() {
         return bakeryId;
@@ -59,6 +92,10 @@ public class Bakery {
 
     public String getBakeryAddress() {
         return bakeryAddress;
+    }
+
+    public Coordinates getCoordinates() {
+        return coordinates;
     }
 
     /**

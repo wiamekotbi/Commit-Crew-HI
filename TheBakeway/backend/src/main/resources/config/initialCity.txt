@@ -1,10 +1,12 @@
 # Initial city (UC-ORD-01). One entry per line, values separated by commas (no commas inside values).
-# BAKERY,bakeryId,name,status(open|paused|closed),address
+# BAKERY,bakeryId,name,status(open|paused|closed),address,latitude,longitude
 # MENU_ITEM,itemId,bakeryId,name,description,price,status(available|sold_out)
-BAKERY,bakery-sweet-treats,Sweet Treats,open,123 Main Street Montreal
-BAKERY,bakery-crumbs,Crumbs and Co,open,45 Oak Avenue Montreal
-BAKERY,bakery-old-mill,Old Mill Bakery,paused,8 Mill Road Montreal
-BAKERY,bakery-corner,Corner Bakery,closed,2 Corner Lane Montreal
+# COURIER,courierId,latitude,longitude
+BAKERY,bakery-sweet-treats,Sweet Treats,open,123 Main Street Montreal,45.4972,-73.5789
+BAKERY,bakery-crumbs,Crumbs and Co,open,45 Oak Avenue Montreal,45.5088,-73.5878
+BAKERY,bakery-old-mill,Old Mill Bakery,paused,8 Mill Road Montreal,45.5017,-73.5673
+BAKERY,bakery-corner,Corner Bakery,closed,2 Corner Lane Montreal,45.5155,-73.5612
+COURIER,acc-courier-1,45.5048,-73.5772
 MENU_ITEM,item-croissant,bakery-sweet-treats,Croissant,Butter croissant,3.50,available
 MENU_ITEM,item-pain-chocolat,bakery-sweet-treats,Pain au chocolat,Chocolate pastry,3.75,available
 MENU_ITEM,item-baguette,bakery-sweet-treats,Baguette,Traditional French baguette,4.00,available
