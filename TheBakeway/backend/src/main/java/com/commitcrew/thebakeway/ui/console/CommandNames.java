@@ -40,6 +40,11 @@ final class CommandNames {
             route("GET", "/api/orders", "VIEW_ALL_ORDERS"),
             route("GET", "/api/orders/" + ID + "/summary", "VIEW_ORDER_SUMMARY"),
             route("GET", "/api/orders/" + ID, "VIEW_ORDER"),
+            route("GET", "/api/couriers/me", "VIEW_COURIER_STATUS"),
+            route("PATCH", "/api/couriers/me/on-duty", "GO_ON_DUTY"),
+            route("PATCH", "/api/couriers/me/off-duty", "GO_OFF_DUTY"),
+            route("PATCH", "/api/couriers/offers/" + ID + "/accept", "ACCEPT_DELIVERY_OFFER"),
+            route("PATCH", "/api/couriers/offers/" + ID + "/decline", "DECLINE_DELIVERY_OFFER"),
             route("POST", "/api/initial-state/restore", "RESTORE_INITIAL_STATE"));
 
     private CommandNames() {

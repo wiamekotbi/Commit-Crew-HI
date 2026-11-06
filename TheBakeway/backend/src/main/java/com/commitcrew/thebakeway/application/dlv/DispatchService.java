@@ -108,6 +108,15 @@ public class DispatchService {
         return matchingOffer(offerId, courierId);
     }
 
+    /** Returns the offer currently reserved for a courier, if one exists. */
+    public synchronized Optional<DispatchOffer> findActiveOfferForCourier(
+            String courierId) {
+        if (courierId == null || courierId.isBlank()) {
+            throw new IllegalArgumentException("Courier ID is required.");
+        }
+        return activeOffers.findByCourierId(courierId);
+    }
+
     /**
      * Hook for Wiame's acceptance command. The caller must first complete and
      * save Courier.assignOrder(orderId); this method then closes dispatch state.

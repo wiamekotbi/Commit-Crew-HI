@@ -190,18 +190,6 @@ const Dashboard = (() => {
         });
     }
 
-    // Couriers have no Phase II commands: pickup and delivery belong to DLV
-    panels.COURIER = {
-        render(container) {
-            container.innerHTML = `
-                <section class="card">
-                    <div class="card-title"><h2><i class="fa-solid fa-person-biking"></i> Courier</h2></div>
-                    <p>Pickup and delivery are not part of Phase II. Orders can still be followed by the
-                       bakery and the operator.</p>
-                </section>`;
-        }
-    };
-
     async function start() {
         const result = await api("GET", "/api/session");
         if (!result.ok) {

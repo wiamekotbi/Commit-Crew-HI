@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.commitcrew.thebakeway.domain.courier.Courier;
 import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.courier.CourierStatus;
+import com.commitcrew.thebakeway.domain.order.Order;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +55,54 @@ class CourierServiceTest {
                 activeOffers,
                 waitingQueue);
         courierService = new CourierService(courierRegistry, dispatchService);
+    }
+
+    @Test
+    void goingOnDutyRetriesWaitingOrdersAndReturnsNewOffer() {
+        Courier courier = new Courier(COURIER_ID);
+        waitingQueue.enqueue(ORDER_ID);
+        when(courierRegistry.findById(COURIER_ID))
+                .thenReturn(Optional.of(courier));
+        when(orderRegistry.findById(ORDER_ID))
+                .thenReturn(Optional.of(readyOrder()));
+        when(courierSelectionService.selectCourierForBakery(
+                "bakery-1", Set.of()))
+                .thenReturn(Optional.of(courier));
+
+        CourierView view = courierService.goOnDuty(COURIER_ID);
+
+        assertEquals(CourierStatus.IDLE, view.status());
+        assertEquals(ORDER_ID, view.activeOffer().orderId());
+        assertTrue(waitingQueue.snapshot().isEmpty());
+        verify(courierRegistry).save(courier);
+    }
+
+    @Test
+    void goingOffDutyDeclinesActiveOfferAndQueuesItsOrder() {
+        Courier courier = idleCourier();
+        activeOffer(ORDER_ID);
+        when(courierRegistry.findById(COURIER_ID))
+                .thenReturn(Optional.of(courier));
+
+        CourierView view = courierService.goOffDuty(COURIER_ID);
+
+        assertEquals(CourierStatus.OFFLINE, view.status());
+        assertTrue(activeOffers.snapshot().isEmpty());
+        assertEquals(java.util.List.of(ORDER_ID), waitingQueue.snapshot());
+        verify(courierRegistry).save(courier);
+    }
+
+    @Test
+    void currentCourierViewIncludesReservedOffer() {
+        Courier courier = idleCourier();
+        DispatchOffer offer = activeOffer(ORDER_ID);
+        when(courierRegistry.findById(COURIER_ID))
+                .thenReturn(Optional.of(courier));
+
+        CourierView view = courierService.getCourier(COURIER_ID);
+
+        assertEquals(CourierStatus.IDLE, view.status());
+        assertEquals(offer, view.activeOffer());
     }
 
     @Test
@@ -145,5 +195,14 @@ class CourierServiceTest {
                 OFFER_ID, orderId, COURIER_ID, Instant.now());
         activeOffers.add(offer);
         return offer;
+    }
+
+    private Order readyOrder() {
+        Order order = new Order(
+                "customer-1", "bakery-1", "Customer", "Montreal");
+        order.accept();
+        order.startPreparing();
+        order.markReady();
+        return order;
     }
 }
