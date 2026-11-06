@@ -36,6 +36,7 @@ class CommandNamesTest {
             "PATCH,/api/couriers/me/off-duty,GO_OFF_DUTY",
             "PATCH,/api/couriers/offers/offer-1/accept,ACCEPT_DELIVERY_OFFER",
             "PATCH,/api/couriers/offers/offer-1/decline,DECLINE_DELIVERY_OFFER",
+            "GET,/api/orders/o-1/summary,VIEW_ORDER_SUMMARY",
             "POST,/api/initial-state/restore,RESTORE_INITIAL_STATE",
             "DELETE,/api/orders/o-1,DELETE /api/orders/o-1",
     })
