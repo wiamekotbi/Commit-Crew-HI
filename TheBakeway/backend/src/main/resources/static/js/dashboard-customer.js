@@ -211,6 +211,8 @@ Dashboard.register("CUSTOMER", (() => {
                         <td>${D.badge(order.status)}
                             ${order.rejectionReason ? `<br><span class="muted">${D.escape(order.rejectionReason)}</span>` : ""}</td>
                         <td class="actions">
+                            ${["delivered", "refunded"].includes(order.status) ? `<a class="btn secondary"
+                                href="/order-summary.html?orderId=${encodeURIComponent(order.orderId)}">Summary</a>` : ""}
                             <button type="button" class="btn secondary" data-details="${D.escape(order.orderId)}">
                                 <i class="fa-solid fa-circle-info"></i> Details</button>
                             ${order.status === "placed" ? `<button type="button" class="btn danger" data-cancel="${D.escape(order.orderId)}">
