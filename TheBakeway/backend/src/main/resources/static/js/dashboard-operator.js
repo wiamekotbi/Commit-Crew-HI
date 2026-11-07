@@ -35,7 +35,19 @@ Dashboard.register("OPERATOR", (() => {
                     </div>
                 </div>
                 <div id="orders" class="table-wrap"></div>
+            </section>
+            <section class="card map-card">
+                <div class="card-title">
+                    <h2>
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        Delivery Map
+                    </h2>
+                </div>
+                <div id="map"></div>
             </section>`;
+
+        // Initialize Google Maps
+        await BakewayMap.init();
 
         container.querySelector("#bakeryFilter").addEventListener("change", loadOrders);
         container.querySelector("#statusFilter").addEventListener("change", loadOrders);
