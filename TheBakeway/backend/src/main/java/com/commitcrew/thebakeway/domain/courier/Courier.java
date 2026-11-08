@@ -125,6 +125,25 @@ public class Courier {
         currentOrderId = null;
     }
 
+    /**
+     * Ends the previous assignment only after an assigned courier has gone
+     * offline and left this exact order stalled. Operator reassignment calls
+     * this before asking dispatch to seek a replacement courier.
+     *
+     * Keeping this rule in the domain entity prevents callers from clearing a
+     * different order or taking work away from an active courier.
+     */
+    public void releaseStalledOrder(String orderId) {
+        requireNonBlank(orderId, "Order ID is required");
+        requireStatus(CourierStatus.OFFLINE, "release a stalled order");
+        if (!orderId.equals(stalledOrderId)) {
+            throw new IllegalStateException(
+                    "Courier does not hold the stalled order: " + orderId);
+        }
+
+        stalledOrderId = null;
+    }
+
     public String getCourierId() {
         return courierId;
     }

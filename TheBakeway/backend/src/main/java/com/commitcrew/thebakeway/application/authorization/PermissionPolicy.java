@@ -36,6 +36,8 @@ public class PermissionPolicy {
                     "CONFIRM_DELIVERY"),
             Role.OPERATOR, withProfileOperations(
                     "VIEW_SIMULATOR_DASHBOARD",
+                    "VIEW_WAITING_ORDERS",
+                    "REASSIGN_STALLED_ORDER",
                     "PAUSE_BAKERY",
                     "REOPEN_BAKERY",
                     "CANCEL_ORDER",

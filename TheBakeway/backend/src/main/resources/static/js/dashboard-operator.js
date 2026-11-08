@@ -27,6 +27,13 @@ Dashboard.register("OPERATOR", (() => {
             </section>
             <section class="card">
                 <div class="card-title">
+                    <h2><i class="fa-solid fa-truck-fast"></i> Waiting dispatch orders</h2>
+                    <span class="muted">Orders without a courier or left by an offline courier</span>
+                </div>
+                <div id="waitingOrders" class="table-wrap"></div>
+            </section>
+            <section class="card">
+                <div class="card-title">
                     <h2><i class="fa-solid fa-receipt"></i> All orders</h2>
                     <div class="inline-form">
                         <select id="bakeryFilter"><option value="">All bakeries</option></select>
@@ -45,6 +52,7 @@ Dashboard.register("OPERATOR", (() => {
 
     async function refresh() {
         await loadBakeries();
+        await loadWaitingOrders();
         await loadOrders();
     }
 
@@ -88,6 +96,59 @@ Dashboard.register("OPERATOR", (() => {
     function bakeryCommand(bakeryId, action) {
         return D.command("PATCH", "/api/bakeries/" + encodeURIComponent(bakeryId) + "/" + action, undefined,
             bakery => `${bakery.bakeryName} is now ${bakery.bakeryStatus}.`);
+    }
+
+    async function loadWaitingOrders() {
+        const result = await D.api("GET", "/api/dispatch/waiting-orders");
+        const target = container.querySelector("#waitingOrders");
+        if (!result.ok) {
+            // Keep dispatch failures inside this card so the operator can
+            // continue using unrelated bakery and order controls.
+            target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+            return;
+        }
+        if (result.data.length === 0) {
+            target.innerHTML = `<p class="empty">No orders are waiting for dispatch.</p>`;
+            return;
+        }
+
+        target.innerHTML = `<table>
+            <thead><tr><th>Order</th><th>Bakery</th><th>Status</th><th>Queue</th>
+                <th>Previous courier</th><th></th></tr></thead>
+            <tbody>${result.data.map(order => `
+                <tr>
+                    <td><strong>${D.escape(D.shortId(order.orderId))}</strong></td>
+                    <td>${D.escape(bakeryName(order.bakeryId))}</td>
+                    <td>${D.badge(order.status)}</td>
+                    <td>${order.queuePosition == null
+                        ? `<span class="muted">not queued</span>`
+                        : `#${D.escape(order.queuePosition)}`}</td>
+                    <td>${order.stalledCourierId
+                        ? D.escape(D.shortId(order.stalledCourierId))
+                        : `<span class="muted">none</span>`}</td>
+                    <td class="actions">
+                        ${order.reassignable
+                            ? `<button type="button" class="btn" data-reassign="${D.escape(order.orderId)}">
+                                <i class="fa-solid fa-rotate"></i> Reassign</button>`
+                            : `<span class="muted">Waiting for an available courier</span>`}
+                    </td>
+                </tr>`).join("")}</tbody></table>`;
+
+        // The backend rechecks operator permission and stalled eligibility;
+        // displaying a button never acts as proof that reassignment is valid.
+        target.querySelectorAll("button[data-reassign]").forEach(button =>
+            button.addEventListener("click", () => reassignOrder(
+                button.dataset.reassign)));
+    }
+
+    function reassignOrder(orderId) {
+        return D.command(
+            "PATCH",
+            "/api/dispatch/waiting-orders/" + encodeURIComponent(orderId) + "/reassign",
+            undefined,
+            result => result.waiting
+                ? `Order ${D.shortId(result.orderId)} remains queued because no replacement courier is available.`
+                : `Order ${D.shortId(result.orderId)} was offered to courier ${D.shortId(result.offeredCourierId)}.`);
     }
 
     async function loadOrders() {
