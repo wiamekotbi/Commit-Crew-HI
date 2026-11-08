@@ -4,6 +4,7 @@ const BakewayMap = (() => {
     let infoWindow = null;
 
     const bakeryMarkers = new Map();
+    const bakeryStatuses = new Map();
     const courierMarkers = new Map();
 
     
@@ -59,6 +60,17 @@ const BakewayMap = (() => {
         const currentIds = new Set();
 
         bakeries.forEach(bakery => {
+            const status = bakery.bakeryStatus?.toLowerCase();
+
+            if (status === "closed") {
+                return;
+            }
+            if (status !== "open" && status !== "paused") {
+                console.warn("Unknown bakery status:", bakery.bakeryId, status);
+                return;
+            }
+
+            bakeryStatuses.set(bakery.bakeryId, status);
             const { bakeryId, bakeryName, coordinates } = bakery;
 
             const lat = coordinates?.latitude;
@@ -78,14 +90,18 @@ const BakewayMap = (() => {
             };
 
             let marker = bakeryMarkers.get(bakeryId);
+            
 
             if (marker) {
                 marker.setPosition(position);
+                if (status === "paused") {
+                    marker.setIcon(createBakeryIcon(COLORS.long));
+                }
             } else {
                 marker = new google.maps.Marker({
                     position,
                     map,
-                    icon: createBakeryIcon(COLORS.unknown)
+                    icon: createBakeryIcon(status === "paused" ? COLORS.long : COLORS.unknown)
                 });
 
                 bakeryMarkers.set(bakeryId, marker);
@@ -109,11 +125,9 @@ const BakewayMap = (() => {
             });
         });
 
-        // Remove markers for bakeries no longer returned.
-        bakeryMarkers.forEach((marker, id) => {
+        bakeryStatuses.forEach((status, id) => {
             if (!currentIds.has(id)) {
-                marker.setMap(null);
-                bakeryMarkers.delete(id);
+                bakeryStatuses.delete(id);
             }
         });
     }
@@ -123,6 +137,16 @@ const BakewayMap = (() => {
 
         if (!marker) return;
 
+        const status = bakeryStatuses.get(bakeryId);
+
+        // Paused bakeries are always red.
+        if (status === "paused") {
+            marker.setIcon(createBakeryIcon(COLORS.long));
+            return;
+        }
+
+        if (status !== "open") return;
+
         const size = Number(queueSize);
 
         if (!Number.isInteger(size) || size < 0) {
@@ -130,9 +154,9 @@ const BakewayMap = (() => {
             return;
         }
 
-        const color = getQueueColor(size);
-
-        marker.setIcon(createBakeryIcon(color));
+        marker.setIcon(
+            createBakeryIcon(getQueueColor(size))
+        );
     }
 
         function setCouriers(couriers) {
@@ -202,6 +226,8 @@ const BakewayMap = (() => {
 
         courierMarkers.forEach(marker => marker.setMap(null));
         courierMarkers.clear();
+
+        bakeryStatuses.clear();
 
         map = new google.maps.Map(element, {
             center: { lat: 45.5017, lng: -73.5673 },

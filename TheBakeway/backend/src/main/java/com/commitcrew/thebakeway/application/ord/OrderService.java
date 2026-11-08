@@ -54,4 +54,6 @@ public interface OrderService {
     InitialStateSummary restoreInitialState(String sessionId);
 
     int getPreparationQueueSize(String sessionId, String bakeryId);
+
+    List<Bakery> getBakeryMapData(String sessionId);
 }

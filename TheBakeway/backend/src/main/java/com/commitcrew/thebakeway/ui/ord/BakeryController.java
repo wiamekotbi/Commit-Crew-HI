@@ -99,8 +99,7 @@ public class BakeryController {
     @GetMapping("/map")
     public List<Bakery> getBakeryMapData(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
-        List<Bakery> bakeries = getOpenBakeries(sessionId);
-        return bakeries;
+        return orderService.getBakeryMapData(sessionId);
     }
 
 

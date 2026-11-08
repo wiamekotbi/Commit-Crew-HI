@@ -46,7 +46,9 @@ Dashboard.register("CUSTOMER", (() => {
             </section>`;
         
         container.querySelector("#refreshBakeries").addEventListener("click", loadBakeries);
+        await loadBakeries();
         renderCart();
+        await loadOrders();
     }
 
     async function loadBakeries() {

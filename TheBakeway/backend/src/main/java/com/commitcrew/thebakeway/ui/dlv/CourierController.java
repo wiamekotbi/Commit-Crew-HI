@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
@@ -28,12 +29,15 @@ public class CourierController {
 
     private final CourierService courierService;
     private final SessionManager sessionManager;
+    private final PermissionPolicy permissionPolicy;
 
     public CourierController(
             CourierService courierService,
-            SessionManager sessionManager) {
+            SessionManager sessionManager,
+            PermissionPolicy permissionPolicy) {
         this.courierService = courierService;
         this.sessionManager = sessionManager;
+        this.permissionPolicy = permissionPolicy;
     }
 
     @GetMapping("/me")
@@ -120,6 +124,13 @@ public class CourierController {
     public List<Courier> getAllCouriers(
             @CookieValue(value = SESSION_COOKIE, required = false)
                     String sessionId) {
+        Session session = sessionManager.findSession(sessionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Authentication required"));
+        if (!permissionPolicy.isAllowed("GET_COURIER_MAP_DATA", session.getRole())) {
+            throw new SecurityException(
+                    "Only operators may manage stalled dispatch assignments");
+        }
         return courierService.getAllCouriers();
     }
 }
