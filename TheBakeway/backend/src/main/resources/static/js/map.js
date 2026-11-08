@@ -6,6 +6,8 @@ const BakewayMap = (() => {
     const bakeryMarkers = new Map();
     const courierMarkers = new Map();
 
+    
+
     const COLORS = {
         unknown: "#808080",
         short: "#20A464",
@@ -221,6 +223,24 @@ const BakewayMap = (() => {
                 }
             ]
         });
+
+        const MONTREAL_BOUNDS = {
+            north: 45.72,
+            south: 45.40,
+            west: -73.99,
+            east: -73.47
+        };
+
+        map.setOptions({
+            restriction: {
+                latLngBounds: MONTREAL_BOUNDS,
+                strictBounds: true
+            },
+            minZoom: 5,
+            maxZoom: 19
+        });
+
+        console.log("Restriction applied:", map.get("restriction"));
 
         infoWindow = new google.maps.InfoWindow();
     }
