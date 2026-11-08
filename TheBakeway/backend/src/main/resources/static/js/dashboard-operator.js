@@ -125,6 +125,10 @@ Dashboard.register("OPERATOR", (() => {
                             <i class="fa-solid fa-circle-info"></i></button>
                         ${CANCELLABLE.includes(order.status) ? `<button type="button" class="btn danger"
                             data-cancel="${D.escape(order.orderId)}"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ""}
+                        ${order.status === "delivered" ? `<button type="button" class="btn danger"
+                            data-refund="${D.escape(order.orderId)}"><i class="fa-solid fa-rotate-left"></i> Refund</button>` : ""}
+                        ${order.status === "delivered" ? `<button type="button" class="btn secondary"
+                            data-ledger="${D.escape(order.orderId)}"><i class="fa-solid fa-book"></i> Ledger</button>` : ""}
                     </td>
                 </tr>`).join("")}</tbody></table>`;
 
@@ -134,11 +138,57 @@ Dashboard.register("OPERATOR", (() => {
             button.addEventListener("click", () => D.command("PATCH",
                 "/api/orders/" + encodeURIComponent(button.dataset.cancel) + "/cancel", undefined,
                 data => `Order ${D.shortId(data.orderId)} cancelled (event ${D.shortId(data.eventId)}).`)));
+        target.querySelectorAll("button[data-refund]").forEach(button =>
+            button.addEventListener("click", () => refundOrder(button.dataset.refund)));
+        target.querySelectorAll("button[data-ledger]").forEach(button =>
+            button.addEventListener("click", () => toggleLedger(button)));
+    }
+
+    async function toggleLedger(button) {
+        const row = button.closest("tr");
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains("ledger-row")) {
+            next.remove();
+            return;
+        }
+
+        const result = await D.api("GET",
+            "/api/orders/" + encodeURIComponent(button.dataset.ledger) + "/ledger");
+        const details = document.createElement("tr");
+        details.className = "ledger-row";
+        const content = result.ok
+            ? result.data.length === 0
+                ? '<p class="empty">No ledger entries recorded.</p>'
+                : `<table><thead><tr><th>Entry</th><th>Amount</th><th>Timestamp</th><th>Actor</th><th>Reason</th></tr></thead>
+                    <tbody>${result.data.map(entry => `<tr>
+                        <td>${D.escape(entry.entryType)}</td>
+                        <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
+                        <td>${D.escape(D.time(entry.occurredAt))}</td>
+                        <td>${D.escape(entry.actorAccountId || "System")}</td>
+                        <td>${D.escape(entry.reason || "")}</td>
+                    </tr>`).join("")}</tbody></table>`
+            : `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+        details.innerHTML = `<td colspan="8">${content}</td>`;
+        row.after(details);
+    }
+
+    async function refundOrder(orderId) {
+        if (!window.confirm("Issue a full refund for this delivered order?")) return;
+        const reason = window.prompt("Refund reason:");
+        if (reason === null) return;
+        const normalizedReason = reason.trim();
+        if (!normalizedReason) {
+            D.showMessage("A refund reason is required.", "error");
+            return;
+        }
+        await D.command("POST", "/api/orders/" + encodeURIComponent(orderId) + "/refund",
+            { reason: normalizedReason },
+            entry => `Refund of ${D.money(entry.amount)} recorded for order ${D.shortId(orderId)}.`);
     }
 
     // Reloads accounts and the city from the config files; every session ends, so the operator logs in again
     async function restore() {
-        if (!window.confirm("Restore the initial state? All orders and events are deleted and everyone is logged out.")) {
+        if (!window.confirm("Restore the initial state? All orders, events, and billing ledger entries are deleted and everyone is logged out.")) {
             return;
         }
         const result = await D.api("POST", "/api/initial-state/restore");
