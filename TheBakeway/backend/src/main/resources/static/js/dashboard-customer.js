@@ -3,8 +3,6 @@
 Dashboard.register("CUSTOMER", (() => {
     const D = Dashboard;
 
-    let container = null;
-    let bakeries = [];
     let selectedBakery = null;
     let menu = [];
     let cart = [];   // { menuItemId, name, price, quantity }
@@ -45,25 +43,10 @@ Dashboard.register("CUSTOMER", (() => {
             <section class="card">
                 <div class="card-title"><h2><i class="fa-solid fa-receipt"></i> My orders</h2></div>
                 <div id="orders" class="table-wrap"></div>
-            </section>
-            <section class="card map-card">
-                <div class="card-title">
-                    <h2>
-                        <i class="fa-solid fa-map-location-dot"></i>
-                        Delivery Map
-                    </h2>
-                </div>
-                <div id="map"></div>
             </section>`;
-
-        // Initialize Google Maps
-        BakewayMap.init();
-
+        
         container.querySelector("#refreshBakeries").addEventListener("click", loadBakeries);
-        await loadBakeries();
         renderCart();
-        await loadOrders();
-        await loadCouriers();
     }
 
     async function loadBakeries() {
@@ -78,8 +61,6 @@ Dashboard.register("CUSTOMER", (() => {
             list.innerHTML = `<p class="empty">No bakery is open right now.</p>`;
             return;
         }
-        BakewayMap.setBakeries(bakeries);
-        void loadBakeryQueueSizes();
         list.innerHTML = bakeries.map(bakery => `
             <div class="bakery-item ${selectedBakery === bakery.bakeryId ? "selected" : ""}">
                 <div>
@@ -92,20 +73,6 @@ Dashboard.register("CUSTOMER", (() => {
             </div>`).join("");
         list.querySelectorAll("button[data-bakery]").forEach(button =>
             button.addEventListener("click", () => loadMenu(button.dataset.bakery)));
-    }
-
-    async function loadCouriers() {
-        const result = await D.api("GET", "/api/couriers/map");
-
-        if (!result.ok) {
-            console.error(
-                "Failed to load couriers:",
-                D.errorText(result)
-            );
-            return;
-        }
-
-        BakewayMap.setCouriers(result.data);
     }
 
     async function loadMenu(bakeryId) {
@@ -199,30 +166,6 @@ Dashboard.register("CUSTOMER", (() => {
                 renderCart();
             }));
         target.querySelector("#placeOrder").addEventListener("click", placeOrder);
-    }
-
-    async function loadBakeryQueueSizes() {
-        await Promise.all(bakeries.map(async bakery => {
-            const result = await D.api(
-                "GET",
-                "/api/bakeries/" +
-                    encodeURIComponent(bakery.bakeryId) +
-                    "/preparation-queue-size"
-            );
-
-            if (result.ok) {
-                BakewayMap.updateBakeryQueue(
-                    bakery.bakeryId,
-                    result.data
-                );
-            } else {
-                console.error(
-                    "Failed to load preparation queue for",
-                    bakery.bakeryName,
-                    D.errorText(result)
-                );
-            }
-        }));
     }
 
     async function placeOrder() {

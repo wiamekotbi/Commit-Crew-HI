@@ -81,7 +81,6 @@ const BakewayMap = (() => {
 
             if (marker) {
                 marker.setPosition(position);
-                marker.setIcon(createBakeryIcon(COLORS.unknown));
             } else {
                 marker = new google.maps.Marker({
                     position,
