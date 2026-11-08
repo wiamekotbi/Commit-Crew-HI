@@ -32,6 +32,8 @@ import com.commitcrew.thebakeway.application.prc.OrderSummaryBilling;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 import com.commitcrew.thebakeway.application.prc.OrderBillingService;
 import com.commitcrew.thebakeway.application.prc.OrderLedgerEntryView;
+import com.commitcrew.thebakeway.application.prc.OrderPricingQuote;
+import com.commitcrew.thebakeway.application.prc.OrderPricingService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -58,6 +60,8 @@ class OrderSummaryControllerTest {
     @Mock
     private OrderBillingService orderBillingService;
     @Mock
+    private OrderPricingService orderPricingService;
+    @Mock
     private AccountRegistry accountRegistry;
 
     private final SessionManager sessions = new SessionManager();
@@ -68,7 +72,8 @@ class OrderSummaryControllerTest {
     void setUp() {
         OrderSummaryService service = new OrderSummaryService(sessions, orderRegistry, eventRepository,
                 Optional.of(billing));
-        mvc = MockMvcBuilders.standaloneSetup(new OrderSummaryController(service, orderBillingService))
+        mvc = MockMvcBuilders.standaloneSetup(
+                new OrderSummaryController(service, orderBillingService, orderPricingService))
                 .addFilters(new CommandConsoleFilter(console, sessions, accountRegistry)).build();
     }
 
@@ -187,6 +192,34 @@ class OrderSummaryControllerTest {
                 .andExpect(jsonPath("$.entryType").value("REFUND"))
                 .andExpect(jsonPath("$.amount").value(19))
                 .andExpect(jsonPath("$.reason").value("Customer request"));
+    }
+
+    @Test
+    void returnsCartPriceQuoteFromPricingService() throws Exception {
+        Cookie customer = session(Role.CUSTOMER);
+        when(orderPricingService.quoteCart(customer.getValue(), 8))
+                .thenReturn(new OrderPricingQuote(new PriceBreakdown(8, 4, 2, 3, 17), false));
+
+        mvc.perform(get("/api/orders/pricing").cookie(customer).param("subtotal", "8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalFare").value(false))
+                .andExpect(jsonPath("$.pricing.deliveryFee").value(4))
+                .andExpect(jsonPath("$.pricing.serviceFee").value(2))
+                .andExpect(jsonPath("$.pricing.smallOrderSurcharge").value(3))
+                .andExpect(jsonPath("$.pricing.total").value(17));
+    }
+
+    @Test
+    void returnsOrderPricingQuoteFromPricingService() throws Exception {
+        Cookie operator = session(Role.OPERATOR);
+        when(orderPricingService.quoteOrder(operator.getValue(), "order-1"))
+                .thenReturn(new OrderPricingQuote(new PriceBreakdown(20, 4, 2, 0, 26), true));
+
+        mvc.perform(get("/api/orders/order-1/pricing").cookie(operator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalFare").value(true))
+                .andExpect(jsonPath("$.pricing.subtotal").value(20))
+                .andExpect(jsonPath("$.pricing.total").value(26));
     }
 
     private Cookie session(Role role) {

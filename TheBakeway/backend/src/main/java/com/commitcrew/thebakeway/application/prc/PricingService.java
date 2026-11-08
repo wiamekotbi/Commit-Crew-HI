@@ -19,12 +19,22 @@ public class PricingService {
     }
 
     public PriceBreakdown calculatePrice(Order order) {
-        PricingConfiguration config = configurationReader.read();
-
         BigDecimal subtotal = order.getOrderItems().stream()
                 .map(item -> BigDecimal.valueOf(item.getUnitPrice())
                         .multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return calculatePrice(subtotal);
+    }
+
+    public PriceBreakdown calculatePriceForSubtotal(double itemSubtotal) {
+        if (!Double.isFinite(itemSubtotal) || itemSubtotal < 0) {
+            throw new IllegalArgumentException("Items subtotal must be a finite nonnegative amount");
+        }
+        return calculatePrice(BigDecimal.valueOf(itemSubtotal));
+    }
+
+    private PriceBreakdown calculatePrice(BigDecimal subtotal) {
+        PricingConfiguration config = configurationReader.read();
         BigDecimal deliveryFee = BigDecimal.valueOf(config.deliveryFee());
         BigDecimal serviceFee = BigDecimal.valueOf(config.serviceFee());
         BigDecimal surcharge = BigDecimal.ZERO;

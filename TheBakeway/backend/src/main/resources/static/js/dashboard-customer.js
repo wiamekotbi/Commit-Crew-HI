@@ -8,6 +8,7 @@ Dashboard.register("CUSTOMER", (() => {
     let selectedBakery = null;
     let menu = [];
     let cart = [];   // { menuItemId, name, price, quantity }
+    let cartPricingRequest = 0;
 
     function bakeryName(bakeryId) {
         const bakery = bakeries.find(b => b.bakeryId === bakeryId);
@@ -157,9 +158,10 @@ Dashboard.register("CUSTOMER", (() => {
                         <td><button type="button" class="btn secondary" data-remove="${index}" title="Remove">
                             <i class="fa-solid fa-trash"></i></button></td>
                     </tr>`).join("")}
-                    <tr><td><strong>Total</strong></td><td><strong>${D.money(total)}</strong></td><td></td></tr>
+                    <tr><td><strong>Items subtotal</strong></td><td><strong>${D.money(total)}</strong></td><td></td></tr>
                 </tbody>
             </table>
+            <div id="cartPricing"><p class="muted">Calculating fees...</p></div>
             <div class="inline-form" style="margin-top:12px">
                 <input type="text" id="deliveryAddress" placeholder="Delivery address (empty: your profile address)">
                 <button type="button" class="btn" id="placeOrder"><i class="fa-solid fa-paper-plane"></i> Place order</button>
@@ -170,6 +172,37 @@ Dashboard.register("CUSTOMER", (() => {
                 renderCart();
             }));
         target.querySelector("#placeOrder").addEventListener("click", placeOrder);
+        loadCartPricing(total);
+    }
+
+    async function loadCartPricing(subtotal) {
+        const requestId = ++cartPricingRequest;
+        const target = container.querySelector("#cartPricing");
+        try {
+            const result = await D.api("GET", "/api/orders/pricing?subtotal=" + encodeURIComponent(subtotal));
+            if (requestId !== cartPricingRequest || !target.isConnected) return;
+            if (!result.ok) {
+                target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+                return;
+            }
+
+            const pricing = result.data.pricing;
+            target.innerHTML = `
+                <table aria-label="Estimated order charges">
+                    <tbody>
+                        <tr><th scope="row">Delivery fee</th><td>${D.money(pricing.deliveryFee)}</td></tr>
+                        <tr><th scope="row">Service fee</th><td>${D.money(pricing.serviceFee)}</td></tr>
+                        ${pricing.smallOrderSurcharge > 0 ? `<tr><th scope="row">Small-order surcharge</th>
+                            <td>${D.money(pricing.smallOrderSurcharge)}</td></tr>` : ""}
+                        <tr><th scope="row">Estimated total</th><td><strong>${D.money(pricing.total)}</strong></td></tr>
+                    </tbody>
+                </table>
+                <p class="muted">Estimate only. Fees and the final total are recorded when the order is delivered.</p>`;
+        } catch (error) {
+            if (requestId === cartPricingRequest && target.isConnected) {
+                target.innerHTML = '<p class="empty">Unable to calculate order fees. Please try again.</p>';
+            }
+        }
     }
 
     async function placeOrder() {
@@ -201,7 +234,7 @@ Dashboard.register("CUSTOMER", (() => {
         }
         target.innerHTML = `
             <table>
-                <thead><tr><th>Placed</th><th>Bakery</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Placed</th><th>Bakery</th><th>Items</th><th>Items subtotal</th><th>Status</th><th></th></tr></thead>
                 <tbody>${result.data.map(order => `
                     <tr>
                         <td>${D.escape(D.time(order.createdAt))}</td>

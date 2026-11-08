@@ -12,11 +12,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.application.prc.OrderBillingService;
 import com.commitcrew.thebakeway.application.prc.OrderLedgerEntryView;
+import com.commitcrew.thebakeway.application.prc.OrderPricingQuote;
+import com.commitcrew.thebakeway.application.prc.OrderPricingService;
 import com.commitcrew.thebakeway.application.prc.OrderSummary;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 
@@ -26,10 +29,22 @@ public class OrderSummaryController {
 
     private final OrderSummaryService orderSummaryService;
     private final OrderBillingService orderBillingService;
+    private final OrderPricingService orderPricingService;
 
-    public OrderSummaryController(OrderSummaryService orderSummaryService, OrderBillingService orderBillingService) {
+    public OrderSummaryController(
+            OrderSummaryService orderSummaryService,
+            OrderBillingService orderBillingService,
+            OrderPricingService orderPricingService) {
         this.orderSummaryService = orderSummaryService;
         this.orderBillingService = orderBillingService;
+        this.orderPricingService = orderPricingService;
+    }
+
+    @GetMapping("/pricing")
+    public OrderPricingQuote quoteCart(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @RequestParam("subtotal") double subtotal) {
+        return orderPricingService.quoteCart(sessionId, subtotal);
     }
 
     @GetMapping("/{orderId}/summary")
@@ -44,6 +59,13 @@ public class OrderSummaryController {
             @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
             @PathVariable("orderId") String orderId) {
         return orderBillingService.getLedger(sessionId, orderId);
+    }
+
+    @GetMapping("/{orderId}/pricing")
+    public OrderPricingQuote quoteOrder(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @PathVariable("orderId") String orderId) {
+        return orderPricingService.quoteOrder(sessionId, orderId);
     }
 
     @PostMapping("/{orderId}/refund")

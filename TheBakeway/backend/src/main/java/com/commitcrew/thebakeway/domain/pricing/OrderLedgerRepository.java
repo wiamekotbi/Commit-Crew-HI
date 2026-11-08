@@ -20,4 +20,6 @@ public interface OrderLedgerRepository extends JpaRepository<OrderLedgerEntry, S
             @Param("orderId") String orderId, @Param("entryType") LedgerEntryType entryType);
 
     List<OrderLedgerEntry> findByOrder_IdOrderByOccurredAtAsc(String orderId);
+
+    List<OrderLedgerEntry> findByOrder_IdInOrderByOccurredAtAsc(List<String> orderIds);
 }
