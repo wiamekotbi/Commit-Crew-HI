@@ -21,8 +21,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.order.Order;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.pricing.LedgerEntryType;
@@ -39,6 +42,8 @@ class OrderBillingServiceTest {
     private OrderRegistry orderRegistry;
     @Mock
     private OrderLedgerRepository ledgerRepository;
+    @Mock
+    private TransitionPublisher transitionPublisher;
 
     private final SessionManager sessions = new SessionManager();
     private final PermissionPolicy permissionPolicy = new PermissionPolicy();
@@ -47,7 +52,7 @@ class OrderBillingServiceTest {
     @BeforeEach
     void setUp() {
         service = new OrderBillingService(sessions, permissionPolicy, bakeryStaffAccessService,
-                orderRegistry, ledgerRepository);
+                orderRegistry, ledgerRepository, transitionPublisher);
     }
 
     @Test
@@ -66,6 +71,7 @@ class OrderBillingServiceTest {
             ReflectionTestUtils.setField(entry, "id", "refund-1");
             return entry;
         });
+        when(orderRegistry.save(order)).thenReturn(order);
 
         OrderLedgerEntryView refund = service.refundDeliveredOrder(sessionId, "order-1", "Customer request");
 
@@ -73,12 +79,19 @@ class OrderBillingServiceTest {
         assertEquals(21, refund.amount());
         assertEquals("operator-1", refund.actorAccountId());
         assertEquals("Customer request", refund.reason());
-        assertEquals("delivered", order.getStatus());
+        assertEquals("refunded", order.getStatus());
         ArgumentCaptor<OrderLedgerEntry> entry = ArgumentCaptor.forClass(OrderLedgerEntry.class);
         verify(ledgerRepository).save(entry.capture());
         assertEquals(LedgerEntryType.REFUND, entry.getValue().getEntryType());
         assertEquals(21, entry.getValue().getAmount());
         assertEquals("operator-1", entry.getValue().getActorAccountId());
+        verify(orderRegistry).save(order);
+        ArgumentCaptor<StateTransitionEvent> event = ArgumentCaptor.forClass(StateTransitionEvent.class);
+        verify(transitionPublisher).notifyObservers(event.capture());
+        assertEquals(EntityType.ORDER, event.getValue().getEntityType());
+        assertEquals("delivered", event.getValue().getPreviousState());
+        assertEquals("refunded", event.getValue().getNewState());
+        assertEquals("order-1", event.getValue().getEntityId());
     }
 
     @Test
@@ -90,6 +103,7 @@ class OrderBillingServiceTest {
 
         verify(orderRegistry, never()).findById("order-1");
         verify(ledgerRepository, never()).save(any());
+        verify(transitionPublisher, never()).notifyObservers(any());
     }
 
     @Test
@@ -107,6 +121,7 @@ class OrderBillingServiceTest {
                 () -> service.refundDeliveredOrder(sessionId, "order-1", "Another reason"));
 
         verify(ledgerRepository, never()).save(any());
+        verify(transitionPublisher, never()).notifyObservers(any());
     }
 
     @Test

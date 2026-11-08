@@ -7,4 +7,9 @@ public class DeliveredState implements OrderState {
     public String getStatus() {
         return OrderStatus.delivered.name();
     }
+
+    @Override
+    public void refund(Order order) {
+        order.setState(new RefundedState());
+    }
 }

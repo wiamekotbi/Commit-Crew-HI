@@ -2,6 +2,7 @@ package com.commitcrew.thebakeway.application.prc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,8 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
+import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.event.EntityType;
+import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.order.Order;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.pricing.LedgerEntryType;
@@ -26,18 +30,21 @@ public class OrderBillingService {
     private final BakeryStaffAccessService bakeryStaffAccessService;
     private final OrderRegistry orderRegistry;
     private final OrderLedgerRepository ledgerRepository;
+    private final TransitionPublisher transitionPublisher;
 
     public OrderBillingService(
             SessionManager sessionManager,
             PermissionPolicy permissionPolicy,
             BakeryStaffAccessService bakeryStaffAccessService,
             OrderRegistry orderRegistry,
-            OrderLedgerRepository ledgerRepository) {
+            OrderLedgerRepository ledgerRepository,
+            TransitionPublisher transitionPublisher) {
         this.sessionManager = sessionManager;
         this.permissionPolicy = permissionPolicy;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
         this.orderRegistry = orderRegistry;
         this.ledgerRepository = ledgerRepository;
+        this.transitionPublisher = transitionPublisher;
     }
 
     @Transactional
@@ -64,9 +71,19 @@ public class OrderBillingService {
             throw new IllegalArgumentException("A refund reason is required");
         }
 
-        OrderLedgerEntry refund = OrderLedgerEntry.refund(
-                order, charge.getAmount(), Instant.now(), session.getAccountId(), normalizedReason);
-        return OrderLedgerEntryView.from(ledgerRepository.save(refund));
+        Instant refundedAt = Instant.now();
+        OrderLedgerEntry refund = ledgerRepository.save(OrderLedgerEntry.refund(
+                order, charge.getAmount(), refundedAt, session.getAccountId(), normalizedReason));
+        order.refund();
+        Order saved = orderRegistry.save(order);
+        transitionPublisher.notifyObservers(new StateTransitionEvent(
+                UUID.randomUUID().toString(),
+                EntityType.ORDER,
+                saved.getId(),
+                "delivered",
+                saved.getStatus(),
+                refundedAt));
+        return OrderLedgerEntryView.from(refund);
     }
 
     @Transactional(readOnly = true)

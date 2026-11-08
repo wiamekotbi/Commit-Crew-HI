@@ -93,7 +93,7 @@ At startup the application loads its initial state from two configuration files 
 
 **Starting the application replaces the accounts, bakeries and menus in the database with these files and deletes all orders, events and associated billing ledger entries.** An invalid entry is reported in the console and the previous data is kept. The platform operator can restore the same initial state at any time from the dashboard.
 
-The `order_ledger_entries` table stores a charge with its price breakdown when an order is delivered, and a distinct full-refund entry when an operator refunds it. A refund does not overwrite the original charge or change the order's `delivered` status. The ledger uses CAD amounts with two-decimal database precision.
+The `order_ledger_entries` table stores a charge with its price breakdown when an order is delivered, and a distinct full-refund entry when an operator refunds it. A refund does not overwrite the original charge; it also transitions the order from `delivered` to `refunded` and records that lifecycle event. The ledger uses CAD amounts with two-decimal database precision.
 
 To start without reloading the data, set this in `TheBakeway/backend/src/main/resources/application.properties`:
 

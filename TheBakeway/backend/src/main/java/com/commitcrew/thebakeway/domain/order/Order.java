@@ -88,6 +88,7 @@ public class Order {
     public void markReady() { state.markReady(this); }
     public void confirmPickup() { state.confirmPickup(this); }
     public void confirmDelivery() { state.confirmDelivery(this); }
+    public void refund() { state.refund(this); }
     public void cancel(Role role) { state.cancel(this, role); }
 
     public void addOrderItem(MenuItem menuItem, int quantity) {

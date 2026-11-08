@@ -3,7 +3,7 @@
 Dashboard.register("OPERATOR", (() => {
     const D = Dashboard;
 
-    const STATES = ["placed", "accepted", "preparing", "ready", "picked_up", "delivered", "rejected", "cancelled"];
+    const STATES = ["placed", "accepted", "preparing", "ready", "picked_up", "delivered", "refunded", "rejected", "cancelled"];
     const CANCELLABLE = ["placed", "accepted", "preparing", "ready"];
 
     let container = null;
@@ -188,7 +188,7 @@ Dashboard.register("OPERATOR", (() => {
                             data-cancel="${D.escape(order.orderId)}"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ""}
                         ${order.status === "delivered" ? `<button type="button" class="btn danger"
                             data-refund="${D.escape(order.orderId)}"><i class="fa-solid fa-rotate-left"></i> Refund</button>` : ""}
-                        ${order.status === "delivered" ? `<button type="button" class="btn secondary"
+                        ${["delivered", "refunded"].includes(order.status) ? `<button type="button" class="btn secondary"
                             data-ledger="${D.escape(order.orderId)}"><i class="fa-solid fa-book"></i> Ledger</button>` : ""}
                     </td>
                 </tr>`).join("")}</tbody></table>`;
