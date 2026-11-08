@@ -45,6 +45,9 @@ final class CommandNames {
             route("PATCH", "/api/couriers/me/off-duty", "GO_OFF_DUTY"),
             route("PATCH", "/api/couriers/offers/" + ID + "/accept", "ACCEPT_DELIVERY_OFFER"),
             route("PATCH", "/api/couriers/offers/" + ID + "/decline", "DECLINE_DELIVERY_OFFER"),
+            route("GET", "/api/dispatch/waiting-orders", "VIEW_WAITING_ORDERS"),
+            route("PATCH", "/api/dispatch/waiting-orders/" + ID + "/reassign",
+                    "REASSIGN_STALLED_ORDER"),
             route("POST", "/api/initial-state/restore", "RESTORE_INITIAL_STATE"));
 
     private CommandNames() {
