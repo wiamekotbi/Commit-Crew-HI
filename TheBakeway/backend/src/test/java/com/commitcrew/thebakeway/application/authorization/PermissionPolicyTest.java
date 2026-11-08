@@ -31,6 +31,7 @@ class PermissionPolicyTest {
             "CONFIRM_PICKUP",
             "CONFIRM_DELIVERY",
             "VIEW_SIMULATOR_DASHBOARD",
+            "REFUND_ORDER",
             "RESTORE_INITIAL_STATE",
             "VIEW_ORDER_DETAILS");
 
@@ -77,6 +78,7 @@ class PermissionPolicyTest {
                 "PAUSE_BAKERY",
                 "REOPEN_BAKERY",
                 "CANCEL_ORDER",
+                "REFUND_ORDER",
                 "RESTORE_INITIAL_STATE",
                 "VIEW_ORDER_DETAILS"));
     }

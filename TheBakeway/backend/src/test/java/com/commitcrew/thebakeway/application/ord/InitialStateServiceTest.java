@@ -42,6 +42,7 @@ import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
+import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
 
 @ExtendWith(MockitoExtension.class)
 class InitialStateServiceTest {
@@ -51,6 +52,9 @@ class InitialStateServiceTest {
 
     @Mock
     private OrderRegistry orderRegistry;
+
+    @Mock
+    private OrderLedgerRepository orderLedgerRepository;
 
     @Mock
     private EventRepository eventRepository;
@@ -105,6 +109,7 @@ class InitialStateServiceTest {
         service = new InitialStateService(
                 cityConfigurationReader,
                 orderRegistry,
+                orderLedgerRepository,
                 eventRepository,
                 menuItemRegistry,
                 bakeryRegistry,
@@ -133,9 +138,10 @@ class InitialStateServiceTest {
                 summary.accountsPerRole());
 
         // Orders and events are cleared, and rows are removed before the ones they reference
-        InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, courierRegistry,
+        InOrder order = inOrder(orderLedgerRepository, orderRegistry, eventRepository, menuItemRegistry, courierRegistry,
                 accountRegistry, bakeryRegistry, entityManager, dashboardReadModel,
                 dispatchWaitingQueue, activeDispatchOffers);
+        order.verify(orderLedgerRepository).deleteAllInBatch();
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
         order.verify(menuItemRegistry).deleteAllInBatch();
