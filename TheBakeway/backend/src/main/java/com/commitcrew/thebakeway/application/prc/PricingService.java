@@ -1,6 +1,9 @@
 
 package com.commitcrew.thebakeway.application.prc;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import org.springframework.stereotype.Service;
 
 import com.commitcrew.thebakeway.domain.order.Order;
@@ -18,25 +21,26 @@ public class PricingService {
     public PriceBreakdown calculatePrice(Order order) {
         PricingConfiguration config = configurationReader.read();
 
-        double subtotal = order.calculateTotal();
-        double surcharge = 0;
+        BigDecimal subtotal = order.getOrderItems().stream()
+                .map(item -> BigDecimal.valueOf(item.getUnitPrice())
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal deliveryFee = BigDecimal.valueOf(config.deliveryFee());
+        BigDecimal serviceFee = BigDecimal.valueOf(config.serviceFee());
+        BigDecimal surcharge = BigDecimal.ZERO;
 
-        if (subtotal < config.smallOrderThreshold()) {
-            surcharge = config.smallOrderSurcharge();
+        if (subtotal.compareTo(BigDecimal.valueOf(config.smallOrderThreshold())) < 0) {
+            surcharge = BigDecimal.valueOf(config.smallOrderSurcharge());
         }
 
-        double total = round(subtotal + config.deliveryFee()
-                + config.serviceFee() + surcharge);
+        BigDecimal total = subtotal.add(deliveryFee).add(serviceFee).add(surcharge)
+                .setScale(2, RoundingMode.HALF_UP);
 
         return new PriceBreakdown(
-                subtotal,
-                config.deliveryFee(),
-                config.serviceFee(),
-                surcharge,
-                total);
-    }
-
-    private double round(double amount) {
-        return Math.round(amount * 100.0) / 100.0;
+                subtotal.doubleValue(),
+                deliveryFee.doubleValue(),
+                serviceFee.doubleValue(),
+                surcharge.doubleValue(),
+                total.doubleValue());
     }
 }

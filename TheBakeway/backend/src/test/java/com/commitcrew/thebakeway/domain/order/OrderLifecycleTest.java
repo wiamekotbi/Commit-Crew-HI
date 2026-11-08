@@ -33,6 +33,7 @@ class OrderLifecycleTest {
         ACTIONS.put("markReady", Order::markReady);
         ACTIONS.put("confirmPickup", Order::confirmPickup);
         ACTIONS.put("confirmDelivery", Order::confirmDelivery);
+        ACTIONS.put("refund", Order::refund);
         ACTIONS.put("cancelAsCustomer", order -> order.cancel(Role.CUSTOMER));
         ACTIONS.put("cancelAsOperator", order -> order.cancel(Role.OPERATOR));
     }
@@ -49,7 +50,8 @@ class OrderLifecycleTest {
             Map.entry("preparing:cancelAsOperator", "cancelled"),
             Map.entry("ready:confirmPickup", "picked_up"),
             Map.entry("ready:cancelAsOperator", "cancelled"),
-            Map.entry("picked_up:confirmDelivery", "delivered"));
+            Map.entry("picked_up:confirmDelivery", "delivered"),
+            Map.entry("delivered:refund", "refunded"));
 
     @Test
     void followsTheFullLifecycle() {
@@ -65,6 +67,8 @@ class OrderLifecycleTest {
         assertEquals("picked_up", order.getStatus());
         order.confirmDelivery();
         assertEquals("delivered", order.getStatus());
+        order.refund();
+        assertEquals("refunded", order.getStatus());
     }
 
     @ParameterizedTest(name = "{0} -> {1}")

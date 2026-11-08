@@ -80,7 +80,7 @@ Dashboard.register("RESTAURANT", (() => {
         renderQueue(orders.filter(o => o.status === "accepted")
             .sort((a, b) => (a.queuePosition ?? 999) - (b.queuePosition ?? 999)));
         renderPreparing(orders.filter(o => o.status === "preparing"));
-        renderDone(orders.filter(o => ["ready", "picked_up", "delivered", "rejected", "cancelled"].includes(o.status))
+        renderDone(orders.filter(o => ["ready", "picked_up", "delivered", "refunded", "rejected", "cancelled"].includes(o.status))
             .reverse());
     }
 

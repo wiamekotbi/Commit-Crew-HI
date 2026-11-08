@@ -7,7 +7,8 @@ public enum OrderStatus {
     preparing,  // Actively being prepared (leaves the queue)
     ready,      // Finished, waiting for a courier
     picked_up,  // Picked up by a courier
-    delivered,  // Delivered to the customer (final)
+    delivered,  // Delivered to the customer
+    refunded,   // Delivered order refunded by an operator (final)
     rejected,   // Rejected by the bakery (final)
     cancelled   // Cancelled by the customer or an operator (final)
 }

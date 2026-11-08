@@ -33,6 +33,7 @@ class PermissionPolicyTest {
             "VIEW_SIMULATOR_DASHBOARD",
             "VIEW_WAITING_ORDERS",
             "REASSIGN_STALLED_ORDER",
+            "REFUND_ORDER",
             "RESTORE_INITIAL_STATE",
             "VIEW_ORDER_DETAILS");
 
@@ -81,6 +82,7 @@ class PermissionPolicyTest {
                 "PAUSE_BAKERY",
                 "REOPEN_BAKERY",
                 "CANCEL_ORDER",
+                "REFUND_ORDER",
                 "RESTORE_INITIAL_STATE",
                 "VIEW_ORDER_DETAILS"));
     }

@@ -16,6 +16,7 @@ const Dashboard = (() => {
         ready: "fa-bell-concierge",
         picked_up: "fa-person-biking",
         delivered: "fa-house-circle-check",
+        refunded: "fa-money-bill-transfer",
         rejected: "fa-ban",
         cancelled: "fa-xmark",
         open: "fa-door-open",

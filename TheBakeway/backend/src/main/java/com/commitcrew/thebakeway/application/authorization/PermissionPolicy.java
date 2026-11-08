@@ -41,6 +41,7 @@ public class PermissionPolicy {
                     "PAUSE_BAKERY",
                     "REOPEN_BAKERY",
                     "CANCEL_ORDER",
+                    "REFUND_ORDER",
                     "RESTORE_INITIAL_STATE",
                     "VIEW_ORDER_DETAILS"));
 
