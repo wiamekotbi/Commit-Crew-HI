@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Optional;
+import java.util.List;
+import java.time.Instant;
 
 import jakarta.servlet.http.Cookie;
 
@@ -21,6 +23,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
+import com.commitcrew.thebakeway.application.dlv.CourierHistoryService;
+import com.commitcrew.thebakeway.application.dlv.CompletedDeliveryView;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.courier.CourierStatus;
@@ -37,6 +41,9 @@ class CourierControllerTest {
     private CourierService courierService;
 
     @Mock
+    private CourierHistoryService courierHistoryService;
+
+    @Mock
     private SessionManager sessionManager;
 
     private MockMvc mockMvc;
@@ -44,7 +51,7 @@ class CourierControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CourierController(courierService, sessionManager)).build();
+                new CourierController(courierService, courierHistoryService, sessionManager)).build();
     }
 
     @Test
@@ -57,6 +64,28 @@ class CourierControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.courierId").value(COURIER_ID))
                 .andExpect(jsonPath("$.status").value("IDLE"));
+    }
+
+    @Test
+    void returnsOnlyAuthenticatedCouriersPastDeliveries() throws Exception {
+        givenCourierSession();
+        when(courierHistoryService.getPastDeliveries(COURIER_ID))
+                .thenReturn(List.of(new CompletedDeliveryView("order-2", Instant.parse("2026-11-07T12:00:00Z"),
+                        List.of())));
+
+        mockMvc.perform(get("/api/couriers/me/past-deliveries").cookie(sessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].orderId").value("order-2"))
+                .andExpect(jsonPath("$[0].ledgerEntries").isEmpty());
+    }
+
+    @Test
+    void rejectsPastDeliveriesForNonCourier() throws Exception {
+        when(sessionManager.findSession(SESSION_ID)).thenReturn(Optional.of(
+                new Session(SESSION_ID, "customer-1", Role.CUSTOMER)));
+
+        mockMvc.perform(get("/api/couriers/me/past-deliveries").cookie(sessionCookie()))
+                .andExpect(status().isForbidden());
     }
 
     @Test

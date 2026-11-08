@@ -45,6 +45,7 @@ final class CommandNames {
             route("POST", "/api/orders/" + ID + "/refund", "REFUND_ORDER"),
             route("GET", "/api/orders/" + ID, "VIEW_ORDER"),
             route("GET", "/api/couriers/me", "VIEW_COURIER_STATUS"),
+            route("GET", "/api/couriers/me/past-deliveries", "VIEW_PAST_DELIVERIES"),
             route("PATCH", "/api/couriers/me/on-duty", "GO_ON_DUTY"),
             route("PATCH", "/api/couriers/me/off-duty", "GO_OFF_DUTY"),
             route("PATCH", "/api/couriers/offers/" + ID + "/accept", "ACCEPT_DELIVERY_OFFER"),

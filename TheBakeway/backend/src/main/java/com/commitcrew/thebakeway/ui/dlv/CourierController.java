@@ -1,6 +1,7 @@
 package com.commitcrew.thebakeway.ui.dlv;
 
 import java.util.Map;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
+import com.commitcrew.thebakeway.application.dlv.CompletedDeliveryView;
+import com.commitcrew.thebakeway.application.dlv.CourierHistoryService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.session.Session;
@@ -25,12 +28,15 @@ public class CourierController {
     private static final String SESSION_COOKIE = "BAKEWAY_SESSION_ID";
 
     private final CourierService courierService;
+    private final CourierHistoryService courierHistoryService;
     private final SessionManager sessionManager;
 
     public CourierController(
             CourierService courierService,
+            CourierHistoryService courierHistoryService,
             SessionManager sessionManager) {
         this.courierService = courierService;
+        this.courierHistoryService = courierHistoryService;
         this.sessionManager = sessionManager;
     }
 
@@ -39,6 +45,13 @@ public class CourierController {
             @CookieValue(value = SESSION_COOKIE, required = false)
                     String sessionId) {
         return courierService.getCourier(courierId(sessionId));
+    }
+
+    @GetMapping("/me/past-deliveries")
+    public List<CompletedDeliveryView> getPastDeliveries(
+            @CookieValue(value = SESSION_COOKIE, required = false)
+                    String sessionId) {
+        return courierHistoryService.getPastDeliveries(courierId(sessionId));
     }
 
     @PatchMapping("/me/on-duty")

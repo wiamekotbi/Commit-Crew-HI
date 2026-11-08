@@ -27,6 +27,7 @@ import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
 import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
+import com.commitcrew.thebakeway.domain.courier.CourierDeliveryRepository;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
@@ -49,6 +50,7 @@ public class InitialStateService {
     private final MenuItemRegistry menuItemRegistry;
     private final BakeryRegistry bakeryRegistry;
     private final CourierRegistry courierRegistry;
+    private final CourierDeliveryRepository courierDeliveryRepository;
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
@@ -66,6 +68,7 @@ public class InitialStateService {
             MenuItemRegistry menuItemRegistry,
             BakeryRegistry bakeryRegistry,
             CourierRegistry courierRegistry,
+            CourierDeliveryRepository courierDeliveryRepository,
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
@@ -81,6 +84,7 @@ public class InitialStateService {
         this.menuItemRegistry = menuItemRegistry;
         this.bakeryRegistry = bakeryRegistry;
         this.courierRegistry = courierRegistry;
+        this.courierDeliveryRepository = courierDeliveryRepository;
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
@@ -92,7 +96,7 @@ public class InitialStateService {
     }
 
     // Replaces bakeries, menus, couriers and accounts with the config files and
-    // clears orders, their ledger entries, queues and events.
+    // clears orders, their ledger and courier history, queues and events.
     // Sessions end (the account seeding invalidates them).
     @Transactional
     public InitialStateSummary loadInitialState() {
@@ -113,8 +117,9 @@ public class InitialStateService {
         CityConfiguration city = cityConfigurationReader.read(scanner(CITY_FILE));
         String accounts = read(ACCOUNTS_FILE);
 
-        // Ledger rows reference orders, so remove them before the orders and their menu references.
+        // Ledger and courier history rows reference orders, so remove them first.
         orderLedgerRepository.deleteAllInBatch();
+        courierDeliveryRepository.deleteAllInBatch();
         orderRegistry.deleteAll();
         orderRegistry.flush();
         eventRepository.deleteAllInBatch();

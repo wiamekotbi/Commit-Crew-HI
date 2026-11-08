@@ -25,6 +25,12 @@ Dashboard.register("COURIER", (() => {
                     <h2><i class="fa-solid fa-box"></i> Current delivery</h2>
                 </div>
                 <div id="courierDelivery"></div>
+            </section>
+            <section class="card">
+                <div class="card-title">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Past deliveries</h2>
+                </div>
+                <div id="courierPastDeliveries"><p class="muted">Loading delivery history...</p></div>
             </section>`;
         await refresh();
     }
@@ -37,6 +43,52 @@ Dashboard.register("COURIER", (() => {
             return;
         }
         renderCourier(result.data);
+        await loadPastDeliveries();
+    }
+
+    async function loadPastDeliveries() {
+        const target = container.querySelector("#courierPastDeliveries");
+        try {
+            const result = await D.api("GET", "/api/couriers/me/past-deliveries");
+            if (!target.isConnected) return;
+            if (!result.ok) {
+                target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+                return;
+            }
+            if (result.data.length === 0) {
+                target.innerHTML = `<p class="empty">You have no past deliveries yet.</p>`;
+                return;
+            }
+
+            target.innerHTML = result.data.map(delivery => `
+                <article class="card">
+                    <strong>Order ${D.escape(D.shortId(delivery.orderId))}</strong>
+                    <p class="muted">Delivered ${D.escape(D.time(delivery.deliveredAt))}</p>
+                    ${delivery.ledgerEntries.length === 0
+                        ? '<p class="empty">No ledger entries have been recorded for this delivery.</p>'
+                        : `<table aria-label="Order ledger entries">
+                            <thead><tr><th>Entry</th><th>Recorded</th><th>Amount</th></tr></thead>
+                            <tbody>${delivery.ledgerEntries.map(entry => `
+                                <tr>
+                                    <td>${D.escape(entry.entryType)}${entry.reason
+                                        ? `<span class="muted"> - ${D.escape(entry.reason)}</span>` : ""}</td>
+                                    <td>${D.escape(D.time(entry.occurredAt))}</td>
+                                    <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
+                                </tr>
+                                ${entry.pricing ? `
+                                    <tr><td colspan="3">
+                                        Items: ${D.money(entry.pricing.subtotal)} |
+                                        Delivery: ${D.money(entry.pricing.deliveryFee)} |
+                                        Service: ${D.money(entry.pricing.serviceFee)} |
+                                        Small-order surcharge: ${D.money(entry.pricing.smallOrderSurcharge)}
+                                    </td></tr>` : ""}`).join("")}</tbody>
+                        </table>`}
+                </article>`).join("");
+        } catch (error) {
+            if (target.isConnected) {
+                target.innerHTML = '<p class="empty">Unable to load past deliveries. Please try again.</p>';
+            }
+        }
     }
 
     function renderCourier(courier) {

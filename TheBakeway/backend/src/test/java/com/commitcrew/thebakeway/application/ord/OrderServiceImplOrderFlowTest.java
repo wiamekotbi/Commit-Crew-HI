@@ -27,6 +27,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
+import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -94,6 +95,9 @@ class OrderServiceImplOrderFlowTest {
     @Mock
     private DispatchService dispatchService;
 
+    @Mock
+    private CourierDeliveryRecorder courierDeliveryRecorder;
+
     private OrderServiceImpl orderService;
 
     @BeforeEach
@@ -111,7 +115,8 @@ class OrderServiceImplOrderFlowTest {
                 initialStateService,
                 eventRepository,
                 courierRegistry,
-                dispatchService);
+                dispatchService,
+                courierDeliveryRecorder);
     }
 
     // Placing an order
@@ -493,6 +498,7 @@ class OrderServiceImplOrderFlowTest {
         assertEquals("delivered", result.newState());
         StateTransitionEvent event = assertTransitionPublished("picked_up", "delivered");
         assertEquals(event.getEventId(), result.eventId());
+        verify(courierDeliveryRecorder).record(courier, order, event.getTimestamp());
     }
 
     @Test
@@ -845,6 +851,7 @@ class OrderServiceImplOrderFlowTest {
     private void assertNothingSavedOrPublished() {
         verify(orderRegistry, never()).save(any());
         verify(courierRegistry, never()).save(any());
+        verify(courierDeliveryRecorder, never()).record(any(), any(), any());
         verify(transitionPublisher, never()).notifyObservers(any());
         verify(dispatchService, never()).retryWaitingOrdersWhenCourierBecomesIdle(any());
     }
