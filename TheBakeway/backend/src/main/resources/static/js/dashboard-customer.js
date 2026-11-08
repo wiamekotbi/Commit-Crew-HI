@@ -63,6 +63,7 @@ Dashboard.register("CUSTOMER", (() => {
         await loadBakeries();
         renderCart();
         await loadOrders();
+        await loadCouriers();
     }
 
     async function loadBakeries() {
@@ -91,6 +92,20 @@ Dashboard.register("CUSTOMER", (() => {
             </div>`).join("");
         list.querySelectorAll("button[data-bakery]").forEach(button =>
             button.addEventListener("click", () => loadMenu(button.dataset.bakery)));
+    }
+
+    async function loadCouriers() {
+        const result = await D.api("GET", "/api/couriers/map");
+
+        if (!result.ok) {
+            console.error(
+                "Failed to load couriers:",
+                D.errorText(result)
+            );
+            return;
+        }
+
+        BakewayMap.setCouriers(result.data);
     }
 
     async function loadMenu(bakeryId) {

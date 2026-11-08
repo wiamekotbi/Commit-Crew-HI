@@ -4,12 +4,14 @@ const BakewayMap = (() => {
     let infoWindow = null;
 
     const bakeryMarkers = new Map();
+    const courierMarkers = new Map();
 
     const COLORS = {
         unknown: "#808080",
         short: "#20A464",
         medium: "#F59E0B",
         long: "#DC3545",
+        courier: "#2563EB"
     };
 
     const SHORT_QUEUE_MAX = 3;
@@ -38,7 +40,16 @@ const BakewayMap = (() => {
         };
     }
 
+    function createCourierIcon() {
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: COLORS.courier,
+            fillOpacity: 1,
+            strokeColor: "#FFFFFF",
+            strokeWeight: 2,
+            scale: 9
         };
+    }
 
     function setBakeries(bakeries) {
         if (!map) return;
@@ -123,6 +134,60 @@ const BakewayMap = (() => {
         marker.setIcon(createBakeryIcon(color));
     }
 
+        function setCouriers(couriers) {
+        if (!map) return;
+
+        const currentIds = new Set();
+
+        couriers.forEach(courier => {
+            const { courierId, coordinates } = courier;
+
+            const lat = coordinates?.latitude;
+            const lng = coordinates?.longitude;
+
+            if (
+                lat == null || lng == null ||
+                !Number.isFinite(Number(lat)) ||
+                !Number.isFinite(Number(lng))
+            ) {
+                return;
+            }
+
+            currentIds.add(courierId);
+
+            const position = {
+                lat: Number(lat),
+                lng: Number(lng)
+            };
+
+            let marker = courierMarkers.get(courierId);
+
+            if (marker) {
+                // Update the position of an existing courier
+                marker.setPosition(position);
+            } else {
+                // Create a marker for a new courier
+                marker = new google.maps.Marker({
+                    position,
+                    map,
+                    icon: createCourierIcon(),
+                    clickable: false,
+                    zIndex: 100
+                });
+
+                courierMarkers.set(courierId, marker);
+            }
+        });
+
+        // Remove couriers no longer returned by the API
+        courierMarkers.forEach((marker, id) => {
+            if (!currentIds.has(id)) {
+                marker.setMap(null);
+                courierMarkers.delete(id);
+            }
+        });
+    }
+
     function init(containerId = "map") {
         const element = document.getElementById(containerId);
 
@@ -163,6 +228,7 @@ const BakewayMap = (() => {
     return {
         init,
         setBakeries,
-        updateBakeryQueue
+        updateBakeryQueue,
+        setCouriers
     };
 })();

@@ -23,7 +23,8 @@ public class PermissionPolicy {
                     "VIEW_ORDER_HISTORY",
                     "VIEW_ORDER_DETAILS",
                     "PREPARATION_QUEUE_SIZE",
-                    "GET_BAKERY_MAP_DATA"),
+                    "GET_BAKERY_MAP_DATA",
+                    "GET_COURIER_MAP_DATA"),
             Role.RESTAURANT, withProfileOperations(
                     "MANAGE_MENU_ITEMS",
                     "MANAGE_ITEM_AVAILABILITY",
@@ -31,11 +32,17 @@ public class PermissionPolicy {
                     "MANAGE_ORDERS",
                     "PREPARE_ORDERS",
                     "ASSIGN_READY_ORDERS_TO_COURIERS",
-                    "VIEW_ORDER_DETAILS"),
+                    "VIEW_ORDER_DETAILS",
+                    "PREPARATION_QUEUE_SIZE",
+                    "GET_BAKERY_MAP_DATA",
+                    "GET_COURIER_MAP_DATA"),
             Role.COURIER, withProfileOperations(
                     "VIEW_ASSIGNED_DELIVERIES",
                     "CONFIRM_PICKUP",
-                    "CONFIRM_DELIVERY"),
+                    "CONFIRM_DELIVERY",
+                    "PREPARATION_QUEUE_SIZE",
+                    "GET_BAKERY_MAP_DATA",
+                    "GET_COURIER_MAP_DATA"),
             Role.OPERATOR, withProfileOperations(
                     "VIEW_SIMULATOR_DASHBOARD",
                     "PAUSE_BAKERY",
@@ -44,7 +51,8 @@ public class PermissionPolicy {
                     "RESTORE_INITIAL_STATE",
                     "VIEW_ORDER_DETAILS",
                     "PREPARATION_QUEUE_SIZE",
-                    "GET_BAKERY_MAP_DATA"));
+                    "GET_BAKERY_MAP_DATA",
+                    "GET_COURIER_MAP_DATA"));
 
     public boolean isAllowed(String operation, Role role) {
         if (operation == null || role == null) {

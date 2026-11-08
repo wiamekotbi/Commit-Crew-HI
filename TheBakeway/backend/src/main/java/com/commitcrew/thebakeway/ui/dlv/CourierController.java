@@ -1,6 +1,7 @@
 package com.commitcrew.thebakeway.ui.dlv;
 
 import java.util.Map;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.courier.Courier;
 import com.commitcrew.thebakeway.domain.session.Session;
 
 @RestController
@@ -111,5 +113,13 @@ public class CourierController {
             HttpStatus status, String message) {
         return ResponseEntity.status(status)
                 .body(Map.of("error", message));
+    }
+
+    // for dashboard map
+    @GetMapping("/map")
+    public List<Courier> getAllCouriers(
+            @CookieValue(value = SESSION_COOKIE, required = false)
+                    String sessionId) {
+        return courierService.getAllCouriers();
     }
 }

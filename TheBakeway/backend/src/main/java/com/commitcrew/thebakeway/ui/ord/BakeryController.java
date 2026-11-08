@@ -96,7 +96,7 @@ public class BakeryController {
     }
 
 
-    @GetMapping("/api/map/bakeries")
+    @GetMapping("/map")
     public List<Bakery> getBakeryMapData(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
         List<Bakery> bakeries = getOpenBakeries(sessionId);
