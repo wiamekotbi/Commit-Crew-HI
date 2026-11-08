@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,6 +30,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryBilling;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
+import com.commitcrew.thebakeway.application.prc.OrderBillingService;
+import com.commitcrew.thebakeway.application.prc.OrderLedgerEntryView;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -52,6 +56,8 @@ class OrderSummaryControllerTest {
     @Mock
     private OrderSummaryBilling billing;
     @Mock
+    private OrderBillingService orderBillingService;
+    @Mock
     private AccountRegistry accountRegistry;
 
     private final SessionManager sessions = new SessionManager();
@@ -62,7 +68,7 @@ class OrderSummaryControllerTest {
     void setUp() {
         OrderSummaryService service = new OrderSummaryService(sessions, orderRegistry, eventRepository,
                 Optional.of(billing));
-        mvc = MockMvcBuilders.standaloneSetup(new OrderSummaryController(service))
+        mvc = MockMvcBuilders.standaloneSetup(new OrderSummaryController(service, orderBillingService))
                 .addFilters(new CommandConsoleFilter(console, sessions, accountRegistry)).build();
     }
 
@@ -148,6 +154,39 @@ class OrderSummaryControllerTest {
         mvc.perform(get("/api/orders/order-1/summary").cookie(session(Role.CUSTOMER)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Order summary is not available: no recorded charge"));
+    }
+
+    @Test
+    void returnsRoleScopedLedgerRows() throws Exception {
+        Cookie operator = session(Role.OPERATOR);
+        when(orderBillingService.getLedger(operator.getValue(), "order-1")).thenReturn(List.of(
+                new OrderLedgerEntryView("charge-1", "order-1", "CHARGE", 19, "CAD",
+                        Instant.parse("2026-11-02T15:00:00Z"), null, null,
+                        new PriceBreakdown(12, 4, 1, 2, 19))));
+
+        mvc.perform(get("/api/orders/order-1/ledger").cookie(operator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ledgerEntryId").value("charge-1"))
+                .andExpect(jsonPath("$[0].entryType").value("CHARGE"))
+                .andExpect(jsonPath("$[0].amount").value(19))
+                .andExpect(jsonPath("$[0].pricing.total").value(19));
+    }
+
+    @Test
+    void acceptsOperatorRefundCommand() throws Exception {
+        Cookie operator = session(Role.OPERATOR);
+        when(orderBillingService.refundDeliveredOrder(operator.getValue(), "order-1", "Customer request"))
+                .thenReturn(new OrderLedgerEntryView("refund-1", "order-1", "REFUND", 19, "CAD",
+                        Instant.parse("2026-11-02T16:00:00Z"), "customer-1", "Customer request", null));
+
+        mvc.perform(post("/api/orders/order-1/refund").cookie(operator)
+                        .contentType(APPLICATION_JSON)
+                        .content("{\"reason\":\"Customer request\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ledgerEntryId").value("refund-1"))
+                .andExpect(jsonPath("$.entryType").value("REFUND"))
+                .andExpect(jsonPath("$.amount").value(19))
+                .andExpect(jsonPath("$.reason").value("Customer request"));
     }
 
     private Cookie session(Role role) {

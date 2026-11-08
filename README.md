@@ -34,6 +34,7 @@ The system allows customers to order bakery products, bakery staff to manage and
 - Assign ready orders to couriers
 - Confirm pickup and delivery
 - Calculate order prices
+- Persist delivered-order charges and a separate operator-refund ledger
 - View order history
 - Display restaurants, couriers, and orders on the simulator dashboard
 
@@ -90,7 +91,9 @@ At startup the application loads its initial state from two configuration files 
 - `TheBakeway/backend/src/main/resources/config/initialAccounts.txt`: the seeded accounts, at least one per role
 - `TheBakeway/backend/src/main/resources/config/initialCity.txt`: the bakeries (name, status, address) and their menu items (name, price, status)
 
-**Starting the application replaces the accounts, bakeries and menus in the database with these files and deletes all orders and events.** An invalid entry is reported in the console and the previous data is kept. The platform operator can restore the same initial state at any time from the dashboard.
+**Starting the application replaces the accounts, bakeries and menus in the database with these files and deletes all orders, events and associated billing ledger entries.** An invalid entry is reported in the console and the previous data is kept. The platform operator can restore the same initial state at any time from the dashboard.
+
+The `order_ledger_entries` table stores a charge with its price breakdown when an order is delivered, and a distinct full-refund entry when an operator refunds it. A refund does not overwrite the original charge or change the order's `delivered` status. The ledger uses CAD amounts with two-decimal database precision.
 
 To start without reloading the data, set this in `TheBakeway/backend/src/main/resources/application.properties`:
 
