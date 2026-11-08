@@ -88,7 +88,7 @@ Dashboard.register("RESTAURANT", (() => {
         return `<td><strong>${D.escape(D.shortId(order.orderId))}</strong><br>
                     <span class="muted">${D.escape(order.recipientName)}</span></td>
                 <td>${D.itemsSummary(order)}</td>
-                <td>${D.money(order.total)}</td>`;
+                <td><span class="muted">Items subtotal</span><br>${D.money(order.total)}</td>`;
     }
 
     function detailsButton(order) {

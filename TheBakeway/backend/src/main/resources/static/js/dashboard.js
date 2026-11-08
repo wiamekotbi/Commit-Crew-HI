@@ -112,7 +112,10 @@ const Dashboard = (() => {
 
     // Lines and state history (event ids) of one order (UC-ORD-12, UC-ORD-13)
     async function orderDetails(orderId) {
-        const result = await api("GET", "/api/orders/" + encodeURIComponent(orderId));
+        const [result, pricingResult] = await Promise.all([
+            api("GET", "/api/orders/" + encodeURIComponent(orderId)),
+            api("GET", "/api/orders/" + encodeURIComponent(orderId) + "/pricing")
+        ]);
         if (!result.ok) {
             return `<p class="empty">${escape(errorText(result))}</p>`;
         }
@@ -126,11 +129,25 @@ const Dashboard = (() => {
              <span class="muted">(event ${escape(shortId(transition.eventId))})</span></li>`
         ).join("");
         const reason = order.rejectionReason ? `<p><strong>Rejection reason:</strong> ${escape(order.rejectionReason)}</p>` : "";
+        const pricing = pricingResult.ok
+            ? `<h4>${pricingResult.data.finalFare ? "Final charge" : "Estimated charges"}</h4>
+                <table><tbody>
+                    <tr><th scope="row">Items subtotal</th><td>${money(pricingResult.data.pricing.subtotal)}</td></tr>
+                    <tr><th scope="row">Delivery fee</th><td>${money(pricingResult.data.pricing.deliveryFee)}</td></tr>
+                    <tr><th scope="row">Service fee</th><td>${money(pricingResult.data.pricing.serviceFee)}</td></tr>
+                    ${pricingResult.data.pricing.smallOrderSurcharge > 0
+                        ? `<tr><th scope="row">Small-order surcharge</th>
+                            <td>${money(pricingResult.data.pricing.smallOrderSurcharge)}</td></tr>` : ""}
+                    <tr><th scope="row">Final total</th><td><strong>${money(pricingResult.data.pricing.total)}</strong></td></tr>
+                </tbody></table>
+                ${pricingResult.data.finalFare ? "" : '<p class="muted">Estimated using current fees; final fees are recorded when delivered.</p>'}`
+            : `<p class="empty">${escape(errorText(pricingResult))}</p>`;
         return `
             <strong>Order ${escape(shortId(order.orderId))}</strong> for ${escape(order.recipientName)},
             ${escape(order.deliveryAddress)}
             ${reason}
             <ul class="history">${lines}</ul>
+            ${pricing}
             <strong><i class="fa-solid fa-clock-rotate-left"></i> History</strong>
             <ul class="history">${history}</ul>`;
     }

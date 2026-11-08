@@ -2,6 +2,7 @@
 package com.commitcrew.thebakeway.application.prc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +76,25 @@ class PricingServiceTest {
         when(reader.read()).thenReturn(new PricingConfiguration(0, 0, 0, 0));
 
         assertEquals(0.3, service.calculatePrice(order).total());
+    }
+
+    @Test
+    void calculatesCartQuoteFromSubtotal() {
+        when(reader.read()).thenReturn(new PricingConfiguration(4, 2, 20, 3));
+
+        PriceBreakdown quote = service.calculatePriceForSubtotal(8);
+
+        assertEquals(8, quote.subtotal());
+        assertEquals(4, quote.deliveryFee());
+        assertEquals(2, quote.serviceFee());
+        assertEquals(3, quote.smallOrderSurcharge());
+        assertEquals(17, quote.total());
+    }
+
+    @Test
+    void rejectsInvalidCartSubtotal() {
+        assertThrows(IllegalArgumentException.class, () -> service.calculatePriceForSubtotal(-1));
+        assertThrows(IllegalArgumentException.class, () -> service.calculatePriceForSubtotal(Double.NaN));
     }
 
     private Order order(double unitPrice) {

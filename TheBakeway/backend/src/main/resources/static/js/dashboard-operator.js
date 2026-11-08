@@ -170,7 +170,7 @@ Dashboard.register("OPERATOR", (() => {
         }
         target.innerHTML = `<table>
             <thead><tr><th>Placed</th><th>Order</th><th>Bakery</th><th>Customer</th><th>Items</th>
-                <th>Total</th><th>Status</th><th></th></tr></thead>
+                <th>Items subtotal</th><th>Status</th><th></th></tr></thead>
             <tbody>${result.data.map(order => `
                 <tr>
                     <td>${D.escape(D.time(order.createdAt))}</td>
