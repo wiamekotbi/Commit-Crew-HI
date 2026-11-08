@@ -87,4 +87,21 @@ public class BakeryController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Authentication required"));
     }
+
+    @GetMapping("/{bakeryId}/preparation-queue-size")
+    public int getPreparationQueueSize(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
+            @PathVariable("bakeryId") String bakeryId) {
+        return orderService.getPreparationQueueSize(sessionId, bakeryId);
+    }
+
+
+    @GetMapping("/api/map/bakeries")
+    public List<Bakery> getBakeryMapData(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
+        List<Bakery> bakeries = getOpenBakeries(sessionId);
+        return bakeries;
+    }
+
+
 }

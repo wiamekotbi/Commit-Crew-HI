@@ -31,6 +31,7 @@ public class OrderServiceProxy implements OrderService {
     static final String VIEW_ORDER_HISTORY = "VIEW_ORDER_HISTORY";
     static final String VIEW_SIMULATOR_DASHBOARD = "VIEW_SIMULATOR_DASHBOARD";
     static final String VIEW_ORDER_DETAILS = "VIEW_ORDER_DETAILS";
+    static final String PREPARATION_QUEUE_SIZE = "PREPARATION_QUEUE_SIZE";
 
     private final OrderService realSubject;
     private final SessionManager sessionManager;
@@ -198,5 +199,11 @@ public class OrderServiceProxy implements OrderService {
         // Only the operator may restore the initial state (UC-REG-03, UC-ORD-01).
         checkAccess(sessionId, RESTORE_INITIAL_STATE);
         return realSubject.restoreInitialState(sessionId);
+    }
+
+    @Override
+    public int getPreparationQueueSize(String sessionId, String bakeryId) {
+        checkAccess(sessionId, PREPARATION_QUEUE_SIZE);
+        return realSubject.getPreparationQueueSize(sessionId, bakeryId);
     }
 }

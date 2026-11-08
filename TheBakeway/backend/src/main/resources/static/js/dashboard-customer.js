@@ -77,6 +77,8 @@ Dashboard.register("CUSTOMER", (() => {
             list.innerHTML = `<p class="empty">No bakery is open right now.</p>`;
             return;
         }
+        BakewayMap.setBakeries(bakeries);
+        void loadBakeryQueueSizes();
         list.innerHTML = bakeries.map(bakery => `
             <div class="bakery-item ${selectedBakery === bakery.bakeryId ? "selected" : ""}">
                 <div>
@@ -182,6 +184,30 @@ Dashboard.register("CUSTOMER", (() => {
                 renderCart();
             }));
         target.querySelector("#placeOrder").addEventListener("click", placeOrder);
+    }
+
+    async function loadBakeryQueueSizes() {
+        await Promise.all(bakeries.map(async bakery => {
+            const result = await D.api(
+                "GET",
+                "/api/bakeries/" +
+                    encodeURIComponent(bakery.bakeryId) +
+                    "/preparation-queue-size"
+            );
+
+            if (result.ok) {
+                BakewayMap.updateBakeryQueue(
+                    bakery.bakeryId,
+                    result.data
+                );
+            } else {
+                console.error(
+                    "Failed to load preparation queue for",
+                    bakery.bakeryName,
+                    D.errorText(result)
+                );
+            }
+        }));
     }
 
     async function placeOrder() {

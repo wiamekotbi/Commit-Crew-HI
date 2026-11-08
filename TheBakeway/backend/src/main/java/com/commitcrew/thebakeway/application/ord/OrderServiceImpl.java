@@ -547,4 +547,9 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Unknown order state: " + status);
         }
     }
+
+    public int getPreparationQueueSize(String sessionId, String bakeryId) {
+        int queueSize = preparationQueue.getPreparationQueueSize(bakeryId);
+        return queueSize;
+    }
 }

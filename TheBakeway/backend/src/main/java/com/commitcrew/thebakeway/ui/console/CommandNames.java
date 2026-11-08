@@ -23,6 +23,8 @@ final class CommandNames {
             route("GET", "/api/bakeries/" + ID + "/menu", "BROWSE_MENU"),
             route("PATCH", "/api/bakeries/" + ID + "/pause", "PAUSE_BAKERY"),
             route("PATCH", "/api/bakeries/" + ID + "/reopen", "REOPEN_BAKERY"),
+            route("PATCH", "/api/bakeries/" + ID + "/preparation-queue-size", "PREPARATION_QUEUE_SIZE"),
+            route("PATCH", "/api/map/bakeries", "GET_BAKERY_MAP_DATA"),
             route("GET", "/api/menu-items", "VIEW_OWN_MENU"),
             route("POST", "/api/menu-items", "ADD_MENU_ITEM"),
             route("PUT", "/api/menu-items/" + ID, "EDIT_MENU_ITEM"),

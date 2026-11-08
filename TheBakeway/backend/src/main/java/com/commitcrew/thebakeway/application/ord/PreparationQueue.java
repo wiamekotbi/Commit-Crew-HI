@@ -19,4 +19,8 @@ public class PreparationQueue {
     public List<Order> getPreparationQueue(String bakeryId) {
         return orderRegistry.findByBakeryIdAndStatusOrderByCreatedAtAsc(bakeryId, OrderStatus.accepted);
     }
+
+    public int getPreparationQueueSize(String bakeryId) {
+        return orderRegistry.findByBakeryIdAndStatusOrderByCreatedAtAsc(bakeryId, OrderStatus.accepted).size();
+    }
 }

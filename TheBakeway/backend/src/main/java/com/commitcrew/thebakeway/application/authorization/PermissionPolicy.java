@@ -21,7 +21,9 @@ public class PermissionPolicy {
                     "PLACE_ORDER",
                     "CANCEL_ORDER",
                     "VIEW_ORDER_HISTORY",
-                    "VIEW_ORDER_DETAILS"),
+                    "VIEW_ORDER_DETAILS",
+                    "PREPARATION_QUEUE_SIZE",
+                    "GET_BAKERY_MAP_DATA"),
             Role.RESTAURANT, withProfileOperations(
                     "MANAGE_MENU_ITEMS",
                     "MANAGE_ITEM_AVAILABILITY",
@@ -40,7 +42,9 @@ public class PermissionPolicy {
                     "REOPEN_BAKERY",
                     "CANCEL_ORDER",
                     "RESTORE_INITIAL_STATE",
-                    "VIEW_ORDER_DETAILS"));
+                    "VIEW_ORDER_DETAILS",
+                    "PREPARATION_QUEUE_SIZE",
+                    "GET_BAKERY_MAP_DATA"));
 
     public boolean isAllowed(String operation, Role role) {
         if (operation == null || role == null) {
