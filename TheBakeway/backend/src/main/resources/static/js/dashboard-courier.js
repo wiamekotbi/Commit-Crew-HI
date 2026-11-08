@@ -99,13 +99,40 @@ Dashboard.register("COURIER", (() => {
         }
 
         if (courier.currentOrderId) {
+            // The backend owns the delivery lifecycle rules. The dashboard only
+            // exposes the command allowed by the courier's current persisted
+            // state: ASSIGNED couriers pick up, while CARRYING couriers deliver.
+            let deliveryAction = "";
+            if (status === "ASSIGNED") {
+                deliveryAction = `<button type="button" class="btn" id="confirmPickup">
+                    <i class="fa-solid fa-box-open"></i> Confirm pickup</button>`;
+            } else if (status === "CARRYING") {
+                deliveryAction = `<button type="button" class="btn" id="confirmDelivery">
+                    <i class="fa-solid fa-house-circle-check"></i> Mark delivered</button>`;
+            }
+
             deliveryTarget.innerHTML = `
                 <p><strong>Order ${D.escape(D.shortId(courier.currentOrderId))}</strong></p>
                 <p class="muted">${
                     status === "CARRYING"
                         ? "Order picked up and in transit."
                         : "Assigned and waiting for pickup."
-                }</p>`;
+                }</p>
+                <div class="actions">${deliveryAction}</div>`;
+
+            // Reuse Dashboard.command so authentication cookies, error messages,
+            // success banners, and the post-command dashboard refresh all remain
+            // consistent with the existing courier and restaurant controls.
+            deliveryTarget.querySelector("#confirmPickup")?.addEventListener(
+                "click", () => updateDelivery(
+                    courier.currentOrderId,
+                    "pickup",
+                    "Order picked up. Delivery is now in progress."));
+            deliveryTarget.querySelector("#confirmDelivery")?.addEventListener(
+                "click", () => updateDelivery(
+                    courier.currentOrderId,
+                    "deliver",
+                    "Order marked as delivered."));
         } else {
             deliveryTarget.innerHTML =
                 `<p class="empty">No delivery is currently assigned.</p>`;
@@ -119,6 +146,14 @@ Dashboard.register("COURIER", (() => {
             `/api/couriers/offers/${encodeURIComponent(offerId)}/${response}`,
             undefined,
             `Delivery offer ${pastTense}.`);
+    }
+
+    function updateDelivery(orderId, action, successMessage) {
+        return D.command(
+            "PATCH",
+            `/api/orders/${encodeURIComponent(orderId)}/${action}`,
+            undefined,
+            successMessage);
     }
 
     return { render, refresh };
