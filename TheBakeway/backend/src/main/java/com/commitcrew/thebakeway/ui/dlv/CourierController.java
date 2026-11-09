@@ -16,6 +16,8 @@ import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
+import com.commitcrew.thebakeway.application.dlv.CompletedDeliveryView;
+import com.commitcrew.thebakeway.application.dlv.CourierHistoryService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.courier.Courier;
@@ -28,6 +30,7 @@ public class CourierController {
     private static final String SESSION_COOKIE = "BAKEWAY_SESSION_ID";
 
     private final CourierService courierService;
+    private final CourierHistoryService courierHistoryService;
     private final SessionManager sessionManager;
     private final PermissionPolicy permissionPolicy;
 
@@ -36,6 +39,7 @@ public class CourierController {
             SessionManager sessionManager,
             PermissionPolicy permissionPolicy) {
         this.courierService = courierService;
+        this.courierHistoryService = courierHistoryService;
         this.sessionManager = sessionManager;
         this.permissionPolicy = permissionPolicy;
     }
@@ -45,6 +49,13 @@ public class CourierController {
             @CookieValue(value = SESSION_COOKIE, required = false)
                     String sessionId) {
         return courierService.getCourier(courierId(sessionId));
+    }
+
+    @GetMapping("/me/past-deliveries")
+    public List<CompletedDeliveryView> getPastDeliveries(
+            @CookieValue(value = SESSION_COOKIE, required = false)
+                    String sessionId) {
+        return courierHistoryService.getPastDeliveries(courierId(sessionId));
     }
 
     @PatchMapping("/me/on-duty")

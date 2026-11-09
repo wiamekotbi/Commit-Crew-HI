@@ -13,6 +13,7 @@ public final class OrderStateFactory {
             OrderStatus.ready.name(), ReadyState::new,
             OrderStatus.picked_up.name(), PickedUpState::new,
             OrderStatus.delivered.name(), DeliveredState::new,
+            OrderStatus.refunded.name(), RefundedState::new,
             OrderStatus.rejected.name(), RejectedState::new,
             OrderStatus.cancelled.name(), CancelledState::new);
 

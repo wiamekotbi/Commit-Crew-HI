@@ -30,6 +30,10 @@ public interface OrderState {
         throw new IllegalTransitionException(getStatus(), "confirm delivery of");
     }
 
+    default void refund(Order order) {
+        throw new IllegalTransitionException(getStatus(), "refund");
+    }
+
     default void cancel(Order order, Role role) {
         throw new IllegalTransitionException(getStatus(), "cancel");
     }

@@ -31,6 +31,9 @@ class PermissionPolicyTest {
             "CONFIRM_PICKUP",
             "CONFIRM_DELIVERY",
             "VIEW_SIMULATOR_DASHBOARD",
+            "VIEW_WAITING_ORDERS",
+            "REASSIGN_STALLED_ORDER",
+            "REFUND_ORDER",
             "RESTORE_INITIAL_STATE",
             "VIEW_ORDER_DETAILS");
 
@@ -74,9 +77,12 @@ class PermissionPolicyTest {
     void operatorHasOnlyOperatorPermissions() {
         assertAllowedAndDenied(Role.OPERATOR, withProfileOperations(
                 "VIEW_SIMULATOR_DASHBOARD",
+                "VIEW_WAITING_ORDERS",
+                "REASSIGN_STALLED_ORDER",
                 "PAUSE_BAKERY",
                 "REOPEN_BAKERY",
                 "CANCEL_ORDER",
+                "REFUND_ORDER",
                 "RESTORE_INITIAL_STATE",
                 "VIEW_ORDER_DETAILS"));
     }

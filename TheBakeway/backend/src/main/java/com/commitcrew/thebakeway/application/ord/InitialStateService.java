@@ -27,9 +27,11 @@ import com.commitcrew.thebakeway.domain.account.BakewayAccount;
 import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
 import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
+import com.commitcrew.thebakeway.domain.courier.CourierDeliveryRepository;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
+import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
 
 // Loads the initial state from the config files, at startup and when the operator restores it
 // (UC-REG-03, UC-ORD-01). Everything happens in one transaction: on any failure the previous state is kept.
@@ -43,10 +45,12 @@ public class InitialStateService {
 
     private final CityConfigurationReader cityConfigurationReader;
     private final OrderRegistry orderRegistry;
+    private final OrderLedgerRepository orderLedgerRepository;
     private final EventRepository eventRepository;
     private final MenuItemRegistry menuItemRegistry;
     private final BakeryRegistry bakeryRegistry;
     private final CourierRegistry courierRegistry;
+    private final CourierDeliveryRepository courierDeliveryRepository;
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
@@ -59,10 +63,12 @@ public class InitialStateService {
     public InitialStateService(
             CityConfigurationReader cityConfigurationReader,
             OrderRegistry orderRegistry,
+            OrderLedgerRepository orderLedgerRepository,
             EventRepository eventRepository,
             MenuItemRegistry menuItemRegistry,
             BakeryRegistry bakeryRegistry,
             CourierRegistry courierRegistry,
+            CourierDeliveryRepository courierDeliveryRepository,
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
@@ -73,10 +79,12 @@ public class InitialStateService {
             EntityManager entityManager) {
         this.cityConfigurationReader = cityConfigurationReader;
         this.orderRegistry = orderRegistry;
+        this.orderLedgerRepository = orderLedgerRepository;
         this.eventRepository = eventRepository;
         this.menuItemRegistry = menuItemRegistry;
         this.bakeryRegistry = bakeryRegistry;
         this.courierRegistry = courierRegistry;
+        this.courierDeliveryRepository = courierDeliveryRepository;
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
@@ -88,7 +96,7 @@ public class InitialStateService {
     }
 
     // Replaces bakeries, menus, couriers and accounts with the config files and
-    // clears orders, queues and events.
+    // clears orders, their ledger and courier history, queues and events.
     // Sessions end (the account seeding invalidates them).
     @Transactional
     public InitialStateSummary loadInitialState() {
@@ -109,7 +117,9 @@ public class InitialStateService {
         CityConfiguration city = cityConfigurationReader.read(scanner(CITY_FILE));
         String accounts = read(ACCOUNTS_FILE);
 
-        // Orders first: they reference accounts and menu items (order lines are removed with them)
+        // Ledger and courier history rows reference orders, so remove them first.
+        orderLedgerRepository.deleteAllInBatch();
+        courierDeliveryRepository.deleteAllInBatch();
         orderRegistry.deleteAll();
         orderRegistry.flush();
         eventRepository.deleteAllInBatch();

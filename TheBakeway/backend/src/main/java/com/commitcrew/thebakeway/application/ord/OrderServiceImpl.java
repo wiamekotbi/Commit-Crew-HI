@@ -15,6 +15,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
+import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -49,6 +50,7 @@ public class OrderServiceImpl implements OrderService {
     private final EventRepository eventRepository;
     private final CourierRegistry courierRegistry;
     private final DispatchService dispatchService;
+    private final CourierDeliveryRecorder courierDeliveryRecorder;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -64,7 +66,8 @@ public class OrderServiceImpl implements OrderService {
             InitialStateService initialStateService,
             EventRepository eventRepository,
             CourierRegistry courierRegistry,
-            DispatchService dispatchService) {
+            DispatchService dispatchService,
+            CourierDeliveryRecorder courierDeliveryRecorder) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -78,6 +81,7 @@ public class OrderServiceImpl implements OrderService {
         this.eventRepository = eventRepository;
         this.courierRegistry = courierRegistry;
         this.dispatchService = dispatchService;
+        this.courierDeliveryRecorder = courierDeliveryRecorder;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
@@ -206,12 +210,14 @@ public class OrderServiceImpl implements OrderService {
         Courier courier = courierHolding(sessionId, orderId);
         Order order = existingOrder(orderId);
         String previousState = order.getStatus();
+        Instant deliveredAt = Instant.now();
 
         order.confirmDelivery();
+        courierDeliveryRecorder.record(courier, order, deliveredAt);
         courier.markDelivered();
 
         courierRegistry.save(courier);
-        OrderTransitionResult result = saveAndPublish(order, previousState);
+        OrderTransitionResult result = saveAndPublish(order, previousState, deliveredAt);
         retryWaitingOrdersAfterCommit(courier.getCourierId());
         return result;
     }
@@ -474,6 +480,10 @@ public class OrderServiceImpl implements OrderService {
     // Saves first, then publishes exactly one event in the same transaction;
     // an observer failure rolls the state change back.
     private OrderTransitionResult saveAndPublish(Order order, String previousState) {
+        return saveAndPublish(order, previousState, Instant.now());
+    }
+
+    private OrderTransitionResult saveAndPublish(Order order, String previousState, Instant occurredAt) {
         Order saved = orderRegistry.save(order);
         String eventId = UUID.randomUUID().toString();
         transitionPublisher.notifyObservers(new StateTransitionEvent(
@@ -482,7 +492,7 @@ public class OrderServiceImpl implements OrderService {
                 saved.getId(),
                 previousState,
                 saved.getStatus(),
-                Instant.now()));
+                occurredAt));
         return new OrderTransitionResult(
                 saved.getId(), previousState, saved.getStatus(), eventId,
                 queuePositions(saved.getBakeryId()).get(saved.getId()));

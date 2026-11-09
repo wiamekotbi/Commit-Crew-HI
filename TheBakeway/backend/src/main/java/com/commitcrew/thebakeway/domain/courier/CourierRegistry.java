@@ -12,4 +12,7 @@ public interface CourierRegistry extends JpaRepository<Courier, String> {
     Optional<Courier> findByCurrentOrderId(String orderId);
 
     Optional<Courier> findByStalledOrderId(String orderId);
+
+    /** Operator dispatch uses this to expose only explicitly stalled work. */
+    List<Courier> findByStalledOrderIdIsNotNull();
 }

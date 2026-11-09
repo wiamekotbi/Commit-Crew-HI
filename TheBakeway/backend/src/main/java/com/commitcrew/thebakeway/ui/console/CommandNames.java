@@ -41,13 +41,21 @@ final class CommandNames {
             route("GET", "/api/orders/bakery", "VIEW_BAKERY_ORDERS"),
             route("GET", "/api/orders", "VIEW_ALL_ORDERS"),
             route("GET", "/api/orders/" + ID + "/summary", "VIEW_ORDER_SUMMARY"),
+            route("GET", "/api/orders/pricing", "QUOTE_ORDER_PRICING"),
+            route("GET", "/api/orders/" + ID + "/pricing", "VIEW_ORDER_PRICING"),
+            route("GET", "/api/orders/" + ID + "/ledger", "VIEW_ORDER_LEDGER"),
+            route("POST", "/api/orders/" + ID + "/refund", "REFUND_ORDER"),
             route("GET", "/api/orders/" + ID, "VIEW_ORDER"),
             route("GET", "/api/couriers/me", "VIEW_COURIER_STATUS"),
             route("GET", "/api/couriers/map", "GET_COURIER_MAP_DATA"),
+            route("GET", "/api/couriers/me/past-deliveries", "VIEW_PAST_DELIVERIES"),
             route("PATCH", "/api/couriers/me/on-duty", "GO_ON_DUTY"),
             route("PATCH", "/api/couriers/me/off-duty", "GO_OFF_DUTY"),
             route("PATCH", "/api/couriers/offers/" + ID + "/accept", "ACCEPT_DELIVERY_OFFER"),
             route("PATCH", "/api/couriers/offers/" + ID + "/decline", "DECLINE_DELIVERY_OFFER"),
+            route("GET", "/api/dispatch/waiting-orders", "VIEW_WAITING_ORDERS"),
+            route("PATCH", "/api/dispatch/waiting-orders/" + ID + "/reassign",
+                    "REASSIGN_STALLED_ORDER"),
             route("POST", "/api/initial-state/restore", "RESTORE_INITIAL_STATE"));
 
     private CommandNames() {

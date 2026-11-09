@@ -2,12 +2,15 @@
 package com.commitcrew.thebakeway.application.prc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 
 import com.commitcrew.thebakeway.domain.order.Order;
+import com.commitcrew.thebakeway.domain.menu.MenuItem;
+import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.pricing.PriceBreakdown;
 
 class PricingServiceTest {
@@ -17,9 +20,8 @@ class PricingServiceTest {
 
     @Test
     void calculatesPriceWithSurcharge() {
-        Order order = mock(Order.class);
+        Order order = order(15.0);
 
-        when(order.calculateTotal()).thenReturn(15.0);
         when(reader.read()).thenReturn(new PricingConfiguration(4.0, 2.0, 20.0, 3.0));
 
         PriceBreakdown result = service.calculatePrice(order);
@@ -33,9 +35,8 @@ class PricingServiceTest {
 
     @Test
     void calculatesPriceWithoutSurcharge() {
-        Order order = mock(Order.class);
+        Order order = order(25.0);
 
-        when(order.calculateTotal()).thenReturn(25.0);
         when(reader.read()).thenReturn(new PricingConfiguration(4.0, 2.0, 20.0, 3.0));
 
         PriceBreakdown result = service.calculatePrice(order);
@@ -46,9 +47,8 @@ class PricingServiceTest {
 
     @Test
     void doesNotApplySurchargeAtThreshold() {
-        Order order = mock(Order.class);
+        Order order = order(20.0);
 
-        when(order.calculateTotal()).thenReturn(20.0);
         when(reader.read()).thenReturn(new PricingConfiguration(4.0, 2.0, 20.0, 3.0));
 
         PriceBreakdown result = service.calculatePrice(order);
@@ -59,14 +59,47 @@ class PricingServiceTest {
 
     @Test
     void roundsTotalToTwoDecimalPlaces() {
-        Order order = mock(Order.class);
+        Order order = order(10.123);
 
-        when(order.calculateTotal()).thenReturn(10.123);
         when(reader.read()).thenReturn(
                 new PricingConfiguration(4.0, 2.0, 20.0, 3.0));
 
         PriceBreakdown result = service.calculatePrice(order);
 
         assertEquals(19.12, result.total());
+    }
+
+    @Test
+    void sumsLineAmountsUsingDecimalArithmetic() {
+        Order order = new Order("customer-1", "bakery-1", "Customer", "Montreal");
+        order.addOrderItem(new MenuItem("bakery-1", "Item", "", 0.1, MenuItemStatus.available), 3);
+        when(reader.read()).thenReturn(new PricingConfiguration(0, 0, 0, 0));
+
+        assertEquals(0.3, service.calculatePrice(order).total());
+    }
+
+    @Test
+    void calculatesCartQuoteFromSubtotal() {
+        when(reader.read()).thenReturn(new PricingConfiguration(4, 2, 20, 3));
+
+        PriceBreakdown quote = service.calculatePriceForSubtotal(8);
+
+        assertEquals(8, quote.subtotal());
+        assertEquals(4, quote.deliveryFee());
+        assertEquals(2, quote.serviceFee());
+        assertEquals(3, quote.smallOrderSurcharge());
+        assertEquals(17, quote.total());
+    }
+
+    @Test
+    void rejectsInvalidCartSubtotal() {
+        assertThrows(IllegalArgumentException.class, () -> service.calculatePriceForSubtotal(-1));
+        assertThrows(IllegalArgumentException.class, () -> service.calculatePriceForSubtotal(Double.NaN));
+    }
+
+    private Order order(double unitPrice) {
+        Order order = new Order("customer-1", "bakery-1", "Customer", "Montreal");
+        order.addOrderItem(new MenuItem("bakery-1", "Item", "", unitPrice, MenuItemStatus.available), 1);
+        return order;
     }
 }

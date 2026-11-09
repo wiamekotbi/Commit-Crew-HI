@@ -35,6 +35,7 @@ import com.commitcrew.thebakeway.domain.bakery.Bakery;
 import com.commitcrew.thebakeway.domain.bakery.BakeryRegistry;
 import com.commitcrew.thebakeway.domain.bakery.BakeryStatus;
 import com.commitcrew.thebakeway.domain.courier.Courier;
+import com.commitcrew.thebakeway.domain.courier.CourierDeliveryRepository;
 import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
 import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.location.Coordinates;
@@ -42,6 +43,7 @@ import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
+import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
 
 @ExtendWith(MockitoExtension.class)
 class InitialStateServiceTest {
@@ -51,6 +53,9 @@ class InitialStateServiceTest {
 
     @Mock
     private OrderRegistry orderRegistry;
+
+    @Mock
+    private OrderLedgerRepository orderLedgerRepository;
 
     @Mock
     private EventRepository eventRepository;
@@ -63,6 +68,9 @@ class InitialStateServiceTest {
 
     @Mock
     private CourierRegistry courierRegistry;
+
+    @Mock
+    private CourierDeliveryRepository courierDeliveryRepository;
 
     @Mock
     private AccountRegistry accountRegistry;
@@ -105,10 +113,12 @@ class InitialStateServiceTest {
         service = new InitialStateService(
                 cityConfigurationReader,
                 orderRegistry,
+                orderLedgerRepository,
                 eventRepository,
                 menuItemRegistry,
                 bakeryRegistry,
                 courierRegistry,
+                courierDeliveryRepository,
                 accountRegistry,
                 passwordEncoder,
                 sessionManager,
@@ -133,9 +143,12 @@ class InitialStateServiceTest {
                 summary.accountsPerRole());
 
         // Orders and events are cleared, and rows are removed before the ones they reference
-        InOrder order = inOrder(orderRegistry, eventRepository, menuItemRegistry, courierRegistry,
+        InOrder order = inOrder(orderLedgerRepository, courierDeliveryRepository, orderRegistry, eventRepository,
+                menuItemRegistry, courierRegistry,
                 accountRegistry, bakeryRegistry, entityManager, dashboardReadModel,
                 dispatchWaitingQueue, activeDispatchOffers);
+        order.verify(orderLedgerRepository).deleteAllInBatch();
+        order.verify(courierDeliveryRepository).deleteAllInBatch();
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
         order.verify(menuItemRegistry).deleteAllInBatch();
@@ -164,6 +177,7 @@ class InitialStateServiceTest {
         assertThrows(InvalidConfigurationException.class, () -> service.loadInitialState());
 
         verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, courierRegistry,
+                courierDeliveryRepository,
                 accountRegistry, sessionManager, dashboardReadModel,
                 dispatchWaitingQueue, activeDispatchOffers);
         verify(console).record("system", "SYSTEM", "LOAD_INITIAL_STATE", false,

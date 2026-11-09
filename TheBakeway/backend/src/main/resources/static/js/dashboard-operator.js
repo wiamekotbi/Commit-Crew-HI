@@ -3,7 +3,7 @@
 Dashboard.register("OPERATOR", (() => {
     const D = Dashboard;
 
-    const STATES = ["placed", "accepted", "preparing", "ready", "picked_up", "delivered", "rejected", "cancelled"];
+    const STATES = ["placed", "accepted", "preparing", "ready", "picked_up", "delivered", "refunded", "rejected", "cancelled"];
     const CANCELLABLE = ["placed", "accepted", "preparing", "ready"];
 
     let container = null;
@@ -27,6 +27,13 @@ Dashboard.register("OPERATOR", (() => {
             </section>
             <section class="card">
                 <div class="card-title">
+                    <h2><i class="fa-solid fa-truck-fast"></i> Waiting dispatch orders</h2>
+                    <span class="muted">Orders without a courier or left by an offline courier</span>
+                </div>
+                <div id="waitingOrders" class="table-wrap"></div>
+            </section>
+            <section class="card">
+                <div class="card-title">
                     <h2><i class="fa-solid fa-receipt"></i> All orders</h2>
                     <div class="inline-form">
                         <select id="bakeryFilter"><option value="">All bakeries</option></select>
@@ -45,6 +52,7 @@ Dashboard.register("OPERATOR", (() => {
 
     async function refresh() {
         await loadBakeries();
+        await loadWaitingOrders();
         await loadOrders();
     }
 
@@ -90,6 +98,59 @@ Dashboard.register("OPERATOR", (() => {
             bakery => `${bakery.bakeryName} is now ${bakery.bakeryStatus}.`);
     }
 
+    async function loadWaitingOrders() {
+        const result = await D.api("GET", "/api/dispatch/waiting-orders");
+        const target = container.querySelector("#waitingOrders");
+        if (!result.ok) {
+            // Keep dispatch failures inside this card so the operator can
+            // continue using unrelated bakery and order controls.
+            target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+            return;
+        }
+        if (result.data.length === 0) {
+            target.innerHTML = `<p class="empty">No orders are waiting for dispatch.</p>`;
+            return;
+        }
+
+        target.innerHTML = `<table>
+            <thead><tr><th>Order</th><th>Bakery</th><th>Status</th><th>Queue</th>
+                <th>Previous courier</th><th></th></tr></thead>
+            <tbody>${result.data.map(order => `
+                <tr>
+                    <td><strong>${D.escape(D.shortId(order.orderId))}</strong></td>
+                    <td>${D.escape(bakeryName(order.bakeryId))}</td>
+                    <td>${D.badge(order.status)}</td>
+                    <td>${order.queuePosition == null
+                        ? `<span class="muted">not queued</span>`
+                        : `#${D.escape(order.queuePosition)}`}</td>
+                    <td>${order.stalledCourierId
+                        ? D.escape(D.shortId(order.stalledCourierId))
+                        : `<span class="muted">none</span>`}</td>
+                    <td class="actions">
+                        ${order.reassignable
+                            ? `<button type="button" class="btn" data-reassign="${D.escape(order.orderId)}">
+                                <i class="fa-solid fa-rotate"></i> Reassign</button>`
+                            : `<span class="muted">Waiting for an available courier</span>`}
+                    </td>
+                </tr>`).join("")}</tbody></table>`;
+
+        // The backend rechecks operator permission and stalled eligibility;
+        // displaying a button never acts as proof that reassignment is valid.
+        target.querySelectorAll("button[data-reassign]").forEach(button =>
+            button.addEventListener("click", () => reassignOrder(
+                button.dataset.reassign)));
+    }
+
+    function reassignOrder(orderId) {
+        return D.command(
+            "PATCH",
+            "/api/dispatch/waiting-orders/" + encodeURIComponent(orderId) + "/reassign",
+            undefined,
+            result => result.waiting
+                ? `Order ${D.shortId(result.orderId)} remains queued because no replacement courier is available.`
+                : `Order ${D.shortId(result.orderId)} was offered to courier ${D.shortId(result.offeredCourierId)}.`);
+    }
+
     async function loadOrders() {
         const bakeryId = container.querySelector("#bakeryFilter").value;
         const status = container.querySelector("#statusFilter").value;
@@ -109,7 +170,7 @@ Dashboard.register("OPERATOR", (() => {
         }
         target.innerHTML = `<table>
             <thead><tr><th>Placed</th><th>Order</th><th>Bakery</th><th>Customer</th><th>Items</th>
-                <th>Total</th><th>Status</th><th></th></tr></thead>
+                <th>Items subtotal</th><th>Status</th><th></th></tr></thead>
             <tbody>${result.data.map(order => `
                 <tr>
                     <td>${D.escape(D.time(order.createdAt))}</td>
@@ -125,6 +186,10 @@ Dashboard.register("OPERATOR", (() => {
                             <i class="fa-solid fa-circle-info"></i></button>
                         ${CANCELLABLE.includes(order.status) ? `<button type="button" class="btn danger"
                             data-cancel="${D.escape(order.orderId)}"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ""}
+                        ${order.status === "delivered" ? `<button type="button" class="btn danger"
+                            data-refund="${D.escape(order.orderId)}"><i class="fa-solid fa-rotate-left"></i> Refund</button>` : ""}
+                        ${["delivered", "refunded"].includes(order.status) ? `<button type="button" class="btn secondary"
+                            data-ledger="${D.escape(order.orderId)}"><i class="fa-solid fa-book"></i> Ledger</button>` : ""}
                     </td>
                 </tr>`).join("")}</tbody></table>`;
 
@@ -134,11 +199,57 @@ Dashboard.register("OPERATOR", (() => {
             button.addEventListener("click", () => D.command("PATCH",
                 "/api/orders/" + encodeURIComponent(button.dataset.cancel) + "/cancel", undefined,
                 data => `Order ${D.shortId(data.orderId)} cancelled (event ${D.shortId(data.eventId)}).`)));
+        target.querySelectorAll("button[data-refund]").forEach(button =>
+            button.addEventListener("click", () => refundOrder(button.dataset.refund)));
+        target.querySelectorAll("button[data-ledger]").forEach(button =>
+            button.addEventListener("click", () => toggleLedger(button)));
+    }
+
+    async function toggleLedger(button) {
+        const row = button.closest("tr");
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains("ledger-row")) {
+            next.remove();
+            return;
+        }
+
+        const result = await D.api("GET",
+            "/api/orders/" + encodeURIComponent(button.dataset.ledger) + "/ledger");
+        const details = document.createElement("tr");
+        details.className = "ledger-row";
+        const content = result.ok
+            ? result.data.length === 0
+                ? '<p class="empty">No ledger entries recorded.</p>'
+                : `<table><thead><tr><th>Entry</th><th>Amount</th><th>Timestamp</th><th>Actor</th><th>Reason</th></tr></thead>
+                    <tbody>${result.data.map(entry => `<tr>
+                        <td>${D.escape(entry.entryType)}</td>
+                        <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
+                        <td>${D.escape(D.time(entry.occurredAt))}</td>
+                        <td>${D.escape(entry.actorAccountId || "System")}</td>
+                        <td>${D.escape(entry.reason || "")}</td>
+                    </tr>`).join("")}</tbody></table>`
+            : `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+        details.innerHTML = `<td colspan="8">${content}</td>`;
+        row.after(details);
+    }
+
+    async function refundOrder(orderId) {
+        if (!window.confirm("Issue a full refund for this delivered order?")) return;
+        const reason = window.prompt("Refund reason:");
+        if (reason === null) return;
+        const normalizedReason = reason.trim();
+        if (!normalizedReason) {
+            D.showMessage("A refund reason is required.", "error");
+            return;
+        }
+        await D.command("POST", "/api/orders/" + encodeURIComponent(orderId) + "/refund",
+            { reason: normalizedReason },
+            entry => `Refund of ${D.money(entry.amount)} recorded for order ${D.shortId(orderId)}.`);
     }
 
     // Reloads accounts and the city from the config files; every session ends, so the operator logs in again
     async function restore() {
-        if (!window.confirm("Restore the initial state? All orders and events are deleted and everyone is logged out.")) {
+        if (!window.confirm("Restore the initial state? All orders, events, and billing ledger entries are deleted and everyone is logged out.")) {
             return;
         }
         const result = await D.api("POST", "/api/initial-state/restore");

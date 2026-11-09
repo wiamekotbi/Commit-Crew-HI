@@ -85,6 +85,44 @@ class CourierTest {
     }
 
     @Test
+    void operatorReassignmentMayReleaseTheRecordedStalledOrder() {
+        Courier courier = assignedCourier();
+        courier.goOffDuty();
+
+        courier.releaseStalledOrder(ORDER_ID);
+
+        // Releasing the abandoned assignment does not put the old courier back
+        // on duty; dispatch will independently select another eligible courier.
+        assertEquals(CourierStatus.OFFLINE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+        assertNull(courier.getStalledOrderId());
+    }
+
+    @Test
+    void releasingAnotherOrderIsRejectedWithoutChangingTheStalledAssignment() {
+        Courier courier = assignedCourier();
+        courier.goOffDuty();
+
+        assertThrows(IllegalStateException.class,
+                () -> courier.releaseStalledOrder("order-2"));
+
+        assertEquals(CourierStatus.OFFLINE, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getStalledOrderId());
+    }
+
+    @Test
+    void activeCourierCannotReleaseAnAssignmentAsStalled() {
+        Courier courier = assignedCourier();
+
+        assertThrows(IllegalStateException.class,
+                () -> courier.releaseStalledOrder(ORDER_ID));
+
+        assertEquals(CourierStatus.ASSIGNED, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
+        assertNull(courier.getStalledOrderId());
+    }
+
+    @Test
     void carryingCourierCannotGoOffline() {
         Courier courier = assignedCourier();
         courier.markPickedUp();

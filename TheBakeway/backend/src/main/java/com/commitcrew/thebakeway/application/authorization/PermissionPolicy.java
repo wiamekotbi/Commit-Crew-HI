@@ -45,9 +45,12 @@ public class PermissionPolicy {
                     "GET_COURIER_MAP_DATA"),
             Role.OPERATOR, withProfileOperations(
                     "VIEW_SIMULATOR_DASHBOARD",
+                    "VIEW_WAITING_ORDERS",
+                    "REASSIGN_STALLED_ORDER",
                     "PAUSE_BAKERY",
                     "REOPEN_BAKERY",
                     "CANCEL_ORDER",
+                    "REFUND_ORDER",
                     "RESTORE_INITIAL_STATE",
                     "VIEW_ORDER_DETAILS",
                     "PREPARATION_QUEUE_SIZE",

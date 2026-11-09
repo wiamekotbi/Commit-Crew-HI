@@ -1,5 +1,6 @@
 package com.commitcrew.thebakeway.ui.prc;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -8,10 +9,17 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
+import com.commitcrew.thebakeway.application.prc.OrderBillingService;
+import com.commitcrew.thebakeway.application.prc.OrderLedgerEntryView;
+import com.commitcrew.thebakeway.application.prc.OrderPricingQuote;
+import com.commitcrew.thebakeway.application.prc.OrderPricingService;
 import com.commitcrew.thebakeway.application.prc.OrderSummary;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 
@@ -20,9 +28,23 @@ import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 public class OrderSummaryController {
 
     private final OrderSummaryService orderSummaryService;
+    private final OrderBillingService orderBillingService;
+    private final OrderPricingService orderPricingService;
 
-    public OrderSummaryController(OrderSummaryService orderSummaryService) {
+    public OrderSummaryController(
+            OrderSummaryService orderSummaryService,
+            OrderBillingService orderBillingService,
+            OrderPricingService orderPricingService) {
         this.orderSummaryService = orderSummaryService;
+        this.orderBillingService = orderBillingService;
+        this.orderPricingService = orderPricingService;
+    }
+
+    @GetMapping("/pricing")
+    public OrderPricingQuote quoteCart(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @RequestParam("subtotal") double subtotal) {
+        return orderPricingService.quoteCart(sessionId, subtotal);
     }
 
     @GetMapping("/{orderId}/summary")
@@ -30,6 +52,29 @@ public class OrderSummaryController {
             @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
             @PathVariable("orderId") String orderId) {
         return orderSummaryService.getSummary(sessionId, orderId);
+    }
+
+    @GetMapping("/{orderId}/ledger")
+    public List<OrderLedgerEntryView> getLedger(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @PathVariable("orderId") String orderId) {
+        return orderBillingService.getLedger(sessionId, orderId);
+    }
+
+    @GetMapping("/{orderId}/pricing")
+    public OrderPricingQuote quoteOrder(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @PathVariable("orderId") String orderId) {
+        return orderPricingService.quoteOrder(sessionId, orderId);
+    }
+
+    @PostMapping("/{orderId}/refund")
+    public OrderLedgerEntryView refund(
+            @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
+            @PathVariable("orderId") String orderId,
+            @RequestBody RefundRequest request) {
+        return orderBillingService.refundDeliveredOrder(sessionId, orderId,
+                request == null ? null : request.reason());
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
@@ -47,6 +92,11 @@ public class OrderSummaryController {
         HttpStatus status = "Authentication required".equals(exception.getMessage())
                 ? HttpStatus.UNAUTHORIZED : HttpStatus.CONFLICT;
         return error(status, exception.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRequest(IllegalArgumentException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     private ResponseEntity<Map<String, String>> error(HttpStatus status, String message) {
