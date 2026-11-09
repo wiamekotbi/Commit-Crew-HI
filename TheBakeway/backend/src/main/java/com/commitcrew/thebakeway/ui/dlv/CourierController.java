@@ -37,7 +37,8 @@ public class CourierController {
     public CourierController(
             CourierService courierService,
             SessionManager sessionManager,
-            PermissionPolicy permissionPolicy) {
+            PermissionPolicy permissionPolicy,
+            CourierHistoryService courierHistoryService) {
         this.courierService = courierService;
         this.courierHistoryService = courierHistoryService;
         this.sessionManager = sessionManager;

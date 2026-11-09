@@ -55,7 +55,7 @@ class CourierControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CourierController(courierService, sessionManager, permissionPolicy)).build();
+                new CourierController(courierService, sessionManager, permissionPolicy, courierHistoryService)).build();
     }
 
     @Test
