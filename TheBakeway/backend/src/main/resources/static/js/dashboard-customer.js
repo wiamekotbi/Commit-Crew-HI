@@ -3,8 +3,6 @@
 Dashboard.register("CUSTOMER", (() => {
     const D = Dashboard;
 
-    let container = null;
-    let bakeries = [];
     let selectedBakery = null;
     let menu = [];
     let cart = [];   // { menuItemId, name, price, quantity }
@@ -47,7 +45,7 @@ Dashboard.register("CUSTOMER", (() => {
                 <div class="card-title"><h2><i class="fa-solid fa-receipt"></i> My orders</h2></div>
                 <div id="orders" class="table-wrap"></div>
             </section>`;
-
+        
         container.querySelector("#refreshBakeries").addEventListener("click", loadBakeries);
         await loadBakeries();
         renderCart();

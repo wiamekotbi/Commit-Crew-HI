@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
@@ -19,6 +20,7 @@ import com.commitcrew.thebakeway.application.dlv.CompletedDeliveryView;
 import com.commitcrew.thebakeway.application.dlv.CourierHistoryService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
+import com.commitcrew.thebakeway.domain.courier.Courier;
 import com.commitcrew.thebakeway.domain.session.Session;
 
 @RestController
@@ -30,14 +32,16 @@ public class CourierController {
     private final CourierService courierService;
     private final CourierHistoryService courierHistoryService;
     private final SessionManager sessionManager;
+    private final PermissionPolicy permissionPolicy;
 
     public CourierController(
             CourierService courierService,
-            CourierHistoryService courierHistoryService,
-            SessionManager sessionManager) {
+            SessionManager sessionManager,
+            PermissionPolicy permissionPolicy) {
         this.courierService = courierService;
         this.courierHistoryService = courierHistoryService;
         this.sessionManager = sessionManager;
+        this.permissionPolicy = permissionPolicy;
     }
 
     @GetMapping("/me")
@@ -124,5 +128,20 @@ public class CourierController {
             HttpStatus status, String message) {
         return ResponseEntity.status(status)
                 .body(Map.of("error", message));
+    }
+
+    // for dashboard map
+    @GetMapping("/map")
+    public List<Courier> getAllCouriers(
+            @CookieValue(value = SESSION_COOKIE, required = false)
+                    String sessionId) {
+        Session session = sessionManager.findSession(sessionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Authentication required"));
+        if (!permissionPolicy.isAllowed("GET_COURIER_MAP_DATA", session.getRole())) {
+            throw new SecurityException(
+                    "Only operators may manage stalled dispatch assignments");
+        }
+        return courierService.getAllCouriers();
     }
 }

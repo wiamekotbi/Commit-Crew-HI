@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.dlv.CourierService;
 import com.commitcrew.thebakeway.application.dlv.CourierView;
 import com.commitcrew.thebakeway.application.dlv.CourierHistoryService;
@@ -46,12 +47,15 @@ class CourierControllerTest {
     @Mock
     private SessionManager sessionManager;
 
+    @Mock
+    private PermissionPolicy permissionPolicy;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-                new CourierController(courierService, courierHistoryService, sessionManager)).build();
+                new CourierController(courierService, sessionManager, permissionPolicy)).build();
     }
 
     @Test

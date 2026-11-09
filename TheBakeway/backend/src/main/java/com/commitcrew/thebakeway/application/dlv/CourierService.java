@@ -1,5 +1,6 @@
 package com.commitcrew.thebakeway.application.dlv;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -7,6 +8,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.commitcrew.thebakeway.domain.courier.Courier;
 import com.commitcrew.thebakeway.domain.courier.CourierRegistry;
+import com.commitcrew.thebakeway.domain.courier.CourierStatus;
 
 @Service
 public class CourierService {
@@ -116,5 +118,12 @@ public class CourierService {
         return courierRegistry.findById(courierId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Courier not found with ID: " + courierId));
+    }
+
+    public List<Courier> getAllCouriers() {
+        List<Courier> hold1 = courierRegistry.findByStatus(CourierStatus.ASSIGNED);
+        hold1.addAll(courierRegistry.findByStatus(CourierStatus.CARRYING));
+        hold1.addAll(courierRegistry.findByStatus(CourierStatus.IDLE));
+        return hold1;
     }
 }

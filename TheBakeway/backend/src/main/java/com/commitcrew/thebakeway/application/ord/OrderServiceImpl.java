@@ -557,4 +557,15 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Unknown order state: " + status);
         }
     }
+
+    public int getPreparationQueueSize(String sessionId, String bakeryId) {
+        int queueSize = preparationQueue.getPreparationQueueSize(bakeryId);
+        return queueSize;
+    }
+
+    // Every bakery with its status and coordinates, for the city map
+    @Override
+    public List<Bakery> getBakeryMapData(String sessionId) {
+        return bakeryService.getAllBakeries();
+    }
 }

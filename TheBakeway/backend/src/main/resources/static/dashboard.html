@@ -33,6 +33,17 @@
             <p class="muted"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</p>
         </div>
 
+        <!-- Shared map for all roles -->
+        <section class="card map-card">
+            <div class="card-title">
+                <h2>
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    Delivery Map
+                </h2>
+            </div>
+            <div id="map"></div>
+        </section>
+
         <section class="card console-card">
             <div class="card-title">
                 <h2><i class="fa-solid fa-terminal"></i> Output console</h2>
@@ -42,11 +53,14 @@
         </section>
     </main>
 
-    <script src="/js/dashboard.js"></script>
-    <script src="/js/dashboard-customer.js"></script>
-    <script src="/js/dashboard-restaurant.js"></script>
-    <script src="/js/dashboard-courier.js"></script>
-    <script src="/js/dashboard-operator.js"></script>
-    <script>Dashboard.start();</script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/dashboard-customer.js"></script>
+<script src="/js/dashboard-restaurant.js"></script>
+<script src="/js/dashboard-courier.js"></script>
+<script src="/js/dashboard-operator.js"></script>
+<script src="/js/map.js"></script>
+<script> Dashboard.start(); </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBD1E9V6-6g0eSLRtvYMMYE3A2IAa3CeFk&loading=async" async defer></script>
 </body>
 </html>

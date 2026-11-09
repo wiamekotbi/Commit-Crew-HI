@@ -29,6 +29,9 @@ const Dashboard = (() => {
     const panels = {};
     let session = null;
     let lastConsoleSequence = 0;
+    let mapRefreshInProgress = false;
+    let mapRefreshTimer = null;
+    let mapReady = false;
 
     // Calls the API; returns { ok, status, data }. A lost session sends the user back to login.
     async function api(method, url, body) {
@@ -188,6 +191,72 @@ const Dashboard = (() => {
         }
     }
 
+    async function loadMapBakeries() {
+        const result = await api("GET", "/api/bakeries/map");
+
+        if (!result.ok || !Array.isArray(result.data)) {
+            console.error("Failed to load map bakeries");
+            return;
+        }
+
+        const bakeries = result.data;
+
+        BakewayMap.setBakeries(bakeries);
+
+        await Promise.all(bakeries.map(async bakery => {
+            try {
+                const queueResult = await api(
+                    "GET",
+                    "/api/bakeries/" +
+                        encodeURIComponent(bakery.bakeryId) +
+                        "/preparation-queue-size"
+                );
+
+                if (queueResult.ok) {
+                    BakewayMap.updateBakeryQueue(
+                        bakery.bakeryId,
+                        queueResult.data
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to load queue for bakery",
+                    bakery.bakeryId,
+                    error
+                );
+            }
+        }));
+    }
+
+    async function loadMapCouriers() {
+        const result = await api("GET", "/api/couriers/map");
+
+        if (!result.ok || !Array.isArray(result.data)) {
+            console.error("Failed to load map couriers");
+            return;
+        }
+
+        BakewayMap.setCouriers(result.data);
+    }
+
+    async function refreshMap() {
+        if (!mapReady || mapRefreshInProgress) {
+            return;
+        }
+
+        mapRefreshInProgress = true;
+
+        try {
+            await Promise.allSettled([
+                loadMapBakeries(),
+                loadMapCouriers()
+            ]);
+        } finally {
+            mapRefreshInProgress = false;
+        }
+    }
+
+
     async function refresh() {
         const panel = panels[session.role];
         if (panel && panel.refresh) {
@@ -224,6 +293,18 @@ const Dashboard = (() => {
             return;
         }
         await panel.render(container, session);
+        // Initialize the shared map.
+        // Wait for the Google Maps API before proceeding.
+        try {
+            await BakewayMap.init("map");
+            mapReady = true;
+
+            // Load initial bakery and courier markers.
+            await refreshMap();
+
+            // Refresh map data every 50 seconds.
+            mapRefreshTimer = setInterval(() => {void refreshMap();}, 5000);
+        } catch (error) {console.error("Unable to initialize map:", error);}
         await loadConsole();
         setInterval(loadConsole, 3000);
     }
