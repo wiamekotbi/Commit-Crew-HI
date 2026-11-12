@@ -152,16 +152,15 @@ Dashboard.register("COURIER", (() => {
 
         if (courier.currentOrderId) {
             // The backend owns the delivery lifecycle rules. The dashboard only
-            // exposes the command allowed by the courier's current persisted
+            // enables the command allowed by the courier's current persisted
             // state: ASSIGNED couriers pick up, while CARRYING couriers deliver.
-            let deliveryAction = "";
-            if (status === "ASSIGNED") {
-                deliveryAction = `<button type="button" class="btn" id="confirmPickup">
-                    <i class="fa-solid fa-box-open"></i> Confirm pickup</button>`;
-            } else if (status === "CARRYING") {
-                deliveryAction = `<button type="button" class="btn" id="confirmDelivery">
+            const deliveryActions = `
+                <button type="button" class="btn" id="confirmPickup"
+                    ${status === "ASSIGNED" ? "" : "disabled"}>
+                    <i class="fa-solid fa-box-open"></i> Confirm pickup</button>
+                <button type="button" class="btn" id="confirmDelivery"
+                    ${status === "CARRYING" ? "" : "disabled"}>
                     <i class="fa-solid fa-house-circle-check"></i> Mark delivered</button>`;
-            }
 
             deliveryTarget.innerHTML = `
                 <p><strong>Order ${D.escape(D.shortId(courier.currentOrderId))}</strong></p>
@@ -170,7 +169,7 @@ Dashboard.register("COURIER", (() => {
                         ? "Order picked up and in transit."
                         : "Assigned and waiting for pickup."
                 }</p>
-                <div class="actions">${deliveryAction}</div>`;
+                <div class="actions">${deliveryActions}</div>`;
 
             // Reuse Dashboard.command so authentication cookies, error messages,
             // success banners, and the post-command dashboard refresh all remain
@@ -186,8 +185,14 @@ Dashboard.register("COURIER", (() => {
                     "deliver",
                     "Order marked as delivered."));
         } else {
-            deliveryTarget.innerHTML =
-                `<p class="empty">No delivery is currently assigned.</p>`;
+            deliveryTarget.innerHTML = `
+                <p class="empty">No delivery is currently assigned.</p>
+                <div class="actions">
+                    <button type="button" class="btn" id="confirmPickup" disabled>
+                        <i class="fa-solid fa-box-open"></i> Confirm pickup</button>
+                    <button type="button" class="btn" id="confirmDelivery" disabled>
+                        <i class="fa-solid fa-house-circle-check"></i> Mark delivered</button>
+                </div>`;
         }
     }
 

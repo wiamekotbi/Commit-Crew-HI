@@ -4,6 +4,7 @@ Dashboard.register("CUSTOMER", (() => {
     const D = Dashboard;
 
     let selectedBakery = null;
+    let bakeries = [];
     let menu = [];
     let cart = [];   // { menuItemId, name, price, quantity }
     let cartPricingRequest = 0;
@@ -46,10 +47,24 @@ Dashboard.register("CUSTOMER", (() => {
                 <div id="orders" class="table-wrap"></div>
             </section>`;
         
-        container.querySelector("#refreshBakeries").addEventListener("click", loadBakeries);
+        container.querySelector("#refreshBakeries").addEventListener("click", refresh);
+        await refresh();
+    }
+
+    async function refresh() {
         await loadBakeries();
-        renderCart();
+        if (selectedBakery && selectedBakeryAcceptsOrders()) {
+            await loadMenu(selectedBakery);
+        } else {
+            if (selectedBakery) menu = [];
+            renderCart();
+        }
         await loadOrders();
+    }
+
+    function selectedBakeryAcceptsOrders() {
+        return selectedBakery != null
+            && bakeries.some(bakery => bakery.bakeryId === selectedBakery);
     }
 
     async function loadBakeries() {
@@ -86,6 +101,8 @@ Dashboard.register("CUSTOMER", (() => {
             D.showMessage(D.errorText(result), "error");
             target.innerHTML = "";
             await loadBakeries();
+            menu = [];
+            renderCart();
             return;
         }
 
@@ -147,6 +164,11 @@ Dashboard.register("CUSTOMER", (() => {
             return;
         }
         const total = cart.reduce((sum, line) => sum + line.price * line.quantity, 0);
+        const selectedItemUnavailable = cart.some(line => {
+            const item = menu.find(candidate => candidate.id === line.menuItemId);
+            return !item || item.status !== "available" || item.discontinued;
+        });
+        const placeOrderDisabled = !selectedBakeryAcceptsOrders() || selectedItemUnavailable;
         target.innerHTML = `
             <table>
                 <tbody>${cart.map((line, index) => `
@@ -162,7 +184,8 @@ Dashboard.register("CUSTOMER", (() => {
             <div id="cartPricing"><p class="muted">Calculating fees...</p></div>
             <div class="inline-form" style="margin-top:12px">
                 <input type="text" id="deliveryAddress" placeholder="Delivery address (empty: your profile address)">
-                <button type="button" class="btn" id="placeOrder"><i class="fa-solid fa-paper-plane"></i> Place order</button>
+                <button type="button" class="btn" id="placeOrder" ${placeOrderDisabled ? "disabled" : ""}>
+                    <i class="fa-solid fa-paper-plane"></i> Place order</button>
             </div>`;
         target.querySelectorAll("button[data-remove]").forEach(button =>
             button.addEventListener("click", () => {
@@ -259,5 +282,5 @@ Dashboard.register("CUSTOMER", (() => {
                 data => `Order ${D.shortId(data.orderId)} cancelled (event ${D.shortId(data.eventId)}).`)));
     }
 
-    return { render, refresh: loadOrders };
+    return { render, refresh };
 })());
