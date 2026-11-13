@@ -62,22 +62,13 @@ function dashboard(deliveries, courier = { status: "OFFLINE" }) {
     return { panel, container, calls, elements };
 }
 
-test("courier dashboard loads and renders past delivery ledger entries", async () => {
+test("courier dashboard renders past deliveries without charges", async () => {
     const view = dashboard([{
         orderId: "order-12345678",
-        deliveredAt: "2026-11-07T12:00:00Z",
-        ledgerEntries: [{
-            entryType: "CHARGE",
-            occurredAt: "2026-11-07T12:00:00Z",
-            amount: 17,
-            currency: "CAD",
-            pricing: {
-                subtotal: 8,
-                deliveryFee: 4,
-                serviceFee: 2,
-                smallOrderSurcharge: 3
-            }
-        }]
+        bakeryId: "bakery-1",
+        deliveryAddress: "123 Main Street",
+        orderStatus: "delivered",
+        deliveredAt: "2026-11-07T12:00:00Z"
     }]);
 
     await view.panel.render(view.container);
@@ -86,10 +77,10 @@ test("courier dashboard loads and renders past delivery ledger entries", async (
         "/api/couriers/me",
         "/api/couriers/me/past-deliveries"
     ]);
-    assert.match(view.elements.courierPastDeliveries.innerHTML, /order-12/);
-    assert.match(view.elements.courierPastDeliveries.innerHTML, /CHARGE/);
-    assert.match(view.elements.courierPastDeliveries.innerHTML, /\$17\.00 CAD/);
-    assert.match(view.elements.courierPastDeliveries.innerHTML, /Delivery: \$4\.00/);
+    const markup = view.elements.courierPastDeliveries.innerHTML;
+    assert.match(markup, /order-12/);
+    assert.match(markup, /123 Main Street/);
+    assert.doesNotMatch(markup, /\$/);
 });
 
 test("courier dashboard replaces loading message when history is empty", async () => {

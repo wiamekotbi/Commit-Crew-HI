@@ -3,4 +3,6 @@ acc-customer-2,customer2,customer123,Bob Tremblay,bob@bakeway.test,456 Boulevard
 acc-staff-1,staff1,staff123,Sweet Treats Staff,staff1@bakeway.test,,RESTAURANT,bakery-sweet-treats
 acc-staff-2,staff2,staff123,Crumbs and Co Staff,staff2@bakeway.test,,RESTAURANT,bakery-crumbs
 acc-courier-1,courier1,courier123,Chris Courier,courier1@bakeway.test,,COURIER,
+acc-courier-2,courier2,courier123,Dana Courier,courier2@bakeway.test,,COURIER,
+acc-courier-3,courier3,courier123,Eli Courier,courier3@bakeway.test,,COURIER,
 acc-operator-1,operator1,operator123,Olivia Operator,operator1@bakeway.test,,OPERATOR,

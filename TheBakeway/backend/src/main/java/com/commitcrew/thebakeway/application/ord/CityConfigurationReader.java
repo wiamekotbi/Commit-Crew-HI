@@ -18,7 +18,7 @@ import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 // Reads the city part of the config file (UC-ORD-01). Same line format as the accounts file:
 //   BAKERY,bakeryId,name,status,address,latitude,longitude
 //   MENU_ITEM,itemId,bakeryId,name,description,price,status
-//   COURIER,courierId,latitude,longitude
+//   COURIER,courierId,latitude,longitude,status (offline | idle)
 // Blank lines and lines starting with # are ignored. Any invalid entry refuses the whole file.
 @Component
 public class CityConfigurationReader {
@@ -73,14 +73,24 @@ public class CityConfigurationReader {
     }
 
     private Courier courier(String[] values, int lineNumber, Set<String> courierIds) {
-        requireFieldCount(values, 4, lineNumber);
+        requireFieldCount(values, 5, lineNumber);
         String id = required(values[1], "courier id", lineNumber);
 
         if (!courierIds.add(id)) {
             throw invalid(lineNumber, "duplicate courier id '" + id + "'");
         }
 
-        return new Courier(id, coordinates(values[2], values[3], lineNumber));
+        Courier courier = new Courier(id, coordinates(values[2], values[3], lineNumber));
+
+        // R-ORD-01: the file gives each courier's starting status; a courier
+        // starts on duty (idle) or off duty (offline), never with an order
+        switch (values[4].trim()) {
+            case "offline" -> { }
+            case "idle" -> courier.goOnDuty();
+            default -> throw invalid(lineNumber, "unknown courier status '" + values[4].trim() + "'");
+        }
+
+        return courier;
     }
 
     // Menu items must come after the bakery they belong to

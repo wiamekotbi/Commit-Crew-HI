@@ -213,6 +213,28 @@ class CourierTest {
         assertEquals(ORDER_ID, courier.getCurrentOrderId());
     }
 
+    @Test
+    void cancelledOrderIsReleasedFromAnAssignedCourier() {
+        Courier courier = assignedCourier();
+
+        courier.releaseCancelledOrder(ORDER_ID);
+
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+    }
+
+    @Test
+    void releasingACancelledOrderRequiresThatExactAssignedOrder() {
+        Courier courier = assignedCourier();
+
+        assertThrows(IllegalStateException.class, () -> courier.releaseCancelledOrder("other-order"));
+        courier.markPickedUp();
+        assertThrows(IllegalStateException.class, () -> courier.releaseCancelledOrder(ORDER_ID));
+
+        assertEquals(CourierStatus.CARRYING, courier.getStatus());
+        assertEquals(ORDER_ID, courier.getCurrentOrderId());
+    }
+
     private Courier assignedCourier() {
         Courier courier = new Courier(COURIER_ID);
         courier.goOnDuty();

@@ -735,6 +735,57 @@ class OrderServiceImplOrderFlowTest {
     }
 
     @Test
+    void cancellingAReadyOrderFreesItsCourierAndClosesItsOffer() {
+        givenSession("operator-1", Role.OPERATOR);
+        Order order = givenReadyOrder();
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+        courier.assignOrder(ORDER_ID);
+        when(courierRegistry.findByCurrentOrderId(ORDER_ID)).thenReturn(Optional.of(courier));
+        givenSaveReturnsOrder();
+
+        orderService.cancelOrder(SESSION_ID, ORDER_ID);
+
+        assertEquals("cancelled", order.getStatus());
+        assertEquals(CourierStatus.IDLE, courier.getStatus());
+        assertNull(courier.getCurrentOrderId());
+        verify(courierRegistry).save(courier);
+        verify(dispatchService).dispatchReadyOrder(ORDER_ID);
+        verify(dispatchService).retryWaitingOrdersWhenCourierBecomesIdle(COURIER_ID);
+    }
+
+    @Test
+    void cancellingAStalledReadyOrderReleasesTheOfflineCourier() {
+        givenSession("operator-1", Role.OPERATOR);
+        givenReadyOrder();
+        Courier courier = new Courier(COURIER_ID);
+        courier.goOnDuty();
+        courier.assignOrder(ORDER_ID);
+        courier.goOffDuty();
+        when(courierRegistry.findByStalledOrderId(ORDER_ID)).thenReturn(Optional.of(courier));
+        givenSaveReturnsOrder();
+
+        orderService.cancelOrder(SESSION_ID, ORDER_ID);
+
+        assertNull(courier.getStalledOrderId());
+        verify(courierRegistry).save(courier);
+        verify(dispatchService).dispatchReadyOrder(ORDER_ID);
+    }
+
+    @Test
+    void cancellingAnOrderBeforeReadyDoesNotTouchDispatch() {
+        givenSession("operator-1", Role.OPERATOR);
+        Order order = givenStoredOrder();
+        order.accept();
+        givenSaveReturnsOrder();
+
+        orderService.cancelOrder(SESSION_ID, ORDER_ID);
+
+        verify(courierRegistry, never()).findByCurrentOrderId(any());
+        verify(dispatchService, never()).dispatchReadyOrder(any());
+    }
+
+    @Test
     void operatorCannotCancelPickedUpOrder() {
         givenSession("operator-1", Role.OPERATOR);
         Order order = givenStoredOrder();

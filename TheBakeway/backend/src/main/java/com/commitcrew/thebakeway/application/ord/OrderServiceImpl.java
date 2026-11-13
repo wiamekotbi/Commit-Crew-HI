@@ -126,7 +126,11 @@ public class OrderServiceImpl implements OrderService {
         // Leaving "accepted" also removes the order from the preparation queue
         order.cancel(session.getRole());
 
-        return saveAndPublish(order, previousState);
+        OrderTransitionResult result = saveAndPublish(order, previousState);
+        if (OrderStatus.ready.name().equals(previousState)) {
+            releaseDispatchOf(orderId);
+        }
+        return result;
     }
 
     // Bakery staff accept a placed order of their own bakery.
@@ -392,15 +396,36 @@ public class OrderServiceImpl implements OrderService {
     // The courier is idle again, so waiting orders are dispatched (UC-DLV-06 step 7, R-DLV-04).
     // This runs after the commit, so a delivery that rolls back never creates an offer.
     private void retryWaitingOrdersAfterCommit(String courierId) {
+        afterCommit(() -> dispatchService.retryWaitingOrdersWhenCourierBecomesIdle(courierId));
+    }
+
+    // A cancelled ready order may still be offered, bound to a courier, or stalled. The courier
+    // is freed and, after the commit, dispatch drops the offer and the queue entry, because the
+    // order is no longer ready (R-DLV-02).
+    private void releaseDispatchOf(String orderId) {
+        courierRegistry.findByCurrentOrderId(orderId).ifPresent(courier -> {
+            courier.releaseCancelledOrder(orderId);
+            courierRegistry.save(courier);
+            retryWaitingOrdersAfterCommit(courier.getCourierId());
+        });
+        courierRegistry.findByStalledOrderId(orderId).ifPresent(courier -> {
+            courier.releaseStalledOrder(orderId);
+            courierRegistry.save(courier);
+        });
+        afterCommit(() -> dispatchService.dispatchReadyOrder(orderId));
+    }
+
+    // Runs the action once the transaction commits, so a rolled-back command never changes dispatch
+    private void afterCommit(Runnable action) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            dispatchService.retryWaitingOrdersWhenCourierBecomesIdle(courierId);
+            action.run();
             return;
         }
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                dispatchService.retryWaitingOrdersWhenCourierBecomesIdle(courierId);
+                action.run();
             }
         });
     }
