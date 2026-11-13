@@ -64,6 +64,32 @@ The system allows customers to order bakery products, bakery staff to manage and
 
 Maven does not need to be installed because the Maven Wrapper is included.
 
+## Run with Docker
+
+The containerized setup includes Java, Maven and PostgreSQL. The only platform
+requirement is Docker Desktop (or Docker Engine with Docker Compose).
+
+From the repository root, run:
+
+```bash
+docker compose up --build
+```
+
+Wait until the application logs `Tomcat started on port 8080`, then open:
+
+```text
+http://localhost:8080/login.html
+```
+
+Stop the application with `Ctrl+C`, followed by:
+
+```bash
+docker compose down
+```
+
+The PostgreSQL data is kept in a Docker volume. To delete that volume and start
+with a completely new database, run `docker compose down -v`.
+
 ## Database Configuration
 
 Set the Supabase environment variables before running the application.
