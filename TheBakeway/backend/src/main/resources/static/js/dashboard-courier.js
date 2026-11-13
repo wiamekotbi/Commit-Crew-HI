@@ -63,26 +63,9 @@ Dashboard.register("COURIER", (() => {
             target.innerHTML = result.data.map(delivery => `
                 <article class="card">
                     <strong>Order ${D.escape(D.shortId(delivery.orderId))}</strong>
-                    <p class="muted">Delivered ${D.escape(D.time(delivery.deliveredAt))}</p>
-                    ${delivery.ledgerEntries.length === 0
-                        ? '<p class="empty">No ledger entries have been recorded for this delivery.</p>'
-                        : `<table aria-label="Order ledger entries">
-                            <thead><tr><th>Entry</th><th>Recorded</th><th>Amount</th></tr></thead>
-                            <tbody>${delivery.ledgerEntries.map(entry => `
-                                <tr>
-                                    <td>${D.escape(entry.entryType)}${entry.reason
-                                        ? `<span class="muted"> - ${D.escape(entry.reason)}</span>` : ""}</td>
-                                    <td>${D.escape(D.time(entry.occurredAt))}</td>
-                                    <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
-                                </tr>
-                                ${entry.pricing ? `
-                                    <tr><td colspan="3">
-                                        Items: ${D.money(entry.pricing.subtotal)} |
-                                        Delivery: ${D.money(entry.pricing.deliveryFee)} |
-                                        Service: ${D.money(entry.pricing.serviceFee)} |
-                                        Small-order surcharge: ${D.money(entry.pricing.smallOrderSurcharge)}
-                                    </td></tr>` : ""}`).join("")}</tbody>
-                        </table>`}
+                    ${D.badge(delivery.orderStatus)}
+                    <p class="muted">Delivered ${D.escape(D.time(delivery.deliveredAt))}
+                        to ${D.escape(delivery.deliveryAddress)}</p>
                 </article>`).join("");
         } catch (error) {
             if (target.isConnected) {

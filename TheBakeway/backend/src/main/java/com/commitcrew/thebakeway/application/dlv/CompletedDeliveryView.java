@@ -1,12 +1,13 @@
 package com.commitcrew.thebakeway.application.dlv;
 
 import java.time.Instant;
-import java.util.List;
 
-import com.commitcrew.thebakeway.application.prc.OrderLedgerEntryView;
-
+// One delivery the courier carried (R-PRC-04). Charges are left out: a courier does
+// not see what the customer paid (UC-PRC-04 4b, Appendix A).
 public record CompletedDeliveryView(
         String orderId,
-        Instant deliveredAt,
-        List<OrderLedgerEntryView> ledgerEntries) {
+        String bakeryId,
+        String deliveryAddress,
+        String orderStatus,
+        Instant deliveredAt) {
 }

@@ -74,13 +74,15 @@ class CourierControllerTest {
     void returnsOnlyAuthenticatedCouriersPastDeliveries() throws Exception {
         givenCourierSession();
         when(courierHistoryService.getPastDeliveries(COURIER_ID))
-                .thenReturn(List.of(new CompletedDeliveryView("order-2", Instant.parse("2026-11-07T12:00:00Z"),
-                        List.of())));
+                .thenReturn(List.of(new CompletedDeliveryView("order-2", "bakery-1", "123 Main Street",
+                        "delivered", Instant.parse("2026-11-07T12:00:00Z"))));
 
         mockMvc.perform(get("/api/couriers/me/past-deliveries").cookie(sessionCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].orderId").value("order-2"))
-                .andExpect(jsonPath("$[0].ledgerEntries").isEmpty());
+                .andExpect(jsonPath("$[0].deliveredAt").exists())
+                .andExpect(jsonPath("$[0].amount").doesNotExist())
+                .andExpect(jsonPath("$[0].ledgerEntries").doesNotExist());
     }
 
     @Test
