@@ -180,6 +180,8 @@ Loaded from `initialAccounts.txt` at startup:
 | Bakery staff | `staff1` | `staff123` | Sweet Treats |
 | Bakery staff | `staff2` | `staff123` | Crumbs and Co |
 | Courier | `courier1` | `courier123` | |
+| Courier | `courier2` | `courier123` | Same distance from Sweet Treats as `courier3`: shows the lowest-id tie-break |
+| Courier | `courier3` | `courier123` | |
 | Operator | `operator1` | `operator123` | |
 
 New customers can also register from the login page.

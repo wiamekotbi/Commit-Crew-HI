@@ -1,12 +1,15 @@
 # Initial city (UC-ORD-01). One entry per line, values separated by commas (no commas inside values).
 # BAKERY,bakeryId,name,status(open|paused|closed),address,latitude,longitude
 # MENU_ITEM,itemId,bakeryId,name,description,price,status(available|sold_out)
-# COURIER,courierId,latitude,longitude
+# COURIER,courierId,latitude,longitude,status(offline|idle) - courierId is the courier's account id
 BAKERY,bakery-sweet-treats,Sweet Treats,open,123 Main Street Montreal,45.4972,-73.5789
 BAKERY,bakery-crumbs,Crumbs and Co,open,45 Oak Avenue Montreal,45.5088,-73.5878
 BAKERY,bakery-old-mill,Old Mill Bakery,paused,8 Mill Road Montreal,45.5017,-73.5673
 BAKERY,bakery-corner,Corner Bakery,closed,2 Corner Lane Montreal,45.5155,-73.5612
-COURIER,acc-courier-1,45.5048,-73.5772
+COURIER,acc-courier-1,45.5048,-73.5772,offline
+# Couriers 2 and 3 are at the same distance from Sweet Treats: the tie goes to the lowest id (R-DLV-02)
+COURIER,acc-courier-2,45.5022,-73.5789,offline
+COURIER,acc-courier-3,45.4922,-73.5789,offline
 MENU_ITEM,item-croissant,bakery-sweet-treats,Croissant,Butter croissant,3.50,available
 MENU_ITEM,item-pain-chocolat,bakery-sweet-treats,Pain au chocolat,Chocolate pastry,3.75,available
 MENU_ITEM,item-baguette,bakery-sweet-treats,Baguette,Traditional French baguette,4.00,available
