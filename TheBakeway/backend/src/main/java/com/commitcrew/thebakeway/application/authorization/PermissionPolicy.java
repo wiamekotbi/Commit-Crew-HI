@@ -31,7 +31,6 @@ public class PermissionPolicy {
                     "PAUSE_BAKERY",
                     "MANAGE_ORDERS",
                     "PREPARE_ORDERS",
-                    "ASSIGN_READY_ORDERS_TO_COURIERS",
                     "VIEW_ORDER_DETAILS",
                     "PREPARATION_QUEUE_SIZE",
                     "GET_BAKERY_MAP_DATA",

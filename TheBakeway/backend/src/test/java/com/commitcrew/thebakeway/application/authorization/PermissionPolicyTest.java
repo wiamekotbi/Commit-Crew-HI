@@ -61,7 +61,6 @@ class PermissionPolicyTest {
                 "PAUSE_BAKERY",
                 "MANAGE_ORDERS",
                 "PREPARE_ORDERS",
-                "ASSIGN_READY_ORDERS_TO_COURIERS",
                 "VIEW_ORDER_DETAILS"));
     }
 
