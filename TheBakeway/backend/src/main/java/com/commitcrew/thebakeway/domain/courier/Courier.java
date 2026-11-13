@@ -111,6 +111,21 @@ public class Courier {
         requireStatus(CourierStatus.IDLE, "decline an order");
     }
 
+    /**
+     * Frees an assigned courier whose order the operator cancelled before
+     * pickup, so a cancelled order never stays bound to a courier (R-DLV-02).
+     */
+    public void releaseCancelledOrder(String orderId) {
+        requireNonBlank(orderId, "Order ID is required");
+        requireStatus(CourierStatus.ASSIGNED, "release a cancelled order");
+        if (!orderId.equals(currentOrderId)) {
+            throw new IllegalStateException("Courier does not hold the order: " + orderId);
+        }
+
+        currentOrderId = null;
+        status = CourierStatus.IDLE;
+    }
+
     public void markPickedUp() {
         requireStatus(CourierStatus.ASSIGNED, "pick up an order");
         if (currentOrderId == null) {
