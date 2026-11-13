@@ -251,6 +251,7 @@ const Dashboard = (() => {
                 loadMapBakeries(),
                 loadMapCouriers()
             ]);
+            BakewayMap.fitToData();
         } finally {
             mapRefreshInProgress = false;
         }
