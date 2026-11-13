@@ -188,7 +188,7 @@ Dashboard.register("OPERATOR", (() => {
                             data-cancel="${D.escape(order.orderId)}"><i class="fa-solid fa-xmark"></i> Cancel</button>` : ""}
                         ${order.status === "delivered" ? `<button type="button" class="btn danger"
                             data-refund="${D.escape(order.orderId)}"><i class="fa-solid fa-rotate-left"></i> Refund</button>` : ""}
-                        ${["delivered", "refunded"].includes(order.status) ? `<button type="button" class="btn secondary"
+                        ${["delivered", "refunded", "rejected", "cancelled"].includes(order.status) ? `<button type="button" class="btn secondary"
                             data-ledger="${D.escape(order.orderId)}"><i class="fa-solid fa-book"></i> Ledger</button>` : ""}
                     </td>
                 </tr>`).join("")}</tbody></table>`;
@@ -220,10 +220,12 @@ Dashboard.register("OPERATOR", (() => {
         const content = result.ok
             ? result.data.length === 0
                 ? '<p class="empty">No ledger entries recorded.</p>'
-                : `<table><thead><tr><th>Entry</th><th>Amount</th><th>Timestamp</th><th>Actor</th><th>Reason</th></tr></thead>
+                : `<table><thead><tr><th>Entry</th><th>Final state</th><th>Amount</th><th>Placed</th><th>Recorded</th><th>Actor</th><th>Reason</th></tr></thead>
                     <tbody>${result.data.map(entry => `<tr>
                         <td>${D.escape(entry.entryType)}</td>
+                        <td>${D.badge(entry.finalState || "")}</td>
                         <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
+                        <td>${D.escape(D.time(entry.placedAt))}</td>
                         <td>${D.escape(D.time(entry.occurredAt))}</td>
                         <td>${D.escape(entry.actorAccountId || "System")}</td>
                         <td>${D.escape(entry.reason || "")}</td>

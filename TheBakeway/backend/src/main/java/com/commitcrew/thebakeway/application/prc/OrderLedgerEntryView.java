@@ -1,6 +1,7 @@
 package com.commitcrew.thebakeway.application.prc;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 import com.commitcrew.thebakeway.domain.pricing.OrderLedgerEntry;
 import com.commitcrew.thebakeway.domain.pricing.PriceBreakdown;
@@ -14,11 +15,14 @@ public record OrderLedgerEntryView(
         Instant occurredAt,
         String actorAccountId,
         String reason,
-        PriceBreakdown pricing) {
+        PriceBreakdown pricing,
+        String finalState,
+        LocalDateTime placedAt) {
 
     public static OrderLedgerEntryView from(OrderLedgerEntry entry) {
         return new OrderLedgerEntryView(entry.getId(), entry.getOrder().getId(),
                 entry.getEntryType().name(), entry.getAmount(), entry.getCurrency(),
-                entry.getOccurredAt(), entry.getActorAccountId(), entry.getReason(), entry.getPricing());
+                entry.getOccurredAt(), entry.getActorAccountId(), entry.getReason(), entry.getPricing(),
+                entry.getFinalState(), entry.getOrder().getCreatedAt());
     }
 }

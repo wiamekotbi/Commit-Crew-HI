@@ -167,7 +167,7 @@ class OrderSummaryControllerTest {
         when(orderBillingService.getLedger(operator.getValue(), "order-1")).thenReturn(List.of(
                 new OrderLedgerEntryView("charge-1", "order-1", "CHARGE", 19, "CAD",
                         Instant.parse("2026-11-02T15:00:00Z"), null, null,
-                        new PriceBreakdown(12, 4, 1, 2, 19))));
+                        new PriceBreakdown(12, 4, 1, 2, 19), "delivered", null)));
 
         mvc.perform(get("/api/orders/order-1/ledger").cookie(operator))
                 .andExpect(status().isOk())
@@ -182,7 +182,8 @@ class OrderSummaryControllerTest {
         Cookie operator = session(Role.OPERATOR);
         when(orderBillingService.refundDeliveredOrder(operator.getValue(), "order-1", "Customer request"))
                 .thenReturn(new OrderLedgerEntryView("refund-1", "order-1", "REFUND", 19, "CAD",
-                        Instant.parse("2026-11-02T16:00:00Z"), "customer-1", "Customer request", null));
+                        Instant.parse("2026-11-02T16:00:00Z"), "customer-1", "Customer request", null,
+                        "refunded", null));
 
         mvc.perform(post("/api/orders/order-1/refund").cookie(operator)
                         .contentType(APPLICATION_JSON)

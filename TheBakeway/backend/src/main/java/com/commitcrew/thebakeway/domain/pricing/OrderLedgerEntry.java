@@ -69,6 +69,11 @@ public class OrderLedgerEntry {
     @Column(updatable = false)
     private String reason;
 
+    // R-PRC-03: the order's state when the entry was written (delivered, rejected,
+    // cancelled or refunded)
+    @Column(name = "final_state", updatable = false)
+    private String finalState;
+
     protected OrderLedgerEntry() {
     }
 
@@ -79,9 +84,10 @@ public class OrderLedgerEntry {
             PriceBreakdown pricing,
             Instant occurredAt,
             String actorAccountId,
-            String reason) {
+            String reason,
+            String finalState) {
         if (order == null || entryType == null || !Double.isFinite(amount) || amount < 0
-                || occurredAt == null) {
+                || occurredAt == null || finalState == null) {
             throw new IllegalArgumentException("Invalid order ledger entry");
         }
         this.order = order;
@@ -97,6 +103,7 @@ public class OrderLedgerEntry {
         this.occurredAt = occurredAt;
         this.actorAccountId = actorAccountId;
         this.reason = reason;
+        this.finalState = finalState;
     }
 
     public static OrderLedgerEntry charge(Order order, PriceBreakdown pricing, Instant deliveredAt) {
@@ -104,13 +111,19 @@ public class OrderLedgerEntry {
             throw new IllegalArgumentException("Pricing is required for a charge");
         }
         return new OrderLedgerEntry(order, LedgerEntryType.CHARGE, pricing.total(),
-                pricing, deliveredAt, null, null);
+                pricing, deliveredAt, null, null, "delivered");
+    }
+
+    // A rejected or cancelled order is recorded with a total charge of zero (R-PRC-03)
+    public static OrderLedgerEntry noCharge(Order order, String finalState, Instant closedAt) {
+        return new OrderLedgerEntry(order, LedgerEntryType.CHARGE, 0,
+                null, closedAt, null, null, finalState);
     }
 
     public static OrderLedgerEntry refund(
             Order order, double amount, Instant refundedAt, String actorAccountId, String reason) {
         return new OrderLedgerEntry(order, LedgerEntryType.REFUND, amount,
-                null, refundedAt, actorAccountId, reason);
+                null, refundedAt, actorAccountId, reason, "refunded");
     }
 
     public PriceBreakdown getPricing() {
@@ -129,6 +142,7 @@ public class OrderLedgerEntry {
     public Instant getOccurredAt() { return occurredAt; }
     public String getActorAccountId() { return actorAccountId; }
     public String getReason() { return reason; }
+    public String getFinalState() { return finalState; }
 
     private static BigDecimal money(double amount) {
         if (!Double.isFinite(amount) || amount < 0) {
