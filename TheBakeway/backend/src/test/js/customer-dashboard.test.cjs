@@ -27,13 +27,17 @@ const customerScript = readFileSync(
                     D, container.querySelector("#orders"), bakeryName);
             },
             renderCart,
-            loadOrders: () => orderHistory.load()
+            loadOrders: () => orderHistory.load(),
+            rateCourier: orderId => orderHistory.rateCourier(orderId)
         }
     };`
 );
 
 function loadCustomerDashboard(Dashboard) {
-    const context = vm.createContext({ Dashboard });
+    const context = vm.createContext({
+        Dashboard,
+        CSS: { escape: value => String(value) }
+    });
     vm.runInContext(orderHistoryScript, context);
     vm.runInContext(customerScript, context);
 }
@@ -129,9 +133,10 @@ test("place order is disabled when a selected item becomes unavailable", () => {
     assert.match(markup, /<button[^>]*id="placeOrder"[^>]*disabled/);
 });
 
-async function loadOrderHistory(orders) {
+async function loadOrderHistory(orders, ratings = []) {
     let panel;
     const calls = [];
+    const commands = [];
     const Dashboard = {
         register(role, value) {
             assert.equal(role, "CUSTOMER");
@@ -139,7 +144,9 @@ async function loadOrderHistory(orders) {
         },
         async api(method, url) {
             calls.push({ method, url });
-            return { ok: true, data: orders };
+            if (url === "/api/orders/mine") return { ok: true, data: orders };
+            if (url === "/api/courier-ratings/mine") return { ok: true, data: ratings };
+            throw new Error(`Unexpected API request: ${method} ${url}`);
         },
         escape: value => String(value ?? ""),
         time: value => value,
@@ -147,11 +154,15 @@ async function loadOrderHistory(orders) {
         money: value => `$${Number(value).toFixed(2)}`,
         badge: value => `[${value}]`,
         toggleDetails() {},
-        command: async () => ({ ok: true })
+        command: async (...args) => {
+            commands.push(args);
+            return { ok: true };
+        }
     };
     loadCustomerDashboard(Dashboard);
 
     const orderList = new Element();
+    orderList.querySelector = () => ({ value: "4" });
     const container = {
         querySelector(selector) {
             if (selector === "#orders") return orderList;
@@ -166,7 +177,12 @@ async function loadOrderHistory(orders) {
         container
     });
     await panel.__test.loadOrders();
-    return { markup: orderList.innerHTML, calls };
+    return {
+        markup: orderList.innerHTML,
+        calls,
+        rateCourier: panel.__test.rateCourier,
+        commands
+    };
 }
 
 test("customer order history preserves status-specific summary and cancel actions", async () => {
@@ -200,13 +216,18 @@ test("customer order history preserves status-specific summary and cancel action
         }
     ]);
 
-    assert.deepEqual(calls, [{ method: "GET", url: "/api/orders/mine" }]);
+    assert.deepEqual(calls, [
+        { method: "GET", url: "/api/orders/mine" },
+        { method: "GET", url: "/api/courier-ratings/mine" }
+    ]);
     assert.match(markup, /Sweet Treats/);
     assert.match(markup, /2 x Croissant/);
     assert.match(markup, /data-cancel="placed-order"/);
     assert.doesNotMatch(markup, /data-cancel="delivered-order"/);
     assert.match(markup, /order-summary\.html\?orderId=delivered-order/);
     assert.doesNotMatch(markup, /order-summary\.html\?orderId=placed-order/);
+    assert.match(markup, /data-rate-courier="delivered-order"/);
+    assert.doesNotMatch(markup, /data-rate-courier="placed-order"/);
     assert.match(markup, /Out of stock/);
     assert.equal((markup.match(/data-details=/g) || []).length, 3);
 });
@@ -215,4 +236,36 @@ test("customer order history preserves its empty state", async () => {
     const { markup } = await loadOrderHistory([]);
 
     assert.match(markup, /You have no orders yet/);
+});
+
+test("customer order history shows a persisted courier rating only once", async () => {
+    const { markup } = await loadOrderHistory([{
+        orderId: "delivered-order",
+        bakeryId: "bakery-1",
+        createdAt: "2026-11-18T13:00:00Z",
+        total: 16,
+        status: "delivered",
+        rejectionReason: null,
+        lines: [{ quantity: 1, itemName: "Bread" }]
+    }], [{
+        ratingId: "rating-1",
+        orderId: "delivered-order",
+        courierId: "courier-1",
+        score: 4
+    }]);
+
+    assert.match(markup, /Courier rated 4\/5/);
+    assert.doesNotMatch(markup, /data-rate-courier=/);
+});
+
+test("customer order history submits the selected courier rating", async () => {
+    const view = await loadOrderHistory([]);
+
+    await view.rateCourier("order-1");
+
+    assert.equal(view.commands.length, 1);
+    assert.equal(view.commands[0][0], "POST");
+    assert.equal(view.commands[0][1], "/api/orders/order-1/courier-rating");
+    assert.equal(view.commands[0][2].score, 4);
+    assert.equal(view.commands[0][3], "Courier rated 4/5.");
 });

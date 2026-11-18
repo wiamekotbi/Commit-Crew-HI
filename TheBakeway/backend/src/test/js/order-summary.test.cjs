@@ -173,11 +173,12 @@ test("customer history links eligible orders to the connected summary page", asy
     const context = vm.createContext({
         Dashboard: {
             register: (role, value) => { panel = value; },
-            api: async () => ({ ok: true, data: [
-                { orderId: "delivered-1", status: "delivered" },
-                { orderId: "refunded-1", status: "refunded" },
-                { orderId: "placed-1", status: "placed" }
-            ] }),
+            api: async (method, url) => ({ ok: true, data:
+                url === "/api/courier-ratings/mine" ? [] : [
+                    { orderId: "delivered-1", status: "delivered" },
+                    { orderId: "refunded-1", status: "refunded" },
+                    { orderId: "placed-1", status: "placed" }
+                ] }),
             escape: value => String(value),
             time: () => "time",
             money: () => "$0.00",
