@@ -32,6 +32,7 @@ import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
+import com.commitcrew.thebakeway.domain.rating.CourierRatingRepository;
 
 // Loads the initial state from the config files, at startup and when the operator restores it
 // (UC-REG-03, UC-ORD-01). Everything happens in one transaction: on any failure the previous state is kept.
@@ -51,6 +52,7 @@ public class InitialStateService {
     private final BakeryRegistry bakeryRegistry;
     private final CourierRegistry courierRegistry;
     private final CourierDeliveryRepository courierDeliveryRepository;
+    private final CourierRatingRepository courierRatingRepository;
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
@@ -69,6 +71,7 @@ public class InitialStateService {
             BakeryRegistry bakeryRegistry,
             CourierRegistry courierRegistry,
             CourierDeliveryRepository courierDeliveryRepository,
+            CourierRatingRepository courierRatingRepository,
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
@@ -85,6 +88,7 @@ public class InitialStateService {
         this.bakeryRegistry = bakeryRegistry;
         this.courierRegistry = courierRegistry;
         this.courierDeliveryRepository = courierDeliveryRepository;
+        this.courierRatingRepository = courierRatingRepository;
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
@@ -117,8 +121,9 @@ public class InitialStateService {
         CityConfiguration city = cityConfigurationReader.read(scanner(CITY_FILE));
         String accounts = read(ACCOUNTS_FILE);
 
-        // Ledger and courier history rows reference orders, so remove them first.
+        // Ledger, ratings and courier history rows reference orders, so remove them first.
         orderLedgerRepository.deleteAllInBatch();
+        courierRatingRepository.deleteAllInBatch();
         courierDeliveryRepository.deleteAllInBatch();
         orderRegistry.deleteAll();
         orderRegistry.flush();
