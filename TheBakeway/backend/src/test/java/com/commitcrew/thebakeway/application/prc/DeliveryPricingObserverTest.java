@@ -16,12 +16,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.InOrder;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
+import com.commitcrew.thebakeway.application.console.ConsoleEntry;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
@@ -231,6 +233,128 @@ class DeliveryPricingObserverTest {
                 .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
 
         assertTrue(console.entriesAfter(0).isEmpty());
+    }
+
+    @Test
+    void checksForAChargeBeforePricingAndRecording() {
+        Order order = deliveredOrder(2);
+        when(pricing.calculatePrice(order)).thenReturn(PRICE);
+        when(billing.recordChargeIfAbsent(order, PRICE, DELIVERED_AT)).thenReturn(true);
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+
+        InOrder calls = inOrder(orders, billing, pricing);
+        calls.verify(orders).findById("order-1");
+        calls.verify(billing).findCharge("order-1");
+        calls.verify(pricing).calculatePrice(order);
+        calls.verify(billing).recordChargeIfAbsent(order, PRICE, DELIVERED_AT);
+        assertConsoleEntry(true, "Order order-1: charge recorded, total 14.0");
+    }
+
+    @Test
+    void existingChargeIsLoggedImmediatelyEvenWithSynchronization() {
+        deliveredOrder(2);
+        when(billing.findCharge("order-1"))
+                .thenReturn(Optional.of(new OrderSummaryBilling.Charge("charge-1", PRICE)));
+        TransactionSynchronizationManager.initSynchronization();
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+
+        verifyNoInteractions(pricing);
+        verify(billing, never()).recordChargeIfAbsent(any(), any(), any());
+        assertConsoleEntry(false, "Order order-1 already has a charge");
+        assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
+    }
+
+    @Test
+    void missingBillingIsLoggedImmediatelyAfterPricingEvenWithSynchronization() {
+        Order order = deliveredOrder(2);
+        when(pricing.calculatePrice(order)).thenReturn(PRICE);
+        observer = new DeliveryPricingObserver(orders, pricing, Optional.empty(), console);
+        TransactionSynchronizationManager.initSynchronization();
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+
+        InOrder calls = inOrder(orders, pricing);
+        calls.verify(orders).findById("order-1");
+        calls.verify(pricing).calculatePrice(order);
+        assertConsoleEntry(false, "Order order-1: price computed but no charge recorded; billing integration is not connected");
+        assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
+    }
+
+    @Test
+    void orderLookupFailureIsLoggedAndTheSameExceptionIsPropagated() {
+        RuntimeException failure = new IllegalStateException("Order lookup failed");
+        when(orders.findById("order-1")).thenThrow(failure);
+
+        assertSame(failure, assertThrows(IllegalStateException.class,
+                () -> observer.update(event(EntityType.ORDER, "delivered"))));
+
+        verifyNoInteractions(pricing, billing);
+        assertConsoleEntry(false, "Order order-1: Order lookup failed");
+    }
+
+    @Test
+    void duplicateLookupFailureIsLoggedAndTheSameExceptionIsPropagated() {
+        deliveredOrder(2);
+        RuntimeException failure = new IllegalStateException("Charge lookup failed");
+        when(billing.findCharge("order-1")).thenThrow(failure);
+
+        assertSame(failure, assertThrows(IllegalStateException.class,
+                () -> observer.update(event(EntityType.ORDER, "delivered"))));
+
+        verifyNoInteractions(pricing);
+        verify(billing, never()).recordChargeIfAbsent(any(), any(), any());
+        assertConsoleEntry(false, "Order order-1: Charge lookup failed");
+    }
+
+    @Test
+    void unsuccessfulChargeIsLoggedImmediatelyWithoutSynchronization() {
+        Order order = deliveredOrder(2);
+        when(pricing.calculatePrice(order)).thenReturn(PRICE);
+        when(billing.recordChargeIfAbsent(order, PRICE, DELIVERED_AT)).thenReturn(false);
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+
+        assertConsoleEntry(false, "Order order-1 already has a charge");
+    }
+
+    @Test
+    void unsuccessfulChargeIsLoggedAfterCommitWithSynchronization() {
+        Order order = deliveredOrder(2);
+        when(pricing.calculatePrice(order)).thenReturn(PRICE);
+        when(billing.recordChargeIfAbsent(order, PRICE, DELIVERED_AT)).thenReturn(false);
+        TransactionSynchronizationManager.initSynchronization();
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+
+        assertTrue(console.entriesAfter(0).isEmpty());
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        assertConsoleEntry(false, "Order order-1 already has a charge");
+    }
+
+    @Test
+    void unsuccessfulChargeIsNotLoggedAfterRollback() {
+        Order order = deliveredOrder(2);
+        when(pricing.calculatePrice(order)).thenReturn(PRICE);
+        when(billing.recordChargeIfAbsent(order, PRICE, DELIVERED_AT)).thenReturn(false);
+        TransactionSynchronizationManager.initSynchronization();
+
+        observer.update(event(EntityType.ORDER, "delivered"));
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+
+        assertTrue(console.entriesAfter(0).isEmpty());
+    }
+
+    private void assertConsoleEntry(boolean success, String detail) {
+        assertEquals(1, console.entriesAfter(0).size());
+        ConsoleEntry entry = console.entriesAfter(0).get(0);
+        assertEquals("system", entry.user());
+        assertEquals("SYSTEM", entry.role());
+        assertEquals("COMPUTE_ORDER_CHARGE", entry.command());
+        assertEquals(success, entry.success());
+        assertEquals(detail, entry.detail());
     }
 
     private Order deliveredOrder(int quantity) {
