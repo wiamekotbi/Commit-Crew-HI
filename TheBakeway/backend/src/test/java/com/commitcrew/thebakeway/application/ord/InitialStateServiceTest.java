@@ -44,6 +44,7 @@ import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
+import com.commitcrew.thebakeway.domain.rating.CourierRatingRepository;
 
 @ExtendWith(MockitoExtension.class)
 class InitialStateServiceTest {
@@ -71,6 +72,9 @@ class InitialStateServiceTest {
 
     @Mock
     private CourierDeliveryRepository courierDeliveryRepository;
+
+    @Mock
+    private CourierRatingRepository courierRatingRepository;
 
     @Mock
     private AccountRegistry accountRegistry;
@@ -119,6 +123,7 @@ class InitialStateServiceTest {
                 bakeryRegistry,
                 courierRegistry,
                 courierDeliveryRepository,
+                courierRatingRepository,
                 accountRegistry,
                 passwordEncoder,
                 sessionManager,
@@ -143,11 +148,13 @@ class InitialStateServiceTest {
                 summary.accountsPerRole());
 
         // Orders and events are cleared, and rows are removed before the ones they reference
-        InOrder order = inOrder(orderLedgerRepository, courierDeliveryRepository, orderRegistry, eventRepository,
+        InOrder order = inOrder(orderLedgerRepository, courierRatingRepository,
+                courierDeliveryRepository, orderRegistry, eventRepository,
                 menuItemRegistry, courierRegistry,
                 accountRegistry, bakeryRegistry, entityManager, dashboardReadModel,
                 dispatchWaitingQueue, activeDispatchOffers);
         order.verify(orderLedgerRepository).deleteAllInBatch();
+        order.verify(courierRatingRepository).deleteAllInBatch();
         order.verify(courierDeliveryRepository).deleteAllInBatch();
         order.verify(orderRegistry).deleteAll();
         order.verify(eventRepository).deleteAllInBatch();
@@ -177,7 +184,7 @@ class InitialStateServiceTest {
         assertThrows(InvalidConfigurationException.class, () -> service.loadInitialState());
 
         verifyNoInteractions(orderRegistry, eventRepository, menuItemRegistry, bakeryRegistry, courierRegistry,
-                courierDeliveryRepository,
+                courierDeliveryRepository, courierRatingRepository,
                 accountRegistry, sessionManager, dashboardReadModel,
                 dispatchWaitingQueue, activeDispatchOffers);
         verify(console).record("system", "SYSTEM", "LOAD_INITIAL_STATE", false,
