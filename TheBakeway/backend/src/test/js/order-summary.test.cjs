@@ -185,6 +185,8 @@ test("customer history links eligible orders to the connected summary page", asy
             itemsSummary: () => "items"
         }
     });
+    vm.runInContext(readFileSync(
+        resolve(staticRoot, "js/dashboard-customer-orders.js"), "utf8"), context);
     vm.runInContext(readFileSync(resolve(staticRoot, "js/dashboard-customer.js"), "utf8"), context);
     const container = { innerHTML: "", querySelector: id => id === "#orders" ? orders : {
         innerHTML: "", textContent: "", addEventListener: () => {}, querySelectorAll: () => []

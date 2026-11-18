@@ -4,6 +4,10 @@ const { readFileSync } = require("node:fs");
 const { resolve } = require("node:path");
 const vm = require("node:vm");
 
+const orderHistoryScript = readFileSync(
+    resolve(__dirname, "../../main/resources/static/js/dashboard-customer-orders.js"),
+    "utf8"
+);
 const customerScript = readFileSync(
     resolve(__dirname, "../../main/resources/static/js/dashboard-customer.js"),
     "utf8"
@@ -19,11 +23,20 @@ const customerScript = readFileSync(
                 menu = state.menu;
                 cart = state.cart;
                 container = state.container;
+                orderHistory = CustomerOrderHistory.create(
+                    D, container.querySelector("#orders"), bakeryName);
             },
-            renderCart
+            renderCart,
+            loadOrders: () => orderHistory.load()
         }
     };`
 );
+
+function loadCustomerDashboard(Dashboard) {
+    const context = vm.createContext({ Dashboard });
+    vm.runInContext(orderHistoryScript, context);
+    vm.runInContext(customerScript, context);
+}
 
 class Element {
     constructor() {
@@ -66,7 +79,7 @@ function renderCart({ bakeries, menu }) {
         escape: value => String(value ?? ""),
         money: value => `$${Number(value).toFixed(2)}`
     };
-    vm.runInNewContext(customerScript, { Dashboard });
+    loadCustomerDashboard(Dashboard);
 
     const cart = new Element();
     const cartBakery = new Element();
@@ -114,4 +127,92 @@ test("place order is disabled when a selected item becomes unavailable", () => {
     });
 
     assert.match(markup, /<button[^>]*id="placeOrder"[^>]*disabled/);
+});
+
+async function loadOrderHistory(orders) {
+    let panel;
+    const calls = [];
+    const Dashboard = {
+        register(role, value) {
+            assert.equal(role, "CUSTOMER");
+            panel = value;
+        },
+        async api(method, url) {
+            calls.push({ method, url });
+            return { ok: true, data: orders };
+        },
+        escape: value => String(value ?? ""),
+        time: value => value,
+        itemsSummary: order => order.lines.map(line => `${line.quantity} x ${line.itemName}`).join(", "),
+        money: value => `$${Number(value).toFixed(2)}`,
+        badge: value => `[${value}]`,
+        toggleDetails() {},
+        command: async () => ({ ok: true })
+    };
+    loadCustomerDashboard(Dashboard);
+
+    const orderList = new Element();
+    const container = {
+        querySelector(selector) {
+            if (selector === "#orders") return orderList;
+            return new Element();
+        }
+    };
+    panel.__test.setState({
+        selectedBakery: null,
+        bakeries: [{ bakeryId: "bakery-1", bakeryName: "Sweet Treats" }],
+        menu: [],
+        cart: [],
+        container
+    });
+    await panel.__test.loadOrders();
+    return { markup: orderList.innerHTML, calls };
+}
+
+test("customer order history preserves status-specific summary and cancel actions", async () => {
+    const { markup, calls } = await loadOrderHistory([
+        {
+            orderId: "placed-order",
+            bakeryId: "bakery-1",
+            createdAt: "2026-11-18T12:00:00Z",
+            total: 7,
+            status: "placed",
+            rejectionReason: null,
+            lines: [{ quantity: 2, itemName: "Croissant" }]
+        },
+        {
+            orderId: "delivered-order",
+            bakeryId: "bakery-1",
+            createdAt: "2026-11-18T13:00:00Z",
+            total: 16,
+            status: "delivered",
+            rejectionReason: null,
+            lines: [{ quantity: 1, itemName: "Bread" }]
+        },
+        {
+            orderId: "rejected-order",
+            bakeryId: "bakery-1",
+            createdAt: "2026-11-18T14:00:00Z",
+            total: 5,
+            status: "rejected",
+            rejectionReason: "Out of stock",
+            lines: [{ quantity: 1, itemName: "Cake" }]
+        }
+    ]);
+
+    assert.deepEqual(calls, [{ method: "GET", url: "/api/orders/mine" }]);
+    assert.match(markup, /Sweet Treats/);
+    assert.match(markup, /2 x Croissant/);
+    assert.match(markup, /data-cancel="placed-order"/);
+    assert.doesNotMatch(markup, /data-cancel="delivered-order"/);
+    assert.match(markup, /order-summary\.html\?orderId=delivered-order/);
+    assert.doesNotMatch(markup, /order-summary\.html\?orderId=placed-order/);
+    assert.match(markup, /Out of stock/);
+    assert.equal((markup.match(/data-details=/g) || []).length, 3);
+});
+
+test("customer order history preserves its empty state", async () => {
+    const { markup } = await loadOrderHistory([]);
+
+    assert.match(markup, /You have no orders yet/);
 });
