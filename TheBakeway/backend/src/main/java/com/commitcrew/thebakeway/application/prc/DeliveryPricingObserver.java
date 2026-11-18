@@ -36,19 +36,15 @@ public class DeliveryPricingObserver implements StateTransitionObserver {
     @Override
     @Transactional
     public void update(StateTransitionEvent event) {
-        if (event.getEntityType() != EntityType.ORDER
-                || !OrderStatus.delivered.name().equals(event.getNewState())) {
+        if (!isDeliveredOrderEvent(event)) {
             return;
         }
 
         String orderId = event.getEntityId();
         try {
-            Order order = orderRegistry.findById(orderId).orElseThrow(OrderNotFoundException::new);
-            if (!OrderStatus.delivered.name().equals(order.getStatus())) {
-                throw new IllegalStateException("Pricing requires a delivered order");
-            }
+            Order order = findDeliveredOrder(orderId);
 
-            if (billing.isPresent() && billing.get().findCharge(orderId).isPresent()) {
+            if (hasExistingCharge(orderId)) {
                 record(false, "Order " + orderId + " already has a charge");
                 return;
             }
@@ -59,22 +55,47 @@ public class DeliveryPricingObserver implements StateTransitionObserver {
                 return;
             }
 
-            boolean recorded = billing.get().recordChargeIfAbsent(order, pricing, event.getTimestamp());
-            String detail = "Order " + orderId + (recorded
-                    ? ": charge recorded, total " + pricing.total() : " already has a charge");
-            if (TransactionSynchronizationManager.isSynchronizationActive()) {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        record(recorded, detail);
-                    }
-                });
-            } else {
-                record(recorded, detail);
-            }
+            recordCharge(order, pricing, event, orderId);
         } catch (RuntimeException exception) {
             record(false, "Order " + orderId + ": " + exception.getMessage());
             throw exception;
+        }
+    }
+
+    private boolean isDeliveredOrderEvent(StateTransitionEvent event) {
+        return event.getEntityType() == EntityType.ORDER
+                && OrderStatus.delivered.name().equals(event.getNewState());
+    }
+
+    private Order findDeliveredOrder(String orderId) {
+        Order order = orderRegistry.findById(orderId).orElseThrow(OrderNotFoundException::new);
+        if (!OrderStatus.delivered.name().equals(order.getStatus())) {
+            throw new IllegalStateException("Pricing requires a delivered order");
+        }
+        return order;
+    }
+
+    private boolean hasExistingCharge(String orderId) {
+        return billing.isPresent() && billing.get().findCharge(orderId).isPresent();
+    }
+
+    private void recordCharge(Order order, PriceBreakdown pricing, StateTransitionEvent event, String orderId) {
+        boolean recorded = billing.get().recordChargeIfAbsent(order, pricing, event.getTimestamp());
+        String detail = "Order " + orderId + (recorded
+                ? ": charge recorded, total " + pricing.total() : " already has a charge");
+        recordAfterCommitIfSynchronized(recorded, detail);
+    }
+
+    private void recordAfterCommitIfSynchronized(boolean success, String detail) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    record(success, detail);
+                }
+            });
+        } else {
+            record(success, detail);
         }
     }
 
