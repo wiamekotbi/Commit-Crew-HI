@@ -21,6 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -51,7 +52,7 @@ class OrderBillingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrderBillingService(sessions, permissionPolicy, bakeryStaffAccessService,
+        service = new OrderBillingService(sessions, permissionPolicy, new OrderAccessPolicy(bakeryStaffAccessService),
                 orderRegistry, ledgerRepository, transitionPublisher);
     }
 

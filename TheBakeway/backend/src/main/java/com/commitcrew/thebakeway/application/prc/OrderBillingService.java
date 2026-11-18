@@ -8,11 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
-import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.application.ord.TransitionPublisher;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
-import com.commitcrew.thebakeway.domain.account.Role;
 import com.commitcrew.thebakeway.domain.event.EntityType;
 import com.commitcrew.thebakeway.domain.event.StateTransitionEvent;
 import com.commitcrew.thebakeway.domain.order.Order;
@@ -27,7 +26,7 @@ public class OrderBillingService {
 
     private final SessionManager sessionManager;
     private final PermissionPolicy permissionPolicy;
-    private final BakeryStaffAccessService bakeryStaffAccessService;
+    private final OrderAccessPolicy orderAccess;
     private final OrderRegistry orderRegistry;
     private final OrderLedgerRepository ledgerRepository;
     private final TransitionPublisher transitionPublisher;
@@ -35,13 +34,13 @@ public class OrderBillingService {
     public OrderBillingService(
             SessionManager sessionManager,
             PermissionPolicy permissionPolicy,
-            BakeryStaffAccessService bakeryStaffAccessService,
+            OrderAccessPolicy orderAccess,
             OrderRegistry orderRegistry,
             OrderLedgerRepository ledgerRepository,
             TransitionPublisher transitionPublisher) {
         this.sessionManager = sessionManager;
         this.permissionPolicy = permissionPolicy;
-        this.bakeryStaffAccessService = bakeryStaffAccessService;
+        this.orderAccess = orderAccess;
         this.orderRegistry = orderRegistry;
         this.ledgerRepository = ledgerRepository;
         this.transitionPublisher = transitionPublisher;
@@ -90,24 +89,10 @@ public class OrderBillingService {
     public List<OrderLedgerEntryView> getLedger(String sessionId, String orderId) {
         Session session = requireSession(sessionId);
         Order order = orderRegistry.findById(orderId).orElseThrow(OrderNotFoundException::new);
-        verifyCanView(session, order);
+        orderAccess.requireCanView(session, order);
         return ledgerRepository.findByOrder_IdOrderByOccurredAtAsc(orderId).stream()
                 .map(OrderLedgerEntryView::from)
                 .toList();
-    }
-
-    private void verifyCanView(Session session, Order order) {
-        if (session.getRole() == Role.OPERATOR) {
-            return;
-        }
-        if (session.getRole() == Role.CUSTOMER && session.getAccountId().equals(order.getCustomerId())) {
-            return;
-        }
-        if (session.getRole() == Role.RESTAURANT
-                && order.getBakeryId().equals(bakeryStaffAccessService.getBakeryIdForSession(session.getSessionId()))) {
-            return;
-        }
-        throw new OrderNotFoundException();
     }
 
     private Session requireSession(String sessionId) {

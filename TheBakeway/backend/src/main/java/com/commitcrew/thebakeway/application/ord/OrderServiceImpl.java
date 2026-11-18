@@ -51,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final CourierRegistry courierRegistry;
     private final DispatchService dispatchService;
     private final CourierDeliveryRecorder courierDeliveryRecorder;
+    private final OrderAccessPolicy orderAccess;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -67,7 +68,8 @@ public class OrderServiceImpl implements OrderService {
             EventRepository eventRepository,
             CourierRegistry courierRegistry,
             DispatchService dispatchService,
-            CourierDeliveryRecorder courierDeliveryRecorder) {
+            CourierDeliveryRecorder courierDeliveryRecorder,
+            OrderAccessPolicy orderAccess) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -82,6 +84,7 @@ public class OrderServiceImpl implements OrderService {
         this.courierRegistry = courierRegistry;
         this.dispatchService = dispatchService;
         this.courierDeliveryRecorder = courierDeliveryRecorder;
+        this.orderAccess = orderAccess;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
@@ -116,9 +119,9 @@ public class OrderServiceImpl implements OrderService {
         Session session = currentSession(sessionId);
         Order order = existingOrder(orderId);
 
-        // Customers only see their own orders; operators may cancel any order
-        if (session.getRole() == Role.CUSTOMER && !order.getCustomerId().equals(session.getAccountId())) {
-            throw new OrderNotFoundException();
+        // Only customers are limited here; the State classes decide what other roles may cancel
+        if (session.getRole() == Role.CUSTOMER) {
+            orderAccess.requireCanView(session, order);
         }
 
         String previousState = order.getStatus();
@@ -263,13 +266,9 @@ public class OrderServiceImpl implements OrderService {
         Session session = currentSession(sessionId);
         Order order = existingOrder(orderId);
 
-        if (session.getRole() == Role.CUSTOMER && !order.getCustomerId().equals(session.getAccountId())) {
-            throw new OrderNotFoundException();
-        }
-
-        if (session.getRole() == Role.RESTAURANT
-                && !order.getBakeryId().equals(bakeryStaffAccessService.getBakeryIdForSession(sessionId))) {
-            throw new OrderNotFoundException();
+        // Only customers and staff are limited here; every other role passes, as before
+        if (session.getRole() == Role.CUSTOMER || session.getRole() == Role.RESTAURANT) {
+            orderAccess.requireCanView(session, order);
         }
 
         List<OrderView.Transition> history = eventRepository

@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -18,19 +18,19 @@ import com.commitcrew.thebakeway.domain.session.Session;
 public class OrderPricingService {
 
     private final SessionManager sessionManager;
-    private final BakeryStaffAccessService bakeryStaffAccessService;
+    private final OrderAccessPolicy orderAccess;
     private final OrderRegistry orderRegistry;
     private final PricingService pricingService;
     private final Optional<PricingBilling> billing;
 
     public OrderPricingService(
             SessionManager sessionManager,
-            BakeryStaffAccessService bakeryStaffAccessService,
+            OrderAccessPolicy orderAccess,
             OrderRegistry orderRegistry,
             PricingService pricingService,
             Optional<PricingBilling> billing) {
         this.sessionManager = sessionManager;
-        this.bakeryStaffAccessService = bakeryStaffAccessService;
+        this.orderAccess = orderAccess;
         this.orderRegistry = orderRegistry;
         this.pricingService = pricingService;
         this.billing = billing;
@@ -49,7 +49,7 @@ public class OrderPricingService {
     public OrderPricingQuote quoteOrder(String sessionId, String orderId) {
         Session session = requireSession(sessionId);
         Order order = orderRegistry.findById(orderId).orElseThrow(OrderNotFoundException::new);
-        verifyCanView(session, order);
+        orderAccess.requireCanView(session, order);
 
         Optional<PriceBreakdown> savedFare = billing.flatMap(records -> records.findCharge(orderId))
                 .map(OrderSummaryBilling.Charge::pricing);
@@ -57,20 +57,6 @@ public class OrderPricingService {
             return new OrderPricingQuote(savedFare.get(), true);
         }
         return new OrderPricingQuote(pricingService.calculatePrice(order), false);
-    }
-
-    private void verifyCanView(Session session, Order order) {
-        if (session.getRole() == Role.OPERATOR) {
-            return;
-        }
-        if (session.getRole() == Role.CUSTOMER && session.getAccountId().equals(order.getCustomerId())) {
-            return;
-        }
-        if (session.getRole() == Role.RESTAURANT
-                && order.getBakeryId().equals(bakeryStaffAccessService.getBakeryIdForSession(session.getSessionId()))) {
-            return;
-        }
-        throw new OrderNotFoundException();
     }
 
     private Session requireSession(String sessionId) {

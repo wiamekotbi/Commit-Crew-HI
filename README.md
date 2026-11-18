@@ -145,6 +145,30 @@ cd TheBakeway/backend
 
 The database environment variables must be set: the application context test connects to the database. The tests do not reload the initial state.
 
+### Characterisation Tests (Phase IV refactorings)
+
+Each refactoring of Phase IV is protected by characterisation tests that pin down the behaviour of the code before it changes. They are committed before the refactoring, and pass on the commit before it and on the refactoring commit. They do not need the database.
+
+| Refactoring | Test class |
+|---|---|
+| R1: Switch Statements -> Extract Class (`OrderAccessPolicy`) | `OrderAccessCharacterisationTest` |
+
+Run all of them (macOS/Linux; on Windows use `.\mvnw.cmd`):
+
+```bash
+cd TheBakeway/backend
+./mvnw test -Dtest='*CharacterisationTest'
+```
+
+Run one refactoring's tests on the commit before it and on the refactoring commit, for example R1:
+
+```bash
+R1=$(git log --format=%h --grep="^refactor(R1)" -n 1)
+git switch --detach "$R1~1" && (cd TheBakeway/backend && ./mvnw test -Dtest=OrderAccessCharacterisationTest)
+git switch --detach "$R1" && (cd TheBakeway/backend && ./mvnw test -Dtest=OrderAccessCharacterisationTest)
+git switch main
+```
+
 ## Run Locally
 
 ### Windows
