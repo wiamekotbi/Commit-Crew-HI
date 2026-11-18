@@ -22,6 +22,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -53,7 +55,8 @@ class OrderSummaryServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.of(billing));
+        service = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.of(billing),
+                new OrderAccessPolicy(mock(BakeryStaffAccessService.class)));
     }
 
     @ParameterizedTest
@@ -181,7 +184,8 @@ class OrderSummaryServiceTest {
     void reportsMissingBillingIntegrationWithoutCreatingACharge() {
         customerSession();
         eligibleOrder("delivered");
-        service = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.empty());
+        service = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.empty(),
+                new OrderAccessPolicy(mock(BakeryStaffAccessService.class)));
 
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> service.getSummary("session-1", "order-1"));

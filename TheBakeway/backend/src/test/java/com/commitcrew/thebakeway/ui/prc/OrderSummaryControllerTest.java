@@ -28,6 +28,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.commitcrew.thebakeway.application.console.CommandConsole;
+import com.commitcrew.thebakeway.application.ord.BakeryStaffAccessService;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryBilling;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 import com.commitcrew.thebakeway.application.prc.OrderBillingService;
@@ -71,7 +73,7 @@ class OrderSummaryControllerTest {
     @BeforeEach
     void setUp() {
         OrderSummaryService service = new OrderSummaryService(sessions, orderRegistry, eventRepository,
-                Optional.of(billing));
+                Optional.of(billing), new OrderAccessPolicy(mock(BakeryStaffAccessService.class)));
         mvc = MockMvcBuilders.standaloneSetup(
                 new OrderSummaryController(service, orderBillingService, orderPricingService))
                 .addFilters(new CommandConsoleFilter(console, sessions, accountRegistry)).build();

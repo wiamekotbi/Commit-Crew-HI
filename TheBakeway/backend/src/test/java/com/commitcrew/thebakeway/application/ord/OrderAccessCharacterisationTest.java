@@ -69,15 +69,17 @@ class OrderAccessCharacterisationTest {
 
     @BeforeEach
     void setUp() {
-        billingService = new OrderBillingService(sessionManager, new PermissionPolicy(), bakeryStaffAccess,
+        billingService = new OrderBillingService(sessionManager, new PermissionPolicy(), new OrderAccessPolicy(bakeryStaffAccess),
                 orderRegistry, ledgerRepository, new TransitionPublisher());
-        pricingQuotes = new OrderPricingService(sessionManager, bakeryStaffAccess, orderRegistry,
+        pricingQuotes = new OrderPricingService(sessionManager, new OrderAccessPolicy(bakeryStaffAccess), orderRegistry,
                 pricingService, Optional.<PricingBilling>empty());
         orderService = new OrderServiceImpl(mock(BakeryService.class), mock(MenuService.class), bakeryStaffAccess,
                 mock(BakeryStatusAccessService.class), orderRegistry, mock(AccountRegistry.class), sessionManager,
                 preparationQueue, new TransitionPublisher(), mock(InitialStateService.class), eventRepository,
-                mock(CourierRegistry.class), mock(DispatchService.class), mock(CourierDeliveryRecorder.class));
-        summaryService = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.empty());
+                mock(CourierRegistry.class), mock(DispatchService.class), mock(CourierDeliveryRecorder.class),
+                new OrderAccessPolicy(bakeryStaffAccess));
+        summaryService = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.empty(),
+                new OrderAccessPolicy(bakeryStaffAccess));
 
         operator = sessionManager.createSession("operator-1", Role.OPERATOR).getSessionId();
         ownCustomer = sessionManager.createSession("customer-1", Role.CUSTOMER).getSessionId();

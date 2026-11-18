@@ -116,7 +116,8 @@ class OrderServiceImplOrderFlowTest {
                 eventRepository,
                 courierRegistry,
                 dispatchService,
-                courierDeliveryRecorder);
+                courierDeliveryRecorder,
+                new OrderAccessPolicy(bakeryStaffAccessService));
     }
 
     // Placing an order

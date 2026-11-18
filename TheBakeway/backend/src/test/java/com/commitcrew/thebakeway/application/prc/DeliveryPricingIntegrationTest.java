@@ -15,6 +15,7 @@ import com.commitcrew.thebakeway.application.console.CommandConsole;
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
 import com.commitcrew.thebakeway.application.ord.*;
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -104,7 +105,8 @@ class DeliveryPricingIntegrationTest {
                 mock(BakeryService.class), mock(MenuService.class), mock(BakeryStaffAccessService.class),
                 mock(BakeryStatusAccessService.class), orders, mock(AccountRegistry.class), sessions,
                 mock(PreparationQueue.class), publisher, mock(InitialStateService.class),
-                mock(EventRepository.class), couriers, dispatch, mock(CourierDeliveryRecorder.class));
+                mock(EventRepository.class), couriers, dispatch, mock(CourierDeliveryRecorder.class),
+                new OrderAccessPolicy(mock(BakeryStaffAccessService.class)));
         return new OrderServiceProxy(implementation, sessions, new PermissionPolicy());
     }
 

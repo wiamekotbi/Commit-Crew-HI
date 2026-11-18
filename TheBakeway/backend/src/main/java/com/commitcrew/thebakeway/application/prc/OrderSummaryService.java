@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.commitcrew.thebakeway.application.ord.OrderAccessPolicy;
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -23,16 +24,19 @@ public class OrderSummaryService {
     private final OrderRegistry orderRegistry;
     private final EventRepository eventRepository;
     private final Optional<OrderSummaryBilling> billing;
+    private final OrderAccessPolicy orderAccess;
 
     public OrderSummaryService(
             SessionManager sessionManager,
             OrderRegistry orderRegistry,
             EventRepository eventRepository,
-            Optional<OrderSummaryBilling> billing) {
+            Optional<OrderSummaryBilling> billing,
+            OrderAccessPolicy orderAccess) {
         this.sessionManager = sessionManager;
         this.orderRegistry = orderRegistry;
         this.eventRepository = eventRepository;
         this.billing = billing;
+        this.orderAccess = orderAccess;
     }
 
     @Transactional(readOnly = true)
@@ -46,10 +50,7 @@ public class OrderSummaryService {
 
         Order order = orderRegistry.findById(orderId)
                 .orElseThrow(OrderNotFoundException::new);
-
-        if (!session.getAccountId().equals(order.getCustomerId())) {
-            throw new OrderNotFoundException();
-        }
+        orderAccess.requireCanView(session, order);   // role is CUSTOMER here, so this checks ownership only
 
         if (!"delivered".equals(order.getStatus()) && !"refunded".equals(order.getStatus())) {
             throw new IllegalStateException("Order summary is available only after delivery");
