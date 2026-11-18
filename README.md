@@ -212,6 +212,10 @@ Loaded from `initialAccounts.txt` at startup:
 
 New customers can also register from the login page.
 
+## Code Metrics
+
+The raw code measurements of Phase IV (Lizard) and the script to repeat them are in [`docs/metrics`](docs/metrics/README.md).
+
 ## Repository
 
 This repository contains the source code, tests and configuration files of the project.
