@@ -32,6 +32,7 @@ import com.commitcrew.thebakeway.domain.event.EventRepository;
 import com.commitcrew.thebakeway.domain.menu.MenuItemRegistry;
 import com.commitcrew.thebakeway.domain.order.OrderRegistry;
 import com.commitcrew.thebakeway.domain.pricing.OrderLedgerRepository;
+import com.commitcrew.thebakeway.domain.rating.BakeryRatingRepository;
 import com.commitcrew.thebakeway.domain.rating.CourierRatingRepository;
 
 // Loads the initial state from the config files, at startup and when the operator restores it
@@ -53,6 +54,7 @@ public class InitialStateService {
     private final CourierRegistry courierRegistry;
     private final CourierDeliveryRepository courierDeliveryRepository;
     private final CourierRatingRepository courierRatingRepository;
+    private final BakeryRatingRepository bakeryRatingRepository;
     private final AccountRegistry accountRegistry;
     private final PasswordEncoder passwordEncoder;
     private final SessionManager sessionManager;
@@ -72,6 +74,7 @@ public class InitialStateService {
             CourierRegistry courierRegistry,
             CourierDeliveryRepository courierDeliveryRepository,
             CourierRatingRepository courierRatingRepository,
+            BakeryRatingRepository bakeryRatingRepository,
             AccountRegistry accountRegistry,
             PasswordEncoder passwordEncoder,
             SessionManager sessionManager,
@@ -89,6 +92,7 @@ public class InitialStateService {
         this.courierRegistry = courierRegistry;
         this.courierDeliveryRepository = courierDeliveryRepository;
         this.courierRatingRepository = courierRatingRepository;
+        this.bakeryRatingRepository = bakeryRatingRepository;
         this.accountRegistry = accountRegistry;
         this.passwordEncoder = passwordEncoder;
         this.sessionManager = sessionManager;
@@ -124,6 +128,7 @@ public class InitialStateService {
         // Ledger, ratings and courier history rows reference orders, so remove them first.
         orderLedgerRepository.deleteAllInBatch();
         courierRatingRepository.deleteAllInBatch();
+        bakeryRatingRepository.deleteAllInBatch();
         courierDeliveryRepository.deleteAllInBatch();
         orderRegistry.deleteAll();
         orderRegistry.flush();
