@@ -35,7 +35,8 @@ class PermissionPolicyTest {
             "REASSIGN_STALLED_ORDER",
             "REFUND_ORDER",
             "RESTORE_INITIAL_STATE",
-            "VIEW_ORDER_DETAILS");
+            "VIEW_ORDER_DETAILS",
+            "RATE_ORDER");
 
     private static final Set<String> PROFILE_OPERATIONS = Set.of(
             "VIEW_PROFILE",
@@ -50,7 +51,8 @@ class PermissionPolicyTest {
                 "PLACE_ORDER",
                 "CANCEL_ORDER",
                 "VIEW_ORDER_HISTORY",
-                "VIEW_ORDER_DETAILS"));
+                "VIEW_ORDER_DETAILS",
+                "RATE_ORDER"));
     }
 
     @Test

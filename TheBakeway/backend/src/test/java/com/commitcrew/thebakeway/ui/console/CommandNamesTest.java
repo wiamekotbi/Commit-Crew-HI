@@ -43,8 +43,8 @@ class CommandNamesTest {
             "GET,/api/dispatch/waiting-orders,VIEW_WAITING_ORDERS",
             "PATCH,/api/dispatch/waiting-orders/order-1/reassign,REASSIGN_STALLED_ORDER",
             "GET,/api/orders/o-1/summary,VIEW_ORDER_SUMMARY",
-            "POST,/api/orders/o-1/courier-rating,RATE_COURIER",
-            "GET,/api/courier-ratings/mine,VIEW_MY_COURIER_RATINGS",
+            "POST,/api/orders/o-1/rating,RATE_ORDER",
+            "GET,/api/order-ratings/mine,VIEW_MY_RATINGS",
             "POST,/api/initial-state/restore,RESTORE_INITIAL_STATE",
             "DELETE,/api/orders/o-1,DELETE /api/orders/o-1",
     })
