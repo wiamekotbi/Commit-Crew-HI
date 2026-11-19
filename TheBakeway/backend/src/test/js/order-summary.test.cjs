@@ -174,7 +174,7 @@ test("customer history links eligible orders to the connected summary page", asy
         Dashboard: {
             register: (role, value) => { panel = value; },
             api: async (method, url) => ({ ok: true, data:
-                url === "/api/courier-ratings/mine" ? [] : [
+                url === "/api/order-ratings/mine" ? [] : [
                     { orderId: "delivered-1", status: "delivered" },
                     { orderId: "refunded-1", status: "refunded" },
                     { orderId: "placed-1", status: "placed" }

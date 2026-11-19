@@ -15,35 +15,37 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.commitcrew.thebakeway.application.ord.OrderNotFoundException;
-import com.commitcrew.thebakeway.application.rvw.CourierRatingService;
-import com.commitcrew.thebakeway.application.rvw.CourierRatingView;
+import com.commitcrew.thebakeway.application.rvw.OrderRatingService;
+import com.commitcrew.thebakeway.application.rvw.OrderRatingView;
 
+// UC-RVW-01: one submission rates the bakery and the courier of a delivered order
 @RestController
 @RequestMapping("/api")
-public class CourierRatingController {
+public class OrderRatingController {
 
     private static final String SESSION_COOKIE = "BAKEWAY_SESSION_ID";
 
-    private final CourierRatingService ratingService;
+    private final OrderRatingService ratingService;
 
-    public CourierRatingController(CourierRatingService ratingService) {
+    public OrderRatingController(OrderRatingService ratingService) {
         this.ratingService = ratingService;
     }
 
-    @PostMapping("/orders/{orderId}/courier-rating")
-    public ResponseEntity<CourierRatingView> rateCourier(
+    @PostMapping("/orders/{orderId}/rating")
+    public ResponseEntity<OrderRatingView> rateOrder(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
             @PathVariable String orderId,
-            @RequestBody RatingRequest request) {
-        int score = request == null ? 0 : request.score();
+            @RequestBody(required = false) RatingRequest request) {
+        Integer bakeryScore = request == null ? null : request.bakeryScore();
+        Integer courierScore = request == null ? null : request.courierScore();
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ratingService.rateCourier(sessionId, orderId, score));
+                .body(ratingService.rateOrder(sessionId, orderId, bakeryScore, courierScore));
     }
 
-    @GetMapping("/courier-ratings/mine")
-    public List<CourierRatingView> getMyRatings(
+    @GetMapping("/order-ratings/mine")
+    public List<OrderRatingView> getMyRatings(
             @CookieValue(value = SESSION_COOKIE, required = false) String sessionId) {
-        return ratingService.getMyCourierRatings(sessionId);
+        return ratingService.getMyRatings(sessionId);
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
@@ -72,6 +74,6 @@ public class CourierRatingController {
         return ResponseEntity.status(status).body(Map.of("error", message));
     }
 
-    public record RatingRequest(int score) {
+    public record RatingRequest(Integer bakeryScore, Integer courierScore) {
     }
 }

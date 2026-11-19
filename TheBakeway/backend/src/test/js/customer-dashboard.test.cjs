@@ -28,7 +28,7 @@ const customerScript = readFileSync(
             },
             renderCart,
             loadOrders: () => orderHistory.load(),
-            rateCourier: orderId => orderHistory.rateCourier(orderId)
+            rateOrder: orderId => orderHistory.rateOrder(orderId)
         }
     };`
 );
@@ -145,7 +145,7 @@ async function loadOrderHistory(orders, ratings = []) {
         async api(method, url) {
             calls.push({ method, url });
             if (url === "/api/orders/mine") return { ok: true, data: orders };
-            if (url === "/api/courier-ratings/mine") return { ok: true, data: ratings };
+            if (url === "/api/order-ratings/mine") return { ok: true, data: ratings };
             throw new Error(`Unexpected API request: ${method} ${url}`);
         },
         escape: value => String(value ?? ""),
@@ -180,7 +180,7 @@ async function loadOrderHistory(orders, ratings = []) {
     return {
         markup: orderList.innerHTML,
         calls,
-        rateCourier: panel.__test.rateCourier,
+        rateOrder: panel.__test.rateOrder,
         commands
     };
 }
@@ -218,7 +218,7 @@ test("customer order history preserves status-specific summary and cancel action
 
     assert.deepEqual(calls, [
         { method: "GET", url: "/api/orders/mine" },
-        { method: "GET", url: "/api/courier-ratings/mine" }
+        { method: "GET", url: "/api/order-ratings/mine" }
     ]);
     assert.match(markup, /Sweet Treats/);
     assert.match(markup, /2 x Croissant/);
@@ -226,8 +226,11 @@ test("customer order history preserves status-specific summary and cancel action
     assert.doesNotMatch(markup, /data-cancel="delivered-order"/);
     assert.match(markup, /order-summary\.html\?orderId=delivered-order/);
     assert.doesNotMatch(markup, /order-summary\.html\?orderId=placed-order/);
-    assert.match(markup, /data-rate-courier="delivered-order"/);
-    assert.doesNotMatch(markup, /data-rate-courier="placed-order"/);
+    assert.match(markup, /data-rate-order="delivered-order"/);
+    assert.match(markup, /data-bakery-rating="delivered-order"/);
+    assert.match(markup, /data-courier-rating="delivered-order"/);
+    assert.doesNotMatch(markup, /data-rate-order="placed-order"/);
+    assert.doesNotMatch(markup, /data-rate-order="rejected-order"/);
     assert.match(markup, /Out of stock/);
     assert.equal((markup.match(/data-details=/g) || []).length, 3);
 });
@@ -238,7 +241,7 @@ test("customer order history preserves its empty state", async () => {
     assert.match(markup, /You have no orders yet/);
 });
 
-test("customer order history shows a persisted courier rating only once", async () => {
+test("customer order history shows a rated order's two scores instead of the form", async () => {
     const { markup } = await loadOrderHistory([{
         orderId: "delivered-order",
         bakeryId: "bakery-1",
@@ -248,24 +251,26 @@ test("customer order history shows a persisted courier rating only once", async 
         rejectionReason: null,
         lines: [{ quantity: 1, itemName: "Bread" }]
     }], [{
-        ratingId: "rating-1",
         orderId: "delivered-order",
+        bakeryId: "bakery-1",
+        bakeryScore: 3,
         courierId: "courier-1",
-        score: 4
+        courierScore: 4
     }]);
 
-    assert.match(markup, /Courier rated 4\/5/);
-    assert.doesNotMatch(markup, /data-rate-courier=/);
+    assert.match(markup, /Rated: bakery 3\/5, courier 4\/5/);
+    assert.doesNotMatch(markup, /data-rate-order=/);
 });
 
-test("customer order history submits the selected courier rating", async () => {
+test("customer order history submits the bakery and courier ratings together", async () => {
     const view = await loadOrderHistory([]);
 
-    await view.rateCourier("order-1");
+    await view.rateOrder("order-1");
 
     assert.equal(view.commands.length, 1);
     assert.equal(view.commands[0][0], "POST");
-    assert.equal(view.commands[0][1], "/api/orders/order-1/courier-rating");
-    assert.equal(view.commands[0][2].score, 4);
-    assert.equal(view.commands[0][3], "Courier rated 4/5.");
+    assert.equal(view.commands[0][1], "/api/orders/order-1/rating");
+    assert.equal(view.commands[0][2].bakeryScore, 4);
+    assert.equal(view.commands[0][2].courierScore, 4);
+    assert.equal(view.commands[0][3], "Order rated: bakery 4/5, courier 4/5.");
 });

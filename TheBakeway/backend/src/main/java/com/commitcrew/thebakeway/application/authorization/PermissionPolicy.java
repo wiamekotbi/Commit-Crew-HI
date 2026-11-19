@@ -22,6 +22,7 @@ public class PermissionPolicy {
                     "CANCEL_ORDER",
                     "VIEW_ORDER_HISTORY",
                     "VIEW_ORDER_DETAILS",
+                    "RATE_ORDER",
                     "PREPARATION_QUEUE_SIZE",
                     "GET_BAKERY_MAP_DATA",
                     "GET_COURIER_MAP_DATA"),
