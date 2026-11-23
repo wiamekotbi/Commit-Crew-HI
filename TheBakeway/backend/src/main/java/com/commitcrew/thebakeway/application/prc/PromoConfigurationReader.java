@@ -36,8 +36,10 @@ public class PromoConfigurationReader {
                 continue;
             }
             String[] fields = line.split(",", -1);
-            if (fields.length != 3 || fields[0].isBlank() || fields[1].isBlank() || fields[2].isBlank()) {
-                throw invalid(lineNumber, "code, expiration date and minimum order amount are required");
+            if (fields.length != 4 || fields[0].isBlank() || fields[1].isBlank()
+                    || fields[2].isBlank() || fields[3].isBlank()) {
+                throw invalid(lineNumber,
+                        "code, expiration date, minimum order amount and discount amount are required");
             }
             String code = fields[0].trim();
             if (!codes.add(code)) {
@@ -58,7 +60,16 @@ public class PromoConfigurationReader {
             if (minimum.signum() < 0) {
                 throw invalid(lineNumber, "minimum order amount cannot be negative");
             }
-            promos.add(new PromoConfiguration(code, expiration, minimum));
+            BigDecimal discount;
+            try {
+                discount = new BigDecimal(fields[3].trim());
+            } catch (NumberFormatException e) {
+                throw invalid(lineNumber, "invalid discount amount");
+            }
+            if (discount.signum() <= 0) {
+                throw invalid(lineNumber, "discount amount must be positive");
+            }
+            promos.add(new PromoConfiguration(code, expiration, minimum, discount));
         }
         return List.copyOf(promos);
     }

@@ -23,6 +23,7 @@ import com.commitcrew.thebakeway.application.prc.OrderPricingService;
 import com.commitcrew.thebakeway.application.prc.OrderSummaryService;
 import com.commitcrew.thebakeway.application.prc.PricingBilling;
 import com.commitcrew.thebakeway.application.prc.PricingService;
+import com.commitcrew.thebakeway.application.prc.PromoDiscountService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.Role;
@@ -72,7 +73,7 @@ class OrderAccessCharacterisationTest {
         billingService = new OrderBillingService(sessionManager, new PermissionPolicy(), new OrderAccessPolicy(bakeryStaffAccess),
                 orderRegistry, ledgerRepository, new TransitionPublisher());
         pricingQuotes = new OrderPricingService(sessionManager, new OrderAccessPolicy(bakeryStaffAccess), orderRegistry,
-                pricingService, Optional.<PricingBilling>empty());
+                pricingService, mock(PromoDiscountService.class), Optional.<PricingBilling>empty());
         orderService = new OrderServiceImpl(mock(BakeryService.class), mock(MenuService.class), bakeryStaffAccess,
                 mock(BakeryStatusAccessService.class), orderRegistry, mock(AccountRegistry.class), sessionManager,
                 preparationQueue, new TransitionPublisher(), mock(InitialStateService.class), eventRepository,

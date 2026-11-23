@@ -43,8 +43,9 @@ public class OrderSummaryController {
     @GetMapping("/pricing")
     public OrderPricingQuote quoteCart(
             @CookieValue(value = "BAKEWAY_SESSION_ID", required = false) String sessionId,
-            @RequestParam("subtotal") double subtotal) {
-        return orderPricingService.quoteCart(sessionId, subtotal);
+            @RequestParam("subtotal") double subtotal,
+            @RequestParam(value = "promoCode", required = false) String promoCode) {
+        return orderPricingService.quoteCart(sessionId, subtotal, promoCode);
     }
 
     @GetMapping("/{orderId}/summary")
