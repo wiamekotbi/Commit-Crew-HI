@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -200,7 +201,7 @@ class OrderSummaryControllerTest {
     @Test
     void returnsCartPriceQuoteFromPricingService() throws Exception {
         Cookie customer = session(Role.CUSTOMER);
-        when(orderPricingService.quoteCart(customer.getValue(), 8))
+        when(orderPricingService.quoteCart(customer.getValue(), 8, null))
                 .thenReturn(new OrderPricingQuote(new PriceBreakdown(8, 4, 2, 3, 17), false));
 
         mvc.perform(get("/api/orders/pricing").cookie(customer).param("subtotal", "8"))
@@ -209,7 +210,44 @@ class OrderSummaryControllerTest {
                 .andExpect(jsonPath("$.pricing.deliveryFee").value(4))
                 .andExpect(jsonPath("$.pricing.serviceFee").value(2))
                 .andExpect(jsonPath("$.pricing.smallOrderSurcharge").value(3))
-                .andExpect(jsonPath("$.pricing.total").value(17));
+                .andExpect(jsonPath("$.pricing.total").value(17))
+                .andExpect(jsonPath("$.promoCode").doesNotExist())
+                .andExpect(jsonPath("$.discountAmount").value(0))
+                .andExpect(jsonPath("$.discountedTotal").value(17));
+    }
+
+    @Test
+    void returnsDiscountedCartPriceQuoteForValidPromotion() throws Exception {
+        Cookie customer = session(Role.CUSTOMER);
+        when(orderPricingService.quoteCart(customer.getValue(), 25, "SAVE5"))
+                .thenReturn(new OrderPricingQuote(
+                        new PriceBreakdown(25, 4, 2, 0, 31),
+                        false,
+                        "SAVE5",
+                        new BigDecimal("5.00"),
+                        new BigDecimal("26.00")));
+
+        mvc.perform(get("/api/orders/pricing").cookie(customer)
+                        .param("subtotal", "25")
+                        .param("promoCode", "SAVE5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pricing.total").value(31))
+                .andExpect(jsonPath("$.promoCode").value("SAVE5"))
+                .andExpect(jsonPath("$.discountAmount").value(5))
+                .andExpect(jsonPath("$.discountedTotal").value(26));
+    }
+
+    @Test
+    void returnsBadRequestWhenPromotionIsRejected() throws Exception {
+        Cookie customer = session(Role.CUSTOMER);
+        when(orderPricingService.quoteCart(customer.getValue(), 25, "NOTREAL"))
+                .thenThrow(new IllegalArgumentException("Unknown promo code"));
+
+        mvc.perform(get("/api/orders/pricing").cookie(customer)
+                        .param("subtotal", "25")
+                        .param("promoCode", "NOTREAL"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Unknown promo code"));
     }
 
     @Test

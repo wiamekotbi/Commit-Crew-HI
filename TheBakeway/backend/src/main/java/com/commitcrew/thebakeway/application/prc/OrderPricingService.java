@@ -1,5 +1,6 @@
 package com.commitcrew.thebakeway.application.prc;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class OrderPricingService {
     private final OrderAccessPolicy orderAccess;
     private final OrderRegistry orderRegistry;
     private final PricingService pricingService;
+    private final PromoDiscountService promoDiscountService;
     private final Optional<PricingBilling> billing;
 
     public OrderPricingService(
@@ -28,21 +30,46 @@ public class OrderPricingService {
             OrderAccessPolicy orderAccess,
             OrderRegistry orderRegistry,
             PricingService pricingService,
+            PromoDiscountService promoDiscountService,
             Optional<PricingBilling> billing) {
         this.sessionManager = sessionManager;
         this.orderAccess = orderAccess;
         this.orderRegistry = orderRegistry;
         this.pricingService = pricingService;
+        this.promoDiscountService = promoDiscountService;
         this.billing = billing;
     }
 
+    // Keep the original operation available for callers that do not use a promo code.
     @Transactional(readOnly = true)
     public OrderPricingQuote quoteCart(String sessionId, double itemSubtotal) {
+        return quoteCart(sessionId, itemSubtotal, null);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderPricingQuote quoteCart(String sessionId, double itemSubtotal, String promoCode) {
         Session session = requireSession(sessionId);
         if (session.getRole() != Role.CUSTOMER) {
             throw new SecurityException("Only customers can request a cart price quote");
         }
-        return new OrderPricingQuote(pricingService.calculatePriceForSubtotal(itemSubtotal), false);
+
+        // Phase III pricing still calculates the subtotal and fees before PROMO is considered.
+        PriceBreakdown pricing = pricingService.calculatePriceForSubtotal(itemSubtotal);
+        if (promoCode == null || promoCode.isBlank()) {
+            return new OrderPricingQuote(pricing, false);
+        }
+
+        PromoDiscountResult promotion = promoDiscountService.applyDiscount(
+                promoCode,
+                BigDecimal.valueOf(itemSubtotal),
+                BigDecimal.valueOf(pricing.total()));
+
+        return new OrderPricingQuote(
+                pricing,
+                false,
+                promotion.promoCode(),
+                promotion.discountAmount(),
+                promotion.discountedTotal());
     }
 
     @Transactional(readOnly = true)
