@@ -65,7 +65,7 @@ class PromoDiscountServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.applyDiscount("NOTREAL", new BigDecimal("25.00"), new BigDecimal("31.00")));
 
-        assertEquals("Unknown promo code", exception.getMessage());
+        assertEquals("Unknown promo code. Please enter a valid one.", exception.getMessage());
         verifyNoInteractions(validator);
     }
 

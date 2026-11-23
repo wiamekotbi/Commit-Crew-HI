@@ -27,6 +27,10 @@ const customerScript = readFileSync(
                     D, container.querySelector("#orders"), bakeryName);
             },
             renderCart,
+            setPromoCode(code) {
+                appliedPromoCode = code;
+            },
+            loadCartPricing,
             loadOrders: () => orderHistory.load(),
             rateOrder: orderId => orderHistory.rateOrder(orderId)
         }
@@ -112,7 +116,90 @@ test("place order is enabled when the bakery and selected item are available", (
     });
 
     assert.match(markup, /id="placeOrder"/);
+    assert.match(markup, /id="promoCode"/);
+    assert.match(markup, /id="applyPromo"/);
+    assert.doesNotMatch(markup, /id="applyPromo" hidden/);
+    assert.match(markup, /id="removePromo" hidden/);
     assert.doesNotMatch(markup, /<button[^>]*id="placeOrder"[^>]*disabled/);
+});
+
+async function loadPromoPricing(apiResult, promoCode) {
+    let panel;
+    const calls = [];
+    const Dashboard = {
+        register(role, value) {
+            assert.equal(role, "CUSTOMER");
+            panel = value;
+        },
+        async api(method, url) {
+            calls.push({ method, url });
+            return apiResult;
+        },
+        escape: value => String(value ?? ""),
+        errorText: result => result.data.error,
+        money: value => `$${Number(value).toFixed(2)}`
+    };
+    loadCustomerDashboard(Dashboard);
+
+    const pricing = new Element();
+    const promoInput = new Element();
+    const applyPromo = new Element();
+    const removePromo = new Element();
+    const container = {
+        querySelector(selector) {
+            if (selector === "#cartPricing") return pricing;
+            if (selector === "#promoCode") return promoInput;
+            if (selector === "#applyPromo") return applyPromo;
+            if (selector === "#removePromo") return removePromo;
+            if (selector === "#orders") return new Element();
+            return new Element();
+        }
+    };
+    panel.__test.setState({
+        selectedBakery: "bakery-1",
+        bakeries: [],
+        menu: [],
+        cart: [],
+        container
+    });
+    panel.__test.setPromoCode(promoCode);
+    await panel.__test.loadCartPricing(25);
+    return { calls, markup: pricing.innerHTML, promoInput, applyPromo, removePromo };
+}
+
+test("checkout pricing displays an accepted promotion and discounted total", async () => {
+    const view = await loadPromoPricing({
+        ok: true,
+        data: {
+            pricing: { deliveryFee: 4, serviceFee: 2, smallOrderSurcharge: 0, total: 31 },
+            promoCode: "SAVE5",
+            discountAmount: 5,
+            discountedTotal: 26
+        }
+    }, "save5");
+
+    assert.deepEqual(view.calls, [
+        { method: "GET", url: "/api/orders/pricing?subtotal=25&promoCode=save5" }
+    ]);
+    assert.match(view.markup, /Promotion \(SAVE5\)/);
+    assert.match(view.markup, /-\$5\.00/);
+    assert.match(view.markup, /\$26\.00/);
+    assert.equal(view.promoInput.value, "SAVE5");
+    assert.equal(view.promoInput.disabled, true);
+    assert.equal(view.applyPromo.hidden, true);
+    assert.equal(view.removePromo.hidden, false);
+});
+
+test("checkout pricing displays the backend promotion rejection", async () => {
+    const view = await loadPromoPricing({
+        ok: false,
+        data: { error: "This promo code requires an order value of at least 20.00" }
+    }, "SAVE5");
+
+    assert.match(view.markup, /requires an order value of at least 20\.00/);
+    assert.equal(view.promoInput.disabled, false);
+    assert.equal(view.applyPromo.hidden, false);
+    assert.equal(view.removePromo.hidden, true);
 });
 
 test("place order is disabled when the selected bakery is paused or closed", () => {

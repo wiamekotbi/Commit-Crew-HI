@@ -37,7 +37,8 @@ public class PromoDiscountService {
         PromoConfiguration promotion = promoConfigurationReader.read().stream()
                 .filter(config -> config.code().equalsIgnoreCase(enteredCode))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown promo code"));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown promo code. Please enter a valid one."));
 
         // Reuse the existing expiration and minimum-order validation rules.
         promoValidationService.validate(

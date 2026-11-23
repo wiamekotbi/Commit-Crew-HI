@@ -241,13 +241,13 @@ class OrderSummaryControllerTest {
     void returnsBadRequestWhenPromotionIsRejected() throws Exception {
         Cookie customer = session(Role.CUSTOMER);
         when(orderPricingService.quoteCart(customer.getValue(), 25, "NOTREAL"))
-                .thenThrow(new IllegalArgumentException("Unknown promo code"));
+                .thenThrow(new IllegalArgumentException("Unknown promo code. Please enter a valid one."));
 
         mvc.perform(get("/api/orders/pricing").cookie(customer)
                         .param("subtotal", "25")
                         .param("promoCode", "NOTREAL"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Unknown promo code"));
+                .andExpect(jsonPath("$.error").value("Unknown promo code. Please enter a valid one."));
     }
 
     @Test

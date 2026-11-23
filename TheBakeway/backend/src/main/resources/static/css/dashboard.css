@@ -232,6 +232,11 @@ form.inline-form {
     padding: 8px 10px;
 }
 
+/* Promo actions share one position: only the action valid for the current state is shown. */
+.promo-action[hidden] {
+    display: none;
+}
+
 .card-title .inline-form select {
     flex: 0 1 180px;
 }

@@ -8,6 +8,7 @@ Dashboard.register("CUSTOMER", (() => {
     let menu = [];
     let cart = [];   // { menuItemId, name, price, quantity }
     let cartPricingRequest = 0;
+    let appliedPromoCode = "";
     let orderHistory = null;
 
     function bakeryName(bakeryId) {
@@ -163,6 +164,7 @@ Dashboard.register("CUSTOMER", (() => {
         const target = container.querySelector("#cart");
         container.querySelector("#cartBakery").textContent = selectedBakery ? bakeryName(selectedBakery) : "";
         if (cart.length === 0) {
+            appliedPromoCode = "";
             target.innerHTML = `<p class="empty">Your cart is empty.</p>`;
             return;
         }
@@ -186,6 +188,16 @@ Dashboard.register("CUSTOMER", (() => {
             </table>
             <div id="cartPricing"><p class="muted">Calculating fees...</p></div>
             <div class="inline-form" style="margin-top:12px">
+                <input type="text" id="promoCode" value="${D.escape(appliedPromoCode)}"
+                    placeholder="Promo code" ${appliedPromoCode ? "disabled" : ""}>
+                <button type="button" class="btn secondary promo-action" id="applyPromo" ${appliedPromoCode ? "hidden" : ""}>
+                    <i class="fa-solid fa-tag"></i> Apply promo
+                </button>
+                <button type="button" class="btn secondary promo-action" id="removePromo" ${appliedPromoCode ? "" : "hidden"}>
+                    <i class="fa-solid fa-xmark"></i> Remove promo
+                </button>
+            </div>
+            <div class="inline-form" style="margin-top:12px">
                 <input type="text" id="deliveryAddress" placeholder="Delivery address (empty: your profile address)">
                 <button type="button" class="btn" id="placeOrder" ${placeOrderDisabled ? "disabled" : ""}>
                     <i class="fa-solid fa-paper-plane"></i> Place order</button>
@@ -195,22 +207,69 @@ Dashboard.register("CUSTOMER", (() => {
                 cart.splice(Number(button.dataset.remove), 1);
                 renderCart();
             }));
+        target.querySelector("#applyPromo").addEventListener("click", () => {
+            const enteredCode = target.querySelector("#promoCode").value.trim();
+            loadCartPricing(total, enteredCode);
+        });
+        target.querySelector("#removePromo").addEventListener("click", () => {
+            appliedPromoCode = "";
+            target.querySelector("#promoCode").value = "";
+            target.querySelector("#promoCode").disabled = false;
+            target.querySelector("#applyPromo").hidden = false;
+            target.querySelector("#removePromo").hidden = true;
+            loadCartPricing(total, "");
+        });
         target.querySelector("#placeOrder").addEventListener("click", placeOrder);
         loadCartPricing(total);
     }
 
-    async function loadCartPricing(subtotal) {
+    async function loadCartPricing(subtotal, promoCode = appliedPromoCode) {
         const requestId = ++cartPricingRequest;
         const target = container.querySelector("#cartPricing");
         try {
-            const result = await D.api("GET", "/api/orders/pricing?subtotal=" + encodeURIComponent(subtotal));
+            let url = "/api/orders/pricing?subtotal=" + encodeURIComponent(subtotal);
+            if (promoCode) {
+                url += "&promoCode=" + encodeURIComponent(promoCode);
+            }
+            const result = await D.api("GET", url);
             if (requestId !== cartPricingRequest || !target.isConnected) return;
             if (!result.ok) {
+                // Only successfully validated codes are kept for order placement.
+                appliedPromoCode = "";
+                const applyButton = container.querySelector("#applyPromo");
+                if (applyButton) applyButton.hidden = false;
+                const removeButton = container.querySelector("#removePromo");
+                if (removeButton) removeButton.hidden = true;
+                const input = container.querySelector("#promoCode");
+                if (input) input.disabled = false;
                 target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
                 return;
             }
 
             const pricing = result.data.pricing;
+            const acceptedPromo = result.data.promoCode;
+            const estimatedTotal = result.data.discountedTotal ?? pricing.total;
+            if (acceptedPromo) {
+                // Keep the canonical code from the configuration after a successful lookup.
+                appliedPromoCode = acceptedPromo;
+                const input = container.querySelector("#promoCode");
+                if (input) {
+                    input.value = acceptedPromo;
+                    input.disabled = true;
+                }
+                const applyButton = container.querySelector("#applyPromo");
+                if (applyButton) applyButton.hidden = true;
+                const removeButton = container.querySelector("#removePromo");
+                if (removeButton) removeButton.hidden = false;
+            } else {
+                appliedPromoCode = "";
+                const input = container.querySelector("#promoCode");
+                if (input) input.disabled = false;
+                const applyButton = container.querySelector("#applyPromo");
+                if (applyButton) applyButton.hidden = false;
+                const removeButton = container.querySelector("#removePromo");
+                if (removeButton) removeButton.hidden = true;
+            }
             target.innerHTML = `
                 <table aria-label="Estimated order charges">
                     <tbody>
@@ -218,12 +277,21 @@ Dashboard.register("CUSTOMER", (() => {
                         <tr><th scope="row">Service fee</th><td>${D.money(pricing.serviceFee)}</td></tr>
                         ${pricing.smallOrderSurcharge > 0 ? `<tr><th scope="row">Small-order surcharge</th>
                             <td>${D.money(pricing.smallOrderSurcharge)}</td></tr>` : ""}
-                        <tr><th scope="row">Estimated total</th><td><strong>${D.money(pricing.total)}</strong></td></tr>
+                        ${acceptedPromo ? `<tr><th scope="row">Promotion (${D.escape(acceptedPromo)})</th>
+                            <td>-${D.money(result.data.discountAmount)}</td></tr>` : ""}
+                        <tr><th scope="row">Estimated total</th><td><strong>${D.money(estimatedTotal)}</strong></td></tr>
                     </tbody>
                 </table>
                 <p class="muted">Estimate only. Fees and the final total are recorded when the order is delivered.</p>`;
         } catch (error) {
             if (requestId === cartPricingRequest && target.isConnected) {
+                appliedPromoCode = "";
+                const applyButton = container.querySelector("#applyPromo");
+                if (applyButton) applyButton.hidden = false;
+                const removeButton = container.querySelector("#removePromo");
+                if (removeButton) removeButton.hidden = true;
+                const input = container.querySelector("#promoCode");
+                if (input) input.disabled = false;
                 target.innerHTML = '<p class="empty">Unable to calculate order fees. Please try again.</p>';
             }
         }
@@ -233,11 +301,14 @@ Dashboard.register("CUSTOMER", (() => {
         const result = await D.command("POST", "/api/orders", {
             bakeryId: selectedBakery,
             items: cart.map(line => ({ menuItemId: line.menuItemId, quantity: line.quantity })),
-            deliveryAddress: container.querySelector("#deliveryAddress").value
+            deliveryAddress: container.querySelector("#deliveryAddress").value,
+            // Anthony's order integration will persist and revalidate this code at placement time.
+            promoCode: appliedPromoCode || null
         }, data => `Order ${D.shortId(data.orderId)} placed (event ${D.shortId(data.eventId)}).`);
 
         if (result.ok) {
             cart = [];
+            appliedPromoCode = "";
             renderCart();
         } else if (selectedBakery) {
             // The menu may have changed (sold-out item, paused bakery)
