@@ -215,6 +215,36 @@ class OrderRatingServiceTest {
                 service.getMyRatings(customer));
     }
 
+    @Test
+    void calculatesAndRoundsBakeryAverageRating() {
+        BakeryRating first = mock(BakeryRating.class);
+        BakeryRating second = mock(BakeryRating.class);
+        BakeryRating third = mock(BakeryRating.class);
+        when(first.getScore()).thenReturn(4);
+        when(second.getScore()).thenReturn(5);
+        when(third.getScore()).thenReturn(5);
+        when(bakeryRatings.findByBakeryId(BAKERY_ID))
+                .thenReturn(List.of(first, second, third));
+
+        assertEquals(4.7, service.getBakeryAvgRating(customer, BAKERY_ID), 0.000001);
+        verify(bakeryRatings).findByBakeryId(BAKERY_ID);
+    }
+
+    @Test
+    void returnsZeroAverageWhenBakeryHasNoRatings() {
+        when(bakeryRatings.findByBakeryId(BAKERY_ID)).thenReturn(List.of());
+        
+        assertEquals(0.0, service.getBakeryAvgRating(customer, BAKERY_ID), 0.000001);
+        verify(bakeryRatings).findByBakeryId(BAKERY_ID);
+    }
+
+    @Test
+    void bakeryAverageRatingRequiresLoggedInSession() {
+        assertThrows(IllegalStateException.class,
+                () -> service.getBakeryAvgRating("no-session", BAKERY_ID));
+        verify(bakeryRatings, never()).findByBakeryId(anyString());
+    }
+
     private void deliver(Order order) {
         order.accept();
         order.startPreparing();
