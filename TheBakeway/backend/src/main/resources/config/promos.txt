@@ -1,1 +1,1 @@
-
+# code,expirationDate,minimumOrderAmount,discountAmount
