@@ -48,6 +48,13 @@ public class OrderRatingController {
         return ratingService.getMyRatings(sessionId);
     }
 
+    @GetMapping("/order-ratings/{bakeryId}/average-rating")
+    public double getBakeryAvgRating(
+            @CookieValue(value = SESSION_COOKIE, required = false) String sessionId,
+            @PathVariable String bakeryId) {
+        return ratingService.getBakeryAvgRating(sessionId, bakeryId);
+    }
+
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(OrderNotFoundException exception) {
         return error(HttpStatus.NOT_FOUND, exception.getMessage());

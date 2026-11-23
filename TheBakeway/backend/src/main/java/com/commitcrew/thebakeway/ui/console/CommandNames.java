@@ -48,6 +48,7 @@ final class CommandNames {
             route("POST", "/api/orders/" + ID + "/rating", "RATE_ORDER"),
             route("GET", "/api/orders/" + ID, "VIEW_ORDER"),
             route("GET", "/api/order-ratings/mine", "VIEW_MY_RATINGS"),
+            route("GET", "/api/order-ratings/" + ID + "/average-rating", "GET_BAKERY_AVERAGE_ORDER"),
             route("GET", "/api/couriers/me", "VIEW_COURIER_STATUS"),
             route("GET", "/api/couriers/map", "GET_COURIER_MAP_DATA"),
             route("GET", "/api/couriers/me/past-deliveries", "VIEW_PAST_DELIVERIES"),
