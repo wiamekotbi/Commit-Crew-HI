@@ -127,13 +127,61 @@ const BakewayMap = (() => {
 
             google.maps.event.clearListeners(marker, "click");
 
-            marker.addListener("click", () => {
-                // Label "Name · N queued" (DASH labels)
+            /////
+            marker.addListener("click", async () => {
+                const content = document.createElement("div");
+
                 const label = document.createElement("strong");
                 label.textContent = `${bakeryName} · ${queueSizes.get(bakeryId) ?? 0} queued (${status})`;
 
-                infoWindow.setContent(label);
+                const rating = document.createElement("p");
+                rating.textContent = "Average rating: Loading...";
+
+                content.append(label, rating);
+
+                infoWindow.setContent(content);
                 infoWindow.open({ anchor: marker, map });
+
+                try {
+                    const result = await Dashboard.api(
+                        "GET",
+                        "/api/order-ratings/" +
+                            encodeURIComponent(bakeryId) +
+                            "/average-rating"
+                    );
+
+                    // The user may have clicked another marker meanwhile.
+                    if (infoWindow.getContent() !== content) return;
+
+                    if (!result.ok || result.data == null) {
+                        rating.textContent = "Average rating: Not available";
+                        return;
+                    }
+
+                    const average = Number(result.data);
+
+                    if (!Number.isFinite(average)) {
+                        rating.textContent = "Average rating: Not available";
+                        return;
+                    }
+
+                    if (average === 0) {
+                        rating.textContent = "No ratings available";
+                    } else {
+                        rating.textContent = `Average rating: ${average.toFixed(1)} / 5`;
+                    }
+
+                } catch (error) {
+                    console.error(
+                        "Failed to load bakery rating:",
+                        bakeryId,
+                        error
+                    );
+
+                    if (infoWindow.getContent() === content) {
+                        rating.textContent = "Average rating: Not available";
+                    }
+                }
             });
         });
 

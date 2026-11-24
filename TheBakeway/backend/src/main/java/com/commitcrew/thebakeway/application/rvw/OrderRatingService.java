@@ -104,6 +104,19 @@ public class OrderRatingService {
                 .toList();
     }
 
+    // Dashboard role-independent method for getting a bakery's average rating. Returns 0 if no rating exists yet.
+    @Transactional(readOnly = true)
+    public double getBakeryAvgRating(String sessionId, String bakeryId) {
+        requireLoggedSession(sessionId);
+        List<BakeryRating> bakeryRatings = bakeryRatingRepository.findByBakeryId(bakeryId);
+        double average = bakeryRatings.stream().mapToInt(rating -> rating.getScore()).average().orElse(0.0);
+        if(average>0){
+            return Math.round(average * 10.0) / 10.0;
+        } else{
+            return 0;
+        }
+    }
+
     private boolean isRated(String orderId) {
         return bakeryRatingRepository.existsByOrder_Id(orderId)
                 || courierRatingRepository.existsByDelivery_Order_Id(orderId);
@@ -114,6 +127,15 @@ public class OrderRatingService {
                 .orElseThrow(() -> new IllegalStateException("Authentication required"));
         if (!permissionPolicy.isAllowed(RATE_ORDER, session.getRole())) {
             throw new SecurityException("Only customers can rate their orders");
+        }
+        return session;
+    }
+
+    private Session requireLoggedSession(String sessionId) {
+        Session session = sessionManager.findSession(sessionId)
+                .orElseThrow(() -> new IllegalStateException("Authentication required"));
+        if (!permissionPolicy.isAllowed(RATE_ORDER, session.getRole())) {
+            throw new SecurityException("Only customers, staff members, couriers and operators can view bakery's average rating.");
         }
         return session;
     }

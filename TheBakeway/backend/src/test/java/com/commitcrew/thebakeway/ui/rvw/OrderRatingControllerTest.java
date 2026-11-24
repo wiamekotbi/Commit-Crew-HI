@@ -102,4 +102,24 @@ class OrderRatingControllerTest {
                 .andExpect(jsonPath("$[0].orderId").value("order-1"))
                 .andExpect(jsonPath("$[0].bakeryScore").value(4));
     }
+
+    @Test
+    void returnsBakeryAverageRating() throws Exception {
+        when(ratingService.getBakeryAvgRating("session-1", "bakery-1"))
+                .thenReturn(4.7);
+
+        mvc.perform(get("/api/order-ratings/bakery-1/average-rating").cookie(SESSION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(4.7));
+    }
+
+    @Test
+    void returnsZeroWhenBakeryHasNoRatings() throws Exception {
+        when(ratingService.getBakeryAvgRating("session-1", "bakery-1"))
+                .thenReturn(0.0);
+
+        mvc.perform(get("/api/order-ratings/bakery-1/average-rating").cookie(SESSION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(0.0));
+    }
 }
