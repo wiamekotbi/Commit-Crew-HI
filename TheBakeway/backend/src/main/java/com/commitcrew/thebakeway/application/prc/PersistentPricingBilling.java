@@ -36,7 +36,8 @@ public class PersistentPricingBilling implements PricingBilling {
     @Transactional(readOnly = true)
     public Optional<Charge> findCharge(String orderId) {
         return ledgerRepository.findByOrder_IdAndEntryType(orderId, LedgerEntryType.CHARGE)
-                .map(entry -> new Charge(entry.getId(), entry.getPricing()));
+                .map(entry -> new Charge(entry.getId(), entry.getPricing(),
+                        entry.getPromoCode(), entry.getPromoDiscountAmount()));
     }
 
     @Override

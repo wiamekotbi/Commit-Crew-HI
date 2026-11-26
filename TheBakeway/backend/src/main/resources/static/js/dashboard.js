@@ -141,6 +141,9 @@ const Dashboard = (() => {
                     ${pricingResult.data.pricing.smallOrderSurcharge > 0
                         ? `<tr><th scope="row">Small-order surcharge</th>
                             <td>${money(pricingResult.data.pricing.smallOrderSurcharge)}</td></tr>` : ""}
+                    ${pricingResult.data.promoCode ? `<tr><th scope="row">
+                        Promotion (${escape(pricingResult.data.promoCode)})</th>
+                        <td>-${money(pricingResult.data.discountAmount)}</td></tr>` : ""}
                     <tr><th scope="row">Final total</th><td><strong>${money(pricingResult.data.pricing.total)}</strong></td></tr>
                 </tbody></table>
                 ${pricingResult.data.finalFare ? "" : '<p class="muted">Estimated using current fees; final fees are recorded when delivered.</p>'}`

@@ -74,6 +74,12 @@ public class OrderLedgerEntry {
     @Column(name = "final_state", updatable = false)
     private String finalState;
 
+    @Column(name = "promo_code", length = 64, updatable = false)
+    private String promoCode;
+
+    @Column(name = "promo_discount_amount", precision = 12, scale = 2, updatable = false)
+    private BigDecimal promoDiscountAmount = BigDecimal.ZERO.setScale(2);
+
     protected OrderLedgerEntry() {
     }
 
@@ -85,7 +91,9 @@ public class OrderLedgerEntry {
             Instant occurredAt,
             String actorAccountId,
             String reason,
-            String finalState) {
+            String finalState,
+            String promoCode,
+            BigDecimal promoDiscountAmount) {
         if (order == null || entryType == null || !Double.isFinite(amount) || amount < 0
                 || occurredAt == null || finalState == null) {
             throw new IllegalArgumentException("Invalid order ledger entry");
@@ -104,6 +112,10 @@ public class OrderLedgerEntry {
         this.actorAccountId = actorAccountId;
         this.reason = reason;
         this.finalState = finalState;
+        this.promoCode = promoCode;
+        this.promoDiscountAmount = promoDiscountAmount == null
+                ? BigDecimal.ZERO.setScale(2)
+                : promoDiscountAmount.setScale(2, RoundingMode.HALF_UP);
     }
 
     public static OrderLedgerEntry charge(Order order, PriceBreakdown pricing, Instant deliveredAt) {
@@ -111,19 +123,20 @@ public class OrderLedgerEntry {
             throw new IllegalArgumentException("Pricing is required for a charge");
         }
         return new OrderLedgerEntry(order, LedgerEntryType.CHARGE, pricing.total(),
-                pricing, deliveredAt, null, null, "delivered");
+                pricing, deliveredAt, null, null, "delivered",
+                order.getPromoCode(), BigDecimal.valueOf(pricing.discountAmount()));
     }
 
     // A rejected or cancelled order is recorded with a total charge of zero (R-PRC-03)
     public static OrderLedgerEntry noCharge(Order order, String finalState, Instant closedAt) {
         return new OrderLedgerEntry(order, LedgerEntryType.CHARGE, 0,
-                null, closedAt, null, null, finalState);
+                null, closedAt, null, null, finalState, null, BigDecimal.ZERO);
     }
 
     public static OrderLedgerEntry refund(
             Order order, double amount, Instant refundedAt, String actorAccountId, String reason) {
         return new OrderLedgerEntry(order, LedgerEntryType.REFUND, amount,
-                null, refundedAt, actorAccountId, reason, "refunded");
+                null, refundedAt, actorAccountId, reason, "refunded", null, BigDecimal.ZERO);
     }
 
     public PriceBreakdown getPricing() {
@@ -131,7 +144,8 @@ public class OrderLedgerEntry {
             return null;
         }
         return new PriceBreakdown(itemSubtotal.doubleValue(), deliveryFee.doubleValue(),
-                serviceFee.doubleValue(), smallOrderSurcharge.doubleValue(), amount.doubleValue());
+                serviceFee.doubleValue(), smallOrderSurcharge.doubleValue(), amount.doubleValue(),
+                getPromoDiscountAmount().doubleValue());
     }
 
     public String getId() { return id; }
@@ -143,6 +157,10 @@ public class OrderLedgerEntry {
     public String getActorAccountId() { return actorAccountId; }
     public String getReason() { return reason; }
     public String getFinalState() { return finalState; }
+    public String getPromoCode() { return promoCode; }
+    public BigDecimal getPromoDiscountAmount() {
+        return promoDiscountAmount == null ? BigDecimal.ZERO : promoDiscountAmount;
+    }
 
     private static BigDecimal money(double amount) {
         if (!Double.isFinite(amount) || amount < 0) {

@@ -220,11 +220,14 @@ Dashboard.register("OPERATOR", (() => {
         const content = result.ok
             ? result.data.length === 0
                 ? '<p class="empty">No ledger entries recorded.</p>'
-                : `<table><thead><tr><th>Entry</th><th>Final state</th><th>Amount</th><th>Placed</th><th>Recorded</th><th>Actor</th><th>Reason</th></tr></thead>
+                : `<table><thead><tr><th>Entry</th><th>Final state</th><th>Amount</th><th>Promotion</th>
+                    <th>Placed</th><th>Recorded</th><th>Actor</th><th>Reason</th></tr></thead>
                     <tbody>${result.data.map(entry => `<tr>
                         <td>${D.escape(entry.entryType)}</td>
                         <td>${D.badge(entry.finalState || "")}</td>
                         <td>${D.money(entry.amount)} ${D.escape(entry.currency)}</td>
+                        <td>${entry.promoCode
+                            ? `${D.escape(entry.promoCode)} (-${D.money(entry.discountAmount)})` : "None"}</td>
                         <td>${D.escape(D.time(entry.placedAt))}</td>
                         <td>${D.escape(D.time(entry.occurredAt))}</td>
                         <td>${D.escape(entry.actorAccountId || "System")}</td>

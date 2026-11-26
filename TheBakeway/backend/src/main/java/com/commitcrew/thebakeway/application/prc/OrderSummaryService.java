@@ -80,6 +80,8 @@ public class OrderSummaryService {
                 charge.chargeId(),
                 charge.pricing(),
                 deliveredAt,
-                records.findRefunds(orderId));
+                records.findRefunds(orderId),
+                charge.promoCode(),
+                charge.discountAmount());
     }
 }

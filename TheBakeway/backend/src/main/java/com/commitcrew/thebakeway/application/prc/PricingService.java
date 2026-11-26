@@ -23,7 +23,14 @@ public class PricingService {
                 .map(item -> BigDecimal.valueOf(item.getUnitPrice())
                         .multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return calculatePrice(subtotal);
+        PriceBreakdown base = calculatePrice(subtotal);
+        BigDecimal discount = order.getPromoDiscountAmount() == null
+                ? BigDecimal.ZERO
+                : order.getPromoDiscountAmount().min(BigDecimal.valueOf(base.total()));
+        BigDecimal total = BigDecimal.valueOf(base.total()).subtract(discount)
+                .setScale(2, RoundingMode.HALF_UP);
+        return new PriceBreakdown(base.subtotal(), base.deliveryFee(), base.serviceFee(),
+                base.smallOrderSurcharge(), total.doubleValue(), discount.doubleValue());
     }
 
     public PriceBreakdown calculatePriceForSubtotal(double itemSubtotal) {
