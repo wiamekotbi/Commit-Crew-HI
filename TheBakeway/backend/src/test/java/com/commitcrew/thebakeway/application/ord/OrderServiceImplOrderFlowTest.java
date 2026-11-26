@@ -9,10 +9,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +31,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
+import com.commitcrew.thebakeway.application.prc.OrderPromotionService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -98,6 +102,9 @@ class OrderServiceImplOrderFlowTest {
     @Mock
     private CourierDeliveryRecorder courierDeliveryRecorder;
 
+    @Mock
+    private OrderPromotionService orderPromotionService;
+
     private OrderServiceImpl orderService;
 
     @BeforeEach
@@ -117,7 +124,8 @@ class OrderServiceImplOrderFlowTest {
                 courierRegistry,
                 dispatchService,
                 courierDeliveryRecorder,
-                new OrderAccessPolicy(bakeryStaffAccessService));
+                new OrderAccessPolicy(bakeryStaffAccessService),
+                orderPromotionService);
     }
 
     // Placing an order
@@ -149,6 +157,26 @@ class OrderServiceImplOrderFlowTest {
         assertLine(lines.get(0), "item-1", "Croissant", 3.00, 2);
         assertLine(lines.get(1), "item-2", "Baguette", 4.50, 1);
         assertEquals(10.50, saved.calculateTotal(), 0.001);
+    }
+
+    @Test
+    void revalidatesAndPersistsPromoCodeOnOrderPlacement() {
+        givenCustomer("Montreal");
+        givenMenuItem("item-1", BAKERY_ID, "Croissant", 25, MenuItemStatus.available, false);
+        givenSaveAssignsId();
+        doAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.applyPromotion("SAVE5", new BigDecimal("5.00"));
+            return null;
+        }).when(orderPromotionService).apply(any(Order.class), eq("save5"));
+
+        orderService.placeOrder(SESSION_ID, new PlaceOrderRequest(
+                BAKERY_ID, List.of(new OrderItemRequest("item-1", 1)), "Montreal", "save5"));
+
+        Order saved = savedOrder();
+        assertEquals("SAVE5", saved.getPromoCode());
+        assertEquals(new BigDecimal("5.00"), saved.getPromoDiscountAmount());
+        verify(orderPromotionService).apply(saved, "save5");
     }
 
     @Test

@@ -79,6 +79,17 @@ class PersistentPricingBillingTest {
                 billing.findRefunds("order-1"));
     }
 
+    @Test
+    void readsLegacyChargeWithoutPromoColumnsAsZeroDiscount() {
+        OrderLedgerEntry entry = OrderLedgerEntry.charge(order(),
+                new PriceBreakdown(5, 4, 2, 0, 11), Instant.now());
+        ReflectionTestUtils.setField(entry, "promoCode", null);
+        ReflectionTestUtils.setField(entry, "promoDiscountAmount", null);
+
+        assertEquals(0, entry.getPricing().discountAmount());
+        assertEquals(java.math.BigDecimal.ZERO, entry.getPromoDiscountAmount());
+    }
+
     private Order order() {
         Order order = new Order("customer-1", "bakery-1", "Customer", "Montreal");
         ReflectionTestUtils.setField(order, "id", "order-1");

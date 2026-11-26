@@ -17,6 +17,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.commitcrew.thebakeway.application.authorization.PermissionPolicy;
 import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
+import com.commitcrew.thebakeway.application.prc.OrderPromotionService;
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.prc.OrderBillingService;
 import com.commitcrew.thebakeway.application.prc.OrderPricingService;
@@ -78,7 +79,7 @@ class OrderAccessCharacterisationTest {
                 mock(BakeryStatusAccessService.class), orderRegistry, mock(AccountRegistry.class), sessionManager,
                 preparationQueue, new TransitionPublisher(), mock(InitialStateService.class), eventRepository,
                 mock(CourierRegistry.class), mock(DispatchService.class), mock(CourierDeliveryRecorder.class),
-                new OrderAccessPolicy(bakeryStaffAccess));
+                new OrderAccessPolicy(bakeryStaffAccess), mock(OrderPromotionService.class));
         summaryService = new OrderSummaryService(sessionManager, orderRegistry, eventRepository, Optional.empty(),
                 new OrderAccessPolicy(bakeryStaffAccess));
 

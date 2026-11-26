@@ -103,6 +103,20 @@ test("shows refunds separately and keeps the original final total", async () => 
     assert.equal((view.elements.orderSummary.innerHTML.match(/\$14\.00/g) || []).length, 2);
 });
 
+test("shows the applied promo and discount in the order summary", async () => {
+    const data = summary();
+    data.promoCode = "SAVE5";
+    data.discountAmount = 5;
+    data.pricing.total = 9;
+    const view = page([customer(), { data }]);
+    await settled();
+
+    assert.match(view.elements.orderSummary.innerHTML, /Promotion \(SAVE5\)/);
+    assert.match(view.elements.orderSummary.innerHTML, /-\$5\.00/);
+    assert.match(view.elements.orderSummary.innerHTML, /Final total/);
+    assert.match(view.elements.orderSummary.innerHTML, /\$9\.00/);
+});
+
 test("explains when a refunded order has no refund details yet", async () => {
     const data = summary();
     data.status = "refunded";
