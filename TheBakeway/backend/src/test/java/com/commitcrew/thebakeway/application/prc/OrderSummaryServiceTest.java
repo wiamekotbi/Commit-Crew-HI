@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -115,6 +116,24 @@ class OrderSummaryServiceTest {
         assertSame(saved, result.pricing());
         assertEquals(DELIVERED_AT, result.deliveredAt());
         assertEquals(List.of(refund), result.refunds());
+    }
+
+    @Test
+    void includesAppliedPromoAndDiscountFromTheRecordedCharge() {
+        customerSession();
+        eligibleOrder("delivered");
+        PriceBreakdown saved = new PriceBreakdown(25, 4, 2, 0, 26, 5);
+        when(billing.findCharge("order-1")).thenReturn(Optional.of(
+                new OrderSummaryBilling.Charge("charge-1", saved, "SAVE5", new BigDecimal("5.00"))));
+        when(eventRepository.findByEntityTypeAndEntityIdOrderByTimestampAsc(EntityType.ORDER, "order-1"))
+                .thenReturn(List.of(new StateTransitionEvent("delivery", EntityType.ORDER,
+                        "order-1", "picked_up", "delivered", DELIVERED_AT)));
+
+        OrderSummary result = service.getSummary("session-1", "order-1");
+
+        assertEquals("SAVE5", result.promoCode());
+        assertEquals(new BigDecimal("5.00"), result.discountAmount());
+        assertEquals(26, result.pricing().total());
     }
 
     @Test

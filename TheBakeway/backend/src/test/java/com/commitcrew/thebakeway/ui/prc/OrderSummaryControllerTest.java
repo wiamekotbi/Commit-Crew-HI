@@ -116,6 +116,25 @@ class OrderSummaryControllerTest {
     }
 
     @Test
+    void orderSummaryApiIncludesThePromotionSavedOnTheCharge() throws Exception {
+        Order order = order("delivered", "customer-1");
+        when(order.getId()).thenReturn("order-1");
+        when(order.getOrderItems()).thenReturn(List.of());
+        when(billing.findCharge("order-1")).thenReturn(Optional.of(new OrderSummaryBilling.Charge(
+                "charge-1", new PriceBreakdown(25, 4, 2, 0, 26, 5),
+                "SAVE5", new BigDecimal("5.00"))));
+        when(eventRepository.findByEntityTypeAndEntityIdOrderByTimestampAsc(EntityType.ORDER, "order-1"))
+                .thenReturn(List.of(new StateTransitionEvent("delivery-1", EntityType.ORDER,
+                        "order-1", "picked_up", "delivered", Instant.parse("2026-11-02T15:00:00Z"))));
+
+        mvc.perform(get("/api/orders/order-1/summary").cookie(session(Role.CUSTOMER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.promoCode").value("SAVE5"))
+                .andExpect(jsonPath("$.discountAmount").value(5))
+                .andExpect(jsonPath("$.pricing.total").value(26));
+    }
+
+    @Test
     void rejectsUnauthenticatedRequestsAndLogsError() throws Exception {
         mvc.perform(get("/api/orders/order-1/summary"))
                 .andExpect(status().isUnauthorized())

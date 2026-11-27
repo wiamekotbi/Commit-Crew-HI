@@ -33,7 +33,8 @@ public class PromoValidationService {
         }
         if (orderValue.compareTo(minimumOrderValue) < 0) {
             throw new IllegalArgumentException(
-                    "This promo code requires an order value of at least " + minimumOrderValue.toPlainString());
+                    "This promo code requires an items subtotal of at least $"
+                            + minimumOrderValue.toPlainString());
         }
     }
 }

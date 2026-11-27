@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import com.commitcrew.thebakeway.application.dlv.DispatchService;
 import com.commitcrew.thebakeway.application.dlv.CourierDeliveryRecorder;
+import com.commitcrew.thebakeway.application.prc.OrderPromotionService;
 import com.commitcrew.thebakeway.application.reg.SessionManager;
 import com.commitcrew.thebakeway.domain.account.AccountRegistry;
 import com.commitcrew.thebakeway.domain.account.BakewayAccount;
@@ -52,6 +53,7 @@ public class OrderServiceImpl implements OrderService {
     private final DispatchService dispatchService;
     private final CourierDeliveryRecorder courierDeliveryRecorder;
     private final OrderAccessPolicy orderAccess;
+    private final OrderPromotionService orderPromotionService;
 
     // Reuse the existing retrieval services rather than duplicating their queries and rules.
     public OrderServiceImpl(
@@ -69,7 +71,8 @@ public class OrderServiceImpl implements OrderService {
             CourierRegistry courierRegistry,
             DispatchService dispatchService,
             CourierDeliveryRecorder courierDeliveryRecorder,
-            OrderAccessPolicy orderAccess) {
+            OrderAccessPolicy orderAccess,
+            OrderPromotionService orderPromotionService) {
         this.bakeryService = bakeryService;
         this.menuService = menuService;
         this.bakeryStaffAccessService = bakeryStaffAccessService;
@@ -85,6 +88,7 @@ public class OrderServiceImpl implements OrderService {
         this.dispatchService = dispatchService;
         this.courierDeliveryRecorder = courierDeliveryRecorder;
         this.orderAccess = orderAccess;
+        this.orderPromotionService = orderPromotionService;
     }
 
     // Creates a new order for the logged-in customer at an open bakery. Every item must
@@ -108,6 +112,7 @@ public class OrderServiceImpl implements OrderService {
             order.addOrderItem(orderableMenuItem(request.bakeryId(), item.menuItemId()), item.quantity());
         }
 
+        orderPromotionService.apply(order, request.promoCode());
         return saveAndPublish(order, null);
     }
 

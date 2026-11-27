@@ -45,6 +45,8 @@
                         <tr><th scope="row">Service fee</th><td>${D.money(pricing.serviceFee)}</td></tr>
                         ${pricing.smallOrderSurcharge > 0 ? `<tr><th scope="row">Small-order surcharge</th>
                             <td>${D.money(pricing.smallOrderSurcharge)}</td></tr>` : ""}
+                        ${summary.promoCode ? `<tr><th scope="row">Promotion (${D.escape(summary.promoCode)})</th>
+                            <td>-${D.money(summary.discountAmount)}</td></tr>` : ""}
                         <tr><th scope="row">Final total</th><td><strong>${D.money(pricing.total)}</strong></td></tr>
                     </tbody>
                 </table>

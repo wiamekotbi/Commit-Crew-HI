@@ -78,12 +78,19 @@ public class OrderPricingService {
         Order order = orderRegistry.findById(orderId).orElseThrow(OrderNotFoundException::new);
         orderAccess.requireCanView(session, order);
 
-        Optional<PriceBreakdown> savedFare = billing.flatMap(records -> records.findCharge(orderId))
-                .map(OrderSummaryBilling.Charge::pricing);
-        if (savedFare.isPresent()) {
-            return new OrderPricingQuote(savedFare.get(), true);
+        Optional<OrderSummaryBilling.Charge> savedCharge = billing.flatMap(records -> records.findCharge(orderId))
+                .filter(charge -> charge.pricing() != null);
+        if (savedCharge.isPresent()) {
+            OrderSummaryBilling.Charge charge = savedCharge.get();
+            return new OrderPricingQuote(charge.pricing(), true,
+                    charge.promoCode(), charge.discountAmount(),
+                    BigDecimal.valueOf(charge.pricing().total()));
         }
-        return new OrderPricingQuote(pricingService.calculatePrice(order), false);
+        PriceBreakdown pricing = pricingService.calculatePrice(order);
+        String promoCode = order.getPromoCode();
+        BigDecimal discountAmount = BigDecimal.valueOf(pricing.discountAmount());
+        return new OrderPricingQuote(pricing, false, promoCode, discountAmount,
+                BigDecimal.valueOf(pricing.total()));
     }
 
     private Session requireSession(String sessionId) {

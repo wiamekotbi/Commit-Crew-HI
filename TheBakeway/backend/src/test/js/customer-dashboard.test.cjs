@@ -31,6 +31,7 @@ const customerScript = readFileSync(
                 appliedPromoCode = code;
             },
             loadCartPricing,
+            placeOrder,
             loadOrders: () => orderHistory.load(),
             rateOrder: orderId => orderHistory.rateOrder(orderId)
         }
@@ -126,6 +127,7 @@ test("place order is enabled when the bakery and selected item are available", (
 async function loadPromoPricing(apiResult, promoCode) {
     let panel;
     const calls = [];
+    let responseIndex = 0;
     const Dashboard = {
         register(role, value) {
             assert.equal(role, "CUSTOMER");
@@ -133,6 +135,9 @@ async function loadPromoPricing(apiResult, promoCode) {
         },
         async api(method, url) {
             calls.push({ method, url });
+            if (Array.isArray(apiResult)) {
+                return apiResult[responseIndex++];
+            }
             return apiResult;
         },
         escape: value => String(value ?? ""),
@@ -190,13 +195,71 @@ test("checkout pricing displays an accepted promotion and discounted total", asy
     assert.equal(view.removePromo.hidden, false);
 });
 
-test("checkout pricing displays the backend promotion rejection", async () => {
-    const view = await loadPromoPricing({
-        ok: false,
-        data: { error: "This promo code requires an order value of at least 20.00" }
-    }, "SAVE5");
+test("places the order with the canonical applied promo code", async () => {
+    let panel;
+    const calls = [];
+    const Dashboard = {
+        register(role, value) { panel = value; },
+        async command(...args) {
+            calls.push(args);
+            return { ok: false };
+        },
+        escape: value => String(value ?? ""),
+        money: value => `$${Number(value).toFixed(2)}`
+    };
+    loadCustomerDashboard(Dashboard);
+    const container = {
+        querySelector(selector) {
+            if (selector === "#deliveryAddress") return { value: "Montreal" };
+            if (selector === "#cart") return new Element();
+            if (selector === "#cartBakery") return new Element();
+            return new Element();
+        }
+    };
+    panel.__test.setState({
+        selectedBakery: null,
+        bakeries: [],
+        menu: [],
+        cart: [{ menuItemId: "item-1", name: "Bread", price: 25, quantity: 1 }],
+        container
+    });
+    panel.__test.setPromoCode("SAVE5");
 
-    assert.match(view.markup, /requires an order value of at least 20\.00/);
+    await panel.__test.placeOrder();
+
+    assert.equal(calls[0][0], "POST");
+    assert.equal(calls[0][1], "/api/orders");
+    assert.equal(calls[0][2].promoCode, "SAVE5");
+    assert.deepEqual(JSON.parse(JSON.stringify(calls[0][2].items)), [
+        { menuItemId: "item-1", quantity: 1 }
+    ]);
+});
+
+test("checkout pricing displays the backend promotion rejection", async () => {
+    const view = await loadPromoPricing([
+        {
+            ok: false,
+            data: { error: "This promo code requires an items subtotal of at least $20.00" }
+        },
+        {
+            ok: true,
+            data: {
+                pricing: { deliveryFee: 4, serviceFee: 2, smallOrderSurcharge: 0, total: 11 }
+            }
+        }
+    ], "SAVE5");
+
+    assert.deepEqual(view.calls, [
+        { method: "GET", url: "/api/orders/pricing?subtotal=25&promoCode=SAVE5" },
+        { method: "GET", url: "/api/orders/pricing?subtotal=25" }
+    ]);
+    assert.match(view.markup, /requires an items subtotal of at least \$20\.00/);
+    assert.match(view.markup, /Delivery fee/);
+    assert.match(view.markup, /Service fee/);
+    assert.match(view.markup, /Estimated total/);
+    assert.match(view.markup, /\$4\.00/);
+    assert.match(view.markup, /\$2\.00/);
+    assert.match(view.markup, /\$11\.00/);
     assert.equal(view.promoInput.disabled, false);
     assert.equal(view.applyPromo.hidden, false);
     assert.equal(view.removePromo.hidden, true);

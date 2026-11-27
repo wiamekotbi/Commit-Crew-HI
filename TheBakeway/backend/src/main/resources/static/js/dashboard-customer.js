@@ -242,13 +242,31 @@ Dashboard.register("CUSTOMER", (() => {
                 if (removeButton) removeButton.hidden = true;
                 const input = container.querySelector("#promoCode");
                 if (input) input.disabled = false;
-                target.innerHTML = `<p class="empty">${D.escape(D.errorText(result))}</p>`;
+                const promoError = D.errorText(result);
+                if (promoCode) {
+                    try {
+                        const baseResult = await D.api("GET",
+                            "/api/orders/pricing?subtotal=" + encodeURIComponent(subtotal));
+                        if (requestId !== cartPricingRequest || !target.isConnected) return;
+                        if (baseResult.ok) {
+                            renderCartPricing(target, baseResult.data, promoError);
+                            return;
+                        }
+                        target.innerHTML = `<p class="empty">${D.escape(promoError)}
+                            Fees unavailable: ${D.escape(D.errorText(baseResult))}</p>`;
+                    } catch {
+                        if (requestId === cartPricingRequest && target.isConnected) {
+                            target.innerHTML = `<p class="empty">${D.escape(promoError)}
+                                Fees could not be calculated. Please try again.</p>`;
+                        }
+                    }
+                    return;
+                }
+                target.innerHTML = `<p class="empty">${D.escape(promoError)}</p>`;
                 return;
             }
 
-            const pricing = result.data.pricing;
             const acceptedPromo = result.data.promoCode;
-            const estimatedTotal = result.data.discountedTotal ?? pricing.total;
             if (acceptedPromo) {
                 // Keep the canonical code from the configuration after a successful lookup.
                 appliedPromoCode = acceptedPromo;
@@ -270,19 +288,7 @@ Dashboard.register("CUSTOMER", (() => {
                 const removeButton = container.querySelector("#removePromo");
                 if (removeButton) removeButton.hidden = true;
             }
-            target.innerHTML = `
-                <table aria-label="Estimated order charges">
-                    <tbody>
-                        <tr><th scope="row">Delivery fee</th><td>${D.money(pricing.deliveryFee)}</td></tr>
-                        <tr><th scope="row">Service fee</th><td>${D.money(pricing.serviceFee)}</td></tr>
-                        ${pricing.smallOrderSurcharge > 0 ? `<tr><th scope="row">Small-order surcharge</th>
-                            <td>${D.money(pricing.smallOrderSurcharge)}</td></tr>` : ""}
-                        ${acceptedPromo ? `<tr><th scope="row">Promotion (${D.escape(acceptedPromo)})</th>
-                            <td>-${D.money(result.data.discountAmount)}</td></tr>` : ""}
-                        <tr><th scope="row">Estimated total</th><td><strong>${D.money(estimatedTotal)}</strong></td></tr>
-                    </tbody>
-                </table>
-                <p class="muted">Estimate only. Fees and the final total are recorded when the order is delivered.</p>`;
+            renderCartPricing(target, result.data);
         } catch (error) {
             if (requestId === cartPricingRequest && target.isConnected) {
                 appliedPromoCode = "";
@@ -295,6 +301,26 @@ Dashboard.register("CUSTOMER", (() => {
                 target.innerHTML = '<p class="empty">Unable to calculate order fees. Please try again.</p>';
             }
         }
+    }
+
+    function renderCartPricing(target, data, promoError = "") {
+        const pricing = data.pricing;
+        const acceptedPromo = data.promoCode;
+        const estimatedTotal = data.discountedTotal ?? pricing.total;
+        target.innerHTML = `
+            <table aria-label="Estimated order charges">
+                <tbody>
+                    <tr><th scope="row">Delivery fee</th><td>${D.money(pricing.deliveryFee)}</td></tr>
+                    <tr><th scope="row">Service fee</th><td>${D.money(pricing.serviceFee)}</td></tr>
+                    ${pricing.smallOrderSurcharge > 0 ? `<tr><th scope="row">Small-order surcharge</th>
+                        <td>${D.money(pricing.smallOrderSurcharge)}</td></tr>` : ""}
+                    ${acceptedPromo ? `<tr><th scope="row">Promotion (${D.escape(acceptedPromo)})</th>
+                        <td>-${D.money(data.discountAmount)}</td></tr>` : ""}
+                    <tr><th scope="row">Estimated total</th><td><strong>${D.money(estimatedTotal)}</strong></td></tr>
+                </tbody>
+            </table>
+            ${promoError ? `<p class="empty">Promo not applied: ${D.escape(promoError)}</p>` : ""}
+            <p class="muted">Estimate only. Fees and the final total are recorded when the order is delivered.</p>`;
     }
 
     async function placeOrder() {

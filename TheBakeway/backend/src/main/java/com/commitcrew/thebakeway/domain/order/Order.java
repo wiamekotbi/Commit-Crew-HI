@@ -8,6 +8,8 @@ import com.commitcrew.thebakeway.domain.menu.MenuItem;
 import com.commitcrew.thebakeway.domain.menu.MenuItemStatus;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +46,12 @@ public class Order {
 
     @Column(name = "rejection_reason")
     private String rejectionReason;
+
+    @Column(name = "promo_code", length = 64, updatable = false)
+    private String promoCode;
+
+    @Column(name = "promo_discount_amount", precision = 12, scale = 2, updatable = false)
+    private BigDecimal promoDiscountAmount = BigDecimal.ZERO.setScale(2);
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -91,6 +99,17 @@ public class Order {
     public void refund() { state.refund(this); }
     public void cancel(Role role) { state.cancel(this, role); }
 
+    public void applyPromotion(String code, BigDecimal discountAmount) {
+        if (code == null || code.isBlank() || discountAmount == null || discountAmount.signum() < 0) {
+            throw new IllegalArgumentException("A valid promotion code and discount are required");
+        }
+        if (promoCode != null) {
+            throw new IllegalStateException("A promotion has already been applied to this order");
+        }
+        this.promoCode = code.trim();
+        this.promoDiscountAmount = discountAmount.setScale(2, RoundingMode.HALF_UP);
+    }
+
     public void addOrderItem(MenuItem menuItem, int quantity) {
         // Order construction must use the menu item's current availability.
         // This prevents a newly submitted order from accepting an item after
@@ -125,6 +144,10 @@ public class Order {
     public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
     public String getStatus() { return state.getStatus(); }
     public String getRejectionReason() { return rejectionReason; }
+    public String getPromoCode() { return promoCode; }
+    public BigDecimal getPromoDiscountAmount() {
+        return promoDiscountAmount == null ? BigDecimal.ZERO : promoDiscountAmount;
+    }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public List<OrderLine> getOrderItems() { return orderItems; }

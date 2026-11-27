@@ -39,7 +39,7 @@ class PromoValidationServiceTest {
     void rejectsOrderBelowMinimum() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.validate(LocalDate.of(2026, 11, 19), minimum, new BigDecimal("24.99")));
-        assertEquals("This promo code requires an order value of at least 25.00", exception.getMessage());
+        assertEquals("This promo code requires an items subtotal of at least $25.00", exception.getMessage());
     }
 
     @Test
