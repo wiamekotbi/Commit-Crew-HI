@@ -33,9 +33,9 @@ env:
   # EDIT THIS: the folders to build, separated by spaces. The last part of the folder name is the
   # service name (backend -> ghcr.io/<owner>/<repo>-backend). Use `.` for a repository whose
   # Dockerfile is at the top level (the service is then called "app").
-  SERVICES: "backend"
+  SERVICES: "TheBakeway/backend"
   # Your compose file. Change it only if your group keeps it somewhere else.
-  COMPOSE_FILE: demo/compose.yaml
+  COMPOSE_FILE: compose.yaml
 
 permissions:
   contents: read
