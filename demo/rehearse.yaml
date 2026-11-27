@@ -1,0 +1,13 @@
+# Rehearse the demo on a laptop with only the published images. The platform ignores this file.
+# Plain Docker Compose does not know the platform's ${secret:...} syntax, so the command replaces it
+# with the GOOGLE_MAPS_API_KEY of your shell (empty: the map shows "not configured"):
+#
+#   sed 's/\${secret:GOOGLE_MAPS_API_KEY}/"${GOOGLE_MAPS_API_KEY:-}"/' demo/compose.yaml \
+#     | docker compose -p bakeway-demo -f - -f demo/rehearse.yaml up
+#
+# Then open http://localhost:8080. Stop with Ctrl+C, and remove the demo database with
+#   docker compose -p bakeway-demo -f demo/compose.yaml -f demo/rehearse.yaml down -v
+services:
+  backend:
+    ports:
+      - "8080:8080"

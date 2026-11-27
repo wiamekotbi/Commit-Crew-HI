@@ -110,6 +110,20 @@ export SUPABASE_DB_USERNAME="YOUR_USERNAME"
 export SUPABASE_DB_PASSWORD="YOUR_PASSWORD"
 ```
 
+## Google Maps Key
+
+The dashboard map needs a Google Maps JavaScript API browser key. The key is never committed: the application reads it from the `GOOGLE_MAPS_API_KEY` environment variable and gives it to logged-in users at runtime. Without it, the application runs and the map shows "The map is not configured".
+
+```powershell
+$env:GOOGLE_MAPS_API_KEY="YOUR_BROWSER_KEY"
+```
+
+```bash
+export GOOGLE_MAPS_API_KEY="YOUR_BROWSER_KEY"
+```
+
+`docker compose up --build` passes the same variable from your shell to the container. In Google Cloud, restrict the key to the Maps JavaScript API and to the HTTP referrers that use it (`http://localhost:8080/*` and the demo platform address), because a browser key is always visible to the page.
+
 ## Initial State (Configuration Files)
 
 At startup the application loads its initial state from two configuration files (UC-REG-03, UC-ORD-01):

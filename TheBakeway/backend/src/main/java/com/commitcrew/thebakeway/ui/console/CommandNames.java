@@ -51,6 +51,7 @@ final class CommandNames {
             route("GET", "/api/order-ratings/" + ID + "/average-rating", "GET_BAKERY_AVERAGE_ORDER"),
             route("GET", "/api/couriers/me", "VIEW_COURIER_STATUS"),
             route("GET", "/api/couriers/map", "GET_COURIER_MAP_DATA"),
+            route("GET", "/api/map/config", "VIEW_MAP_CONFIG"),
             route("GET", "/api/couriers/me/past-deliveries", "VIEW_PAST_DELIVERIES"),
             route("PATCH", "/api/couriers/me/on-duty", "GO_ON_DUTY"),
             route("PATCH", "/api/couriers/me/off-duty", "GO_OFF_DUTY"),

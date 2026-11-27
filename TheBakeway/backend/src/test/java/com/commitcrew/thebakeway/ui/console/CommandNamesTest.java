@@ -34,6 +34,7 @@ class CommandNamesTest {
             "GET,/api/orders,VIEW_ALL_ORDERS",
             "GET,/api/orders/o-1,VIEW_ORDER",
             "GET,/api/couriers/me,VIEW_COURIER_STATUS",
+            "GET,/api/map/config,VIEW_MAP_CONFIG",
             "GET,/api/couriers/me/past-deliveries,VIEW_PAST_DELIVERIES",
             "PATCH,/api/couriers/me/on-duty,GO_ON_DUTY",
             "PATCH,/api/couriers/me/off-duty,GO_OFF_DUTY",

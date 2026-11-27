@@ -20,6 +20,8 @@ services:
       SUPABASE_DB_URL: jdbc:postgresql://database:5432/thebakeway
       SUPABASE_DB_USERNAME: thebakeway
       SUPABASE_DB_PASSWORD: thebakeway
+      # Google Maps browser key, taken from your shell; never write it here
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     depends_on:
       database:
         condition: service_healthy
