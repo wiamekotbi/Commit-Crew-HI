@@ -320,6 +320,26 @@ const BakewayMap = (() => {
         message.hidden = !text;
     }
 
+    // The browser key is not in the page: it is read from the server (GOOGLE_MAPS_API_KEY), then the
+    // Google Maps script is added with it. Returns false when no key is configured.
+    async function loadGoogleMaps() {
+        if (window.google?.maps?.Map) return true;
+        let apiKey = "";
+        try {
+            const response = await fetch("/api/map/config", { credentials: "same-origin" });
+            if (response.ok) apiKey = (await response.json()).apiKey || "";
+        } catch (error) {
+            console.error("Unable to read the map configuration", error);
+        }
+        if (!apiKey) return false;
+
+        const script = document.createElement("script");
+        script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(apiKey) + "&loading=async";
+        script.async = true;
+        document.head.appendChild(script);
+        return true;
+    }
+
     // The Google Maps script loads asynchronously, so wait for it before giving up
     async function waitForGoogleMaps(timeoutMs) {
         const deadline = Date.now() + timeoutMs;
@@ -331,6 +351,12 @@ const BakewayMap = (() => {
 
     async function init(containerId = "map") {
         const element = document.getElementById(containerId);
+
+        if (element && !(await loadGoogleMaps())) {
+            element.hidden = true;
+            showMessage("The map is not configured: no Google Maps key is set on the server.");
+            return;
+        }
 
         if (!element || !(await waitForGoogleMaps(10000))) {
             console.error("Map container or Google Maps API unavailable");
