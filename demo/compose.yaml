@@ -1,0 +1,47 @@
+# The Bakeway on the SOEN 343 demo platform. Submit this file on the platform.
+#   backend  Spring Boot: serves the dashboard pages and the /api on port 8080 (public)
+#   db       Postgres, the demo database (schema created by JPA, data loaded from the config files)
+# The image line is printed by the "Publish demo images" workflow: replace PLACEHOLDER with its tag.
+x-demo:
+  web: backend
+  port: 8080
+
+services:
+  backend:
+    image: ghcr.io/wiamekotbi/commit-crew-hi-backend:PLACEHOLDER
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SUPABASE_DB_URL: jdbc:postgresql://db:5432/thebakeway
+      SUPABASE_DB_USERNAME: thebakeway
+      SUPABASE_DB_PASSWORD: demo-password
+      # Google Maps browser key, saved on the group's Secrets page (never in this file)
+      GOOGLE_MAPS_API_KEY: ${secret:GOOGLE_MAPS_API_KEY}
+      # The platform edge sends X-Forwarded-* headers: keep https and the demo host in redirects
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=60
+    healthcheck:
+      # Healthy when port 8080 accepts a connection; Spring Boot needs 15 to 40 seconds to start
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: thebakeway
+      POSTGRES_USER: thebakeway
+      POSTGRES_PASSWORD: demo-password
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thebakeway -d thebakeway"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dbdata:
