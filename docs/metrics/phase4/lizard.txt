@@ -609,7 +609,203 @@
        3      1     21      1       3 OrderRatingController::handleInvalidRequest@76-78@TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\ui\rvw\OrderRatingController.java
        3      1     30      2       3 OrderRatingController::error@80-82@TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\ui\rvw\OrderRatingController.java
        3      1     20      1       3 TheBakewayApplication::main@9-11@TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\TheBakewayApplication.java
-145 file analyzed.
+      31      1     22      1      31 render@6-36@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+      10      2     57      0      10 refresh@38-47@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       7      1     20      1       7 (anonymous)@63-69@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+      20      6    123      0      27 loadPastDeliveries@49-75@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       3      1     13      0       3 (anonymous)@105-107@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       3      1     13      0       3 (anonymous)@109-111@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       1      1      9      0       1 (anonymous)@125-125@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       1      1      9      0       1 (anonymous)@127-127@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       4      1     11      0       4 (anonymous)@161-164@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       4      1     11      0       4 (anonymous)@166-169@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+      81     10    301      1     104 renderCourier@77-180@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       8      2     47      2       8 respondToOffer@182-189@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       7      1     32      3       7 updateDelivery@191-197@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+      11      1     40      0     199 (anonymous)@2-200@TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+       1      1      8      1       1 (anonymous)@21-21@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1     15      0       1 (anonymous)@46-46@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1     11      1       2 (anonymous)@45-46@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1     12      1       1 (anonymous)@50-50@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       3      1     25      0       3 (anonymous)@48-50@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1     11      1       4 (anonymous)@47-50@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1      9      0       1 (anonymous)@52-52@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1     11      1       2 (anonymous)@51-52@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+      46      7    157      0      48 load@6-53@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+      14      3     56      2      14 ratingAction@56-69@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+      10      3     43      2      10 scoreSelect@71-80@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       9      1     59      1       9 rateOrder@82-90@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       3      1     30      2       3 selectedScore@92-94@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       8      1     32      3      93 create@5-97@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       4      1     10      0      97 CustomerOrderHistory@4-100@TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+       1      1      6      1       1 (anonymous)@15-15@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       4      2     25      1       4 bakeryName@14-17@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      37      1     54      1      38 render@19-56@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      10      4     48      0      10 refresh@58-67@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      6      1       1 (anonymous)@71-71@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       4      2     17      0       4 selectedBakeryAcceptsOrders@69-72@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      10      2     20      1      10 (anonymous)@86-95@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      9      0       1 (anonymous)@97-97@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     11      1       2 (anonymous)@96-97@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      16      3    106      0      25 loadBakeries@74-98@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      9      0       1 (anonymous)@147-147@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     11      1       2 (anonymous)@146-147@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      45      8    186      1      49 loadMenu@100-148@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      6      1       1 (anonymous)@151-151@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      6      1       1 (anonymous)@154-154@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      12      2     97      1      12 addToCart@150-161@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     10      2       1 (anonymous)@171-171@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      8      1       1 (anonymous)@173-173@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       4      3     27      1       4 (anonymous)@172-175@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       4      1     22      0       4 (anonymous)@206-209@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     12      1       5 (anonymous)@205-209@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       4      1     25      0       4 (anonymous)@210-213@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       8      1     57      0       8 (anonymous)@214-221@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      46      8    197      0      62 renderCart@163-224@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      76     29    533      2      79 loadCartPricing@226-304@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      19      6     68      3      19 renderCartPricing@306-324@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     16      1       1 (anonymous)@329-329@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1     12      1       1 (anonymous)@333-333@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      15      4     87      0      18 placeOrder@326-343@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+      22      1     91      0     344 (anonymous)@3-346@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+       1      1      6      1       1 (anonymous)@13-13@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       4      2     25      1       4 bakeryName@12-15@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      34      1     68      1      35 render@17-51@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       5      1     19      0       5 refresh@53-57@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     12      1       2 (anonymous)@70-71@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      0       1 (anonymous)@91-91@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       2 (anonymous)@90-91@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      0       1 (anonymous)@93-93@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       2 (anonymous)@92-93@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      32      2    138      0      36 loadBakeries@59-94@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       1 (anonymous)@98-98@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       4      1     31      2       4 bakeryCommand@96-99@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       2      1      9      0       2 (anonymous)@140-141@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       3 (anonymous)@139-141@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      35      6     97      0      42 loadWaitingOrders@101-142@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       3      2     24      1       3 (anonymous)@149-151@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       7      1     27      1       9 reassignOrder@144-152@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     15      0       1 (anonymous)@197-197@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       2 (anonymous)@196-197@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     12      1       1 (anonymous)@201-201@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       3      1     25      0       3 (anonymous)@199-201@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       4 (anonymous)@198-201@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1      9      0       1 (anonymous)@203-203@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       2 (anonymous)@202-203@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1      5      0       1 (anonymous)@205-205@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     11      1       2 (anonymous)@204-205@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      49     10    212      0      53 loadOrders@154-206@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      31      9    137      1      32 toggleLedger@208-239@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1     12      1       1 (anonymous)@252-252@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      13      4     88      1      13 refundOrder@241-253@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      11      3     64      0      11 restore@256-266@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+      19      1    102      0     267 (anonymous)@3-269@TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+       1      1      8      1       1 (anonymous)@67-67@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       2      1     23      0       3 (anonymous)@65-67@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      60      1     58      2      62 render@9-70@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      6      1       1 (anonymous)@79-79@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      6      1       1 (anonymous)@80-80@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      3     16      2       1 (anonymous)@81-81@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      6      1       1 (anonymous)@82-82@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     21      1       1 (anonymous)@83-83@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      14      2    110      0      14 loadOrders@72-85@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       6      1     26      1       6 orderCells@87-92@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       4      1     14      1       4 detailsButton@94-97@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     15      0       1 (anonymous)@101-101@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     11      1       2 (anonymous)@100-101@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       4      1     20      2       4 wire@99-102@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       3      2     38      1       3 (anonymous)@106-108@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       4      1     33      3       6 transition@104-109@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     13      0       1 (anonymous)@130-130@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     11      1       2 (anonymous)@129-130@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     12      1       1 (anonymous)@136-136@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       5      1     47      0       6 (anonymous)@132-137@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     12      1       7 (anonymous)@131-137@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      24      2     80      1      29 renderIncoming@111-139@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     13      0       1 (anonymous)@159-159@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     11      1       2 (anonymous)@158-159@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      20      3     67      1      20 renderQueue@142-161@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     13      0       1 (anonymous)@179-179@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     11      1       2 (anonymous)@178-179@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      19      2     67      1      19 renderPreparing@163-181@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      15      3     54      1      15 renderDone@183-197@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     10      1       1 (anonymous)@230-230@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     12      1       1 (anonymous)@233-233@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       6      2     51      0       6 (anonymous)@229-234@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     12      1       7 (anonymous)@228-234@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      9      0       1 (anonymous)@236-236@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     11      1       2 (anonymous)@235-236@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      32      4    114      0      38 loadMenu@200-237@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      6      1       1 (anonymous)@247-247@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1     13      1       1 field@261-261@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      8      1       1 (anonymous)@266-266@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       9      1     57      1      10 (anonymous)@258-267@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      20      3    121      1      29 showEditRow@240-268@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       1      1      8      1       1 (anonymous)@276-276@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      11      2     84      1      11 addItem@270-280@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+       4      1     14      0       4 refresh@282-285@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      20      1     72      0     286 (anonymous)@3-288@TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+      21      6    150      3      23 api@37-59@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      10      3     72      4      11 command@62-72@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      3     28      1       3 errorText@74-76@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       9      2     74      2       9 showMessage@78-86@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      1     27      1       3 (anonymous)@90-92@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      2     21      1       5 escape@89-93@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       4      2     32      1       4 badge@95-98@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      1     18      1       3 money@100-102@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      2     20      1       3 time@104-106@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      2     22      1       3 shortId@108-110@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       1      1     10      1       1 (anonymous)@113-113@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      1     21      1       3 itemsSummary@112-114@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       1      1     19      1       2 (anonymous)@126-127@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       3      2     19      1       4 (anonymous)@129-132@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      41      8    209      1      43 orderDetails@117-159@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      12      3     88      3      12 toggleDetails@162-173@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      20      8    178      0      21 loadConsole@175-195@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      22      3     65      1      23 (anonymous)@209-231@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      10      3     73      0      36 loadMapBakeries@197-232@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       8      3     52      0      10 loadMapCouriers@234-243@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      15      3     51      0      17 refreshMap@245-261@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       7      3     36      0       7 refresh@264-270@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       4      1     18      0       4 (anonymous)@278-281@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       7      4     68      0      11 renderHeader@272-282@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       1      1      7      0       1 (anonymous)@310-310@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      24      4    154      0      31 start@284-314@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       1      1     15      2       1 register@318-318@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+       1      1      7      0       1 get session@319-319@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      54      1    217      0     319 Dashboard@3-321@TheBakeway\backend\src\main\resources\static\js\dashboard.js
+      21      2    112      1      25 (anonymous)@4-28@TheBakeway\backend\src\main\resources\static\js\login.js
+       9      3     36      1      11 getQueueColor@33-43@TheBakeway\backend\src\main\resources\static\js\map.js
+      10      1     38      1      10 createBakeryIcon@45-54@TheBakeway\backend\src\main\resources\static\js\map.js
+      10      2     45      1      10 createCourierIcon@57-66@TheBakeway\backend\src\main\resources\static\js\map.js
+      42      9    238      0      55 (anonymous)@131-185@TheBakeway\backend\src\main\resources\static\js\map.js
+      44     12    288      1     114 (anonymous)@73-186@TheBakeway\backend\src\main\resources\static\js\map.js
+       5      2     21      2       5 (anonymous)@188-192@TheBakeway\backend\src\main\resources\static\js\map.js
+       7      2     35      2       7 (anonymous)@195-201@TheBakeway\backend\src\main\resources\static\js\map.js
+       7      2     55      1     135 setBakeries@68-202@TheBakeway\backend\src\main\resources\static\js\map.js
+      19      6    123      2      28 updateBakeryQueue@204-231@TheBakeway\backend\src\main\resources\static\js\map.js
+      31      7    177      1      40 (anonymous)@238-277@TheBakeway\backend\src\main\resources\static\js\map.js
+       6      2     28      2       6 (anonymous)@280-285@TheBakeway\backend\src\main\resources\static\js\map.js
+       6      2     42      1      54 setCouriers@233-286@TheBakeway\backend\src\main\resources\static\js\map.js
+       1      1     11      1       1 (anonymous)@307-307@TheBakeway\backend\src\main\resources\static\js\map.js
+      21      5    156      0      24 fitToData@291-314@TheBakeway\backend\src\main\resources\static\js\map.js
+       6      3     37      1       6 showMessage@316-321@TheBakeway\backend\src\main\resources\static\js\map.js
+       1      1      7      1       1 (anonymous)@327-327@TheBakeway\backend\src\main\resources\static\js\map.js
+       7      3     57      1       7 waitForGoogleMaps@324-330@TheBakeway\backend\src\main\resources\static\js\map.js
+       1      1      7      1       1 (anonymous)@342-342@TheBakeway\backend\src\main\resources\static\js\map.js
+       1      1      7      1       1 (anonymous)@345-345@TheBakeway\backend\src\main\resources\static\js\map.js
+      35      5    199      1      42 init@332-373@TheBakeway\backend\src\main\resources\static\js\map.js
+      40      1    146      0     381 BakewayMap@2-382@TheBakeway\backend\src\main\resources\static\js\map.js
+       3      1     17      1       3 showError@7-9@TheBakeway\backend\src\main\resources\static\js\order-summary.js
+      44      8    100      1      45 render@11-55@TheBakeway\backend\src\main\resources\static\js\order-summary.js
+      37     10    229      0      37 loadSummary@57-93@TheBakeway\backend\src\main\resources\static\js\order-summary.js
+      12      3     58      0      12 (anonymous)@96-107@TheBakeway\backend\src\main\resources\static\js\order-summary.js
+      12      1     86      0     109 (anonymous)@1-109@TheBakeway\backend\src\main\resources\static\js\order-summary.js
+      24      6    209      0      28 loadProfile@8-35@TheBakeway\backend\src\main\resources\static\js\profile.js
+      21      2    118      1      25 (anonymous)@37-61@TheBakeway\backend\src\main\resources\static\js\profile.js
+       7      1     28      0       7 (anonymous)@63-69@TheBakeway\backend\src\main\resources\static\js\profile.js
+      24      2    144      1      28 (anonymous)@4-31@TheBakeway\backend\src\main\resources\static\js\registration.js
+156 file analyzed.
 ==============================================================
 NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
 --------------------------------------------------------------
@@ -758,6 +954,17 @@ NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
      13       7.0     2.0       76.0         1     TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\ui\registration\SessionResponse.java
      69       4.2     1.3       32.8         9     TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\ui\rvw\OrderRatingController.java
       9       3.0     1.0       20.0         1     TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\TheBakewayApplication.java
+    178      13.6     2.1       50.6        14     TheBakeway\backend\src\main\resources\static\js\dashboard-courier.js
+     90       6.9     1.7       32.6        15     TheBakeway\backend\src\main\resources\static\js\dashboard-customer-orders.js
+    320      11.6     3.0       59.4        30     TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
+    238       8.4     1.9       39.0        32     TheBakeway\backend\src\main\resources\static\js\dashboard-operator.js
+    263       6.8     1.4       31.6        45     TheBakeway\backend\src\main\resources\static\js\dashboard-restaurant.js
+    269      10.2     2.6       61.1        29     TheBakeway\backend\src\main\resources\static\js\dashboard.js
+     23      21.0     2.0      112.0         1     TheBakeway\backend\src\main\resources\static\js\login.js
+    289      14.7     3.4       83.5        21     TheBakeway\backend\src\main\resources\static\js\map.js
+    104      21.6     4.6       98.0         5     TheBakeway\backend\src\main\resources\static\js\order-summary.js
+     57      17.3     3.0      118.3         3     TheBakeway\backend\src\main\resources\static\js\profile.js
+     26      24.0     2.0      144.0         1     TheBakeway\backend\src\main\resources\static\js\registration.js
 
 ===========================================================================================================
 !!!! Warnings (cyclomatic_complexity > 15 or length > 1000 or nloc > 1000000 or parameter_count > 100) !!!!
@@ -766,7 +973,8 @@ NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
 ------------------------------------------------
      142     32    804      1     165 AccountSeedingService::seedAccounts@77-241@TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\application\reg\AccountSeedingService.java
       29     17    187      1      29 CommandConsoleFilter::count@130-158@TheBakeway\backend\src\main\java\com\commitcrew\thebakeway\ui\console\CommandConsoleFilter.java
+      76     29    533      2      79 loadCartPricing@226-304@TheBakeway\backend\src\main\resources\static\js\dashboard-customer.js
 ==========================================================================================
 Total nloc   Avg.NLOC  AvgCCN  Avg.token   Fun Cnt  Warning cnt   Fun Rt   nloc Rt
 ------------------------------------------------------------------------------------------
-      6420       6.6     1.7       43.5      608            2      0.00    0.04
+      8277       7.5     1.9       45.7      804            3      0.00    0.04
