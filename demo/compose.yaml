@@ -1,14 +1,14 @@
 # The Bakeway on the SOEN 343 demo platform. Submit this file on the platform.
 #   backend  Spring Boot: serves the dashboard pages and the /api on port 8080 (public)
 #   db       Postgres, the demo database (schema created by JPA, data loaded from the config files)
-# The image line is printed by the "Publish demo images" workflow: replace PLACEHOLDER with its tag.
+# The image line is printed by the "Publish demo images" workflow; update its tag after each change to main.
 x-demo:
   web: backend
   port: 8080
 
 services:
   backend:
-    image: ghcr.io/wiamekotbi/commit-crew-hi-backend:PLACEHOLDER
+    image: ghcr.io/wiamekotbi/commit-crew-hi-backend:9df967be1b960407ec759c25505ec782085708bb
     depends_on:
       db:
         condition: service_healthy

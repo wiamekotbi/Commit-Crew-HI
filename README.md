@@ -166,12 +166,15 @@ Each refactoring of Phase IV is protected by characterisation tests that pin dow
 | Refactoring | Test class |
 |---|---|
 | R1: Switch Statements -> Extract Class (`OrderAccessPolicy`) | `OrderAccessCharacterisationTest` |
+| R2: Long Method -> Extract Method (`DeliveryPricingObserver`) | `DeliveryPricingObserverTest` |
+| R3: Large Class -> Extract Module (`dashboard-customer-orders.js`) | `src/test/js/customer-dashboard.test.cjs` (Node.js) |
 
 Run all of them (macOS/Linux; on Windows use `.\mvnw.cmd`):
 
 ```bash
 cd TheBakeway/backend
-./mvnw test -Dtest='*CharacterisationTest'
+./mvnw test -Dtest='OrderAccessCharacterisationTest,DeliveryPricingObserverTest'
+node --test src/test/js/customer-dashboard.test.cjs
 ```
 
 Run one refactoring's tests on the commit before it and on the refactoring commit, for example R1:
@@ -182,6 +185,8 @@ git switch --detach "$R1~1" && (cd TheBakeway/backend && ./mvnw test -Dtest=Orde
 git switch --detach "$R1" && (cd TheBakeway/backend && ./mvnw test -Dtest=OrderAccessCharacterisationTest)
 git switch main
 ```
+
+For R2, use `--grep="^refactor(R2)"` and `-Dtest=DeliveryPricingObserverTest`. For R3, use `--grep="^refactor(R3)"` and run `node --test src/test/js/customer-dashboard.test.cjs` in `TheBakeway/backend`.
 
 ## Run Locally
 
